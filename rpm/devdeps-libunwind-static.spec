@@ -1,5 +1,5 @@
 Name: devdeps-libunwind-static
-Version: 1.5.0
+Version: 1.6.2
 Release: %(echo $RELEASE)%{?dist}
 Summary: libunwind's goal is define a portable and efficient C programming interface (API) to determine the call-chain of a program
 
@@ -34,7 +34,7 @@ cd $OLDPWD/../
 rm -rf %{_src}
 tar -xf %{_src}.tar.gz
 cd %{_src}
-./configure --prefix=%{_tmppath}  --enable-minidebuginfo=no --with-pic=yes
+./configure --prefix=%{_tmppath} --enable-minidebuginfo=no --with-pic=yes --disable-weak-backtrace
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES};
 make install;
