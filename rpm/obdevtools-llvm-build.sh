@@ -17,12 +17,18 @@ if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/llvm-$VERSION.*[tar|gz|bz2|xz|zi
 fi
 
 # prepare building environment
+OS_RELEASE=$(grep -Po '(?<=release )\d' /etc/redhat-release)
+if [[ x"$OS_RELEASE" == x"7" ]]; then
+    yum install -y centos-release-scl
+    yum install -y devtoolset-9-gcc devtoolset-9-gcc-c++
+    source /opt/rh/devtoolset-9/enable
+elif [[ x"$OS_RELEASE" == x"8" ]]; then
+    yum install -y gcc-toolset-9-gcc gcc-toolset-9-gcc-c++
+    source /opt/rh/devtoolset-9/enable
+fi
 wget https://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
 yum install obdevtools-cmake-3.20.2 -y
 export PATH=/usr/local/oceanbase/devtools/bin:$PATH
-yum install -y centos-release-scl
-yum install -y devtoolset-9
-source /opt/rh/devtoolset-9/enable
 
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE
