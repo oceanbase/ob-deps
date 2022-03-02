@@ -46,7 +46,7 @@ mkdir -p cmake/build
 cd cmake/build
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} -DCARES_STATIC=ON -DCARES_SHARED=OFF -DCARES_STATIC_PIC=ON ../..
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
-make -j${CPU_CORES}; install
+make -j${CPU_CORES} install
 cd ../../../../..
 rm -rf third_party/cares/cares  # wipe out to prevent influencing the grpc build
 
@@ -56,7 +56,7 @@ mkdir -p cmake/build
 cd cmake/build
 cmake -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} ..
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
-make -j${CPU_CORES}; install
+make -j${CPU_CORES} install
 cd ../../../..
 rm -rf third_party/protobuf  # wipe out to prevent influencing the grpc build
 
@@ -71,7 +71,7 @@ cmake ../.. -DgRPC_INSTALL=ON                \
               -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} \
               -DBUILD_SHARED_LIBS=OFF
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
-make -j${CPU_CORES}; install
+make -j${CPU_CORES} install
 
 %files
 
