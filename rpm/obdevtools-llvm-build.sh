@@ -24,7 +24,7 @@ if [[ x"$OS_RELEASE" == x"7" ]]; then
     source /opt/rh/devtoolset-9/enable
 elif [[ x"$OS_RELEASE" == x"8" ]]; then
     yum install -y gcc-toolset-9-gcc gcc-toolset-9-gcc-c++
-    source /opt/rh/devtoolset-9/enable
+    source /opt/rh/gcc-toolset-9/enable
 fi
 wget https://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
 yum install obdevtools-cmake-3.20.2 -y
