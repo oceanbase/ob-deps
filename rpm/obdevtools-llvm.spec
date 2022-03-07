@@ -42,12 +42,23 @@ mkdir -p build-rpm
 cd build-rpm
 
 export PATH=/usr/local/oceanbase/devtools/bin:$PATH
-cmake .. -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++" -DCMAKE_INSTALL_PREFIX=%{_tmppath} -DLLVM_TARGETS_TO_BUILD='X86' -DLLVM_ENABLE_RTTI=ON -DLLVM_ENABLE_EH=ON -DCMAKE_BUILD_TYPE=Release -G 'Unix Makefiles';
+arch=`uname -p`
+if [[ x"$arch" == x"x86_64" ]]; then
+    echo "Build arch: x86"
+    arch=x86
+elif [[ x"$arch" == x"aarch64" ]]; then
+    echo "Build arch: AArch64"
+    arch=AArch64
+else
+    echo "Unknown arch"
+    exit 1
+fi
+cmake .. -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++" -DCMAKE_INSTALL_PREFIX=%{_tmppath} -DLLVM_TARGETS_TO_BUILD=$arch -DLLVM_ENABLE_RTTI=ON -DLLVM_ENABLE_EH=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DLLVM_ENABLE_PROJECTS='clang;compiler-rt' -G 'Unix Makefiles';
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES};
 make install;
 # drop unnecessary .a files
-rm -rf %{_tmppath}/lib/*.a
+# rm -rf %{_tmppath}/lib/*.a
 
 %install
 
