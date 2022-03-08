@@ -13,6 +13,7 @@ if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/llvm-$VERSION.*[tar|gz|bz2|xz|zi
     wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.1/llvm-11.0.1.src.tar.xz -P $ROOT_DIR
     wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.1/lld-11.0.1.src.tar.xz -P $ROOT_DIR
     wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.1/clang-11.0.1.src.tar.xz -P $ROOT_DIR
+    wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.1/compiler-rt-11.0.1.src.tar.xz -P $ROOT_DIR
 fi
 
 # prepare building environment
