@@ -21,8 +21,8 @@ AutoReqProv:no
 SQLite is a C-language library that implements a small, fast, self-contained, high-reliability, full-featured, SQL database engine.
 
 %install
-mkdir -p %{buildroot}/%{_prefix}/sqlite/lib
-mkdir -p %{buildroot}/%{_prefix}/sqlite/include
+mkdir -p %{buildroot}/%{_prefix}/lib/sqlite
+mkdir -p %{buildroot}/%{_prefix}/include/sqlite
 cd $OLDPWD/../
 rm -rf %{_sqlite_src}
 tar xf %{_sqlite_src}.tar.gz
@@ -31,8 +31,8 @@ cd %{_sqlite_src}
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES}
 make install
-cp %{_tmppath}/include/*.h %{buildroot}/%{_prefix}/sqlite/include
-cp %{_tmppath}/lib/*.a %{buildroot}/%{_prefix}/sqlite/lib
+cp %{_tmppath}/include/*.h %{buildroot}/%{_prefix}/include/sqlite
+cp %{_tmppath}/lib/*.a %{buildroot}/%{_prefix}/lib/sqlite
 
 %files
 
