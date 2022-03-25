@@ -1,5 +1,5 @@
 Name: devdeps-sqlite
-Version: 3.7.7
+Version: 3.38.1
 Release: %(echo $RELEASE)%{?dist}
 
 Summary: SQLite is a C-language library that implements a small, fast, self-contained, high-reliability, full-featured, SQL database engine.
@@ -9,6 +9,10 @@ Url: https://github.com/sqlite/sqlite
 AutoReqProv:no
 
 %undefine _missing_build_ids_terminate_build
+# disable check-buildroot
+%define __arch_install_post %{nil}
+%define _buliddir %{_topdir}/BUILD
+%define _tmppath %{_buliddir}/_tmp
 %define _prefix /usr/local/oceanbase/deps/devel
 %define _sqlite_src sqlite-version-%{version}
 %define debug_package %{nil}
@@ -17,20 +21,18 @@ AutoReqProv:no
 SQLite is a C-language library that implements a small, fast, self-contained, high-reliability, full-featured, SQL database engine.
 
 %install
-mkdir -p %{buildroot}/%{_prefix}
+mkdir -p %{buildroot}/%{_prefix}/sqlite/lib
+mkdir -p %{buildroot}/%{_prefix}/sqlite/include
 cd $OLDPWD/../
 rm -rf %{_sqlite_src}
 tar xf %{_sqlite_src}.tar.gz
 cd %{_sqlite_src}
-arch=$(uname -m)
-if [[ x"$arch" == x"aarch64" ]]; then
-    ./configure --prefix=%{buildroot}/%{_prefix} --build=unknown-unknown-linux
-else
-    ./configure --prefix=%{buildroot}/%{_prefix}
-fi
+./configure --prefix=%{_tmppath} --enable-shared=no
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES}
 make install
+cp %{_tmppath}/include/*.h %{buildroot}/%{_prefix}/sqlite/include
+cp %{_tmppath}/lib/*.a %{buildroot}/%{_prefix}/sqlite/lib
 
 %files
 
@@ -43,4 +45,4 @@ make install
 
 %changelog
 * Fri Mar 25 2022 oceanbase
-- sqlite 3.7.7
+- sqlite 3.38.1
