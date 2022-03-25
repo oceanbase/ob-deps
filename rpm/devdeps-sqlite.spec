@@ -1,0 +1,46 @@
+Name: devdeps-sqlite
+Version: 3.7.7
+Release: %(echo $RELEASE)%{?dist}
+
+Summary: SQLite is a C-language library that implements a small, fast, self-contained, high-reliability, full-featured, SQL database engine.
+
+License: Public Domain
+Url: https://github.com/sqlite/sqlite
+AutoReqProv:no
+
+%undefine _missing_build_ids_terminate_build
+%define _prefix /usr/local/oceanbase/deps/devel
+%define _sqlite_src sqlite-version-%{version}
+%define debug_package %{nil}
+
+%description
+SQLite is a C-language library that implements a small, fast, self-contained, high-reliability, full-featured, SQL database engine.
+
+%install
+mkdir -p %{buildroot}/%{_prefix}
+cd $OLDPWD/../
+rm -rf %{_sqlite_src}
+tar xf %{_sqlite_src}.tar.gz
+cd %{_sqlite_src}
+arch=$(uname -m)
+if [[ x"$arch" == x"aarch64" ]]; then
+    ./configure --prefix=%{buildroot}/%{_prefix} --build=unknown-unknown-linux
+else
+    ./configure --prefix=%{buildroot}/%{_prefix}
+fi
+CPU_CORES=`grep -c ^processor /proc/cpuinfo`
+make -j${CPU_CORES}
+make install
+
+%files
+
+%defattr(-,root,root)
+
+%{_prefix}
+
+%post -p /sbin/ldconfig
+%postun -p /sbin/ldconfig
+
+%changelog
+* Fri Mar 25 2022 oceanbase
+- sqlite 3.7.7
