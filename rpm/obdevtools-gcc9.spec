@@ -45,7 +45,7 @@ mv %{_isl_src} %{_gcc_src}/isl
 cd %{_gcc_src}
 arch=$(uname -m)
 gcc_build=${arch}-redhat-linux
-./configure --enable-bootstrap --enable-languages=c,c++,fortran,lto --prefix=${RPM_BUILD_ROOT}/%{_prefix} --enable-shared --enable-threads=posix --enable-checking=release --disable-multilib --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-gcc-major-version-only --with-linker-hash-style=gnu --with-default-libstdcxx-abi=gcc4-compatible --enable-plugin --enable-initfini-array --enable-gnu-indirect-function --with-tune=generic --build=${gcc_build}
+./configure --enable-bootstrap --enable-languages=c,c++,fortran,lto --prefix=${RPM_BUILD_ROOT}/%{_prefix} --enable-shared --enable-threads=posix --enable-checking=release --disable-multilib --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-gcc-major-version-only --with-linker-hash-style=gnu --with-default-libstdcxx-abi=gcc4-compatible --enable-plugin --enable-initfini-array --enable-gnu-indirect-function --build=${gcc_build}
 
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES};
