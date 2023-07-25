@@ -1,0 +1,495 @@
+diff --git a/include/rapidjson/reader.h b/include/rapidjson/reader.h
+index 5554660..80e4104 100644
+--- a/include/rapidjson/reader.h
++++ b/include/rapidjson/reader.h
+@@ -155,6 +155,9 @@ enum ParseFlag {
+     kParseTrailingCommasFlag = 128, //!< Allow trailing commas at the end of objects and arrays.
+     kParseNanAndInfFlag = 256,      //!< Allow parsing NaN, Inf, Infinity, -Inf and -Infinity as doubles.
+     kParseEscapedApostropheFlag = 512,  //!< Allow escaped apostrophe in strings.
++    kParseObjectKeyNoQuotesFlag = 1024,  //!< Allow without quotes in key of objects.
++    kParseIgnoreCaseForKeyword = 2048,  //!< Allow ignore case in boolean/null input.
++    kParseRelaxNumberFlag = 4096,  //!< Allow Numerals for relaxed JSON syntax .
+     kParseDefaultFlags = RAPIDJSON_PARSE_DEFAULT_FLAGS  //!< Default parse flags. Can be customized by defining RAPIDJSON_PARSE_DEFAULT_FLAGS
+ };
+ 
+@@ -754,8 +757,12 @@ private:
+         }
+ 
+         for (SizeType memberCount = 0;;) {
+-            if (RAPIDJSON_UNLIKELY(is.Peek() != '"'))
+-                RAPIDJSON_PARSE_ERROR(kParseErrorObjectMissName, is.Tell());
++            if (!(parseFlags & kParseObjectKeyNoQuotesFlag)) {
++                if (RAPIDJSON_UNLIKELY(is.Peek() != '"'))
++                    RAPIDJSON_PARSE_ERROR(kParseErrorObjectMissName, is.Tell());
++            } else if ((parseFlags & kParseObjectKeyNoQuotesFlag) && (RAPIDJSON_UNLIKELY(is.Peek() >= '0' && is.Peek() <= '9'))) {
++                RAPIDJSON_PARSE_ERROR(kParseErrorObjectMissColon, is.Tell());
++            }
+ 
+             ParseString<parseFlags>(is, handler, true);
+             RAPIDJSON_PARSE_ERROR_EARLY_RETURN_VOID;
+@@ -854,41 +861,89 @@ private:
+ 
+     template<unsigned parseFlags, typename InputStream, typename Handler>
+     void ParseNull(InputStream& is, Handler& handler) {
+-        RAPIDJSON_ASSERT(is.Peek() == 'n');
+-        is.Take();
++        if (parseFlags & kParseIgnoreCaseForKeyword) {
++            RAPIDJSON_ASSERT(is.Peek() == 'n' || is.Peek() == 'N');
++            is.Take();
+ 
+-        if (RAPIDJSON_LIKELY(Consume(is, 'u') && Consume(is, 'l') && Consume(is, 'l'))) {
+-            if (RAPIDJSON_UNLIKELY(!handler.Null()))
+-                RAPIDJSON_PARSE_ERROR(kParseErrorTermination, is.Tell());
++            if (RAPIDJSON_LIKELY(ConsumeIgnoreCase(is, 'u') && ConsumeIgnoreCase(is, 'l') && ConsumeIgnoreCase(is, 'l'))) {
++                if (RAPIDJSON_UNLIKELY(!handler.Null()))
++                    RAPIDJSON_PARSE_ERROR(kParseErrorTermination, is.Tell());
++            }
++            else
++                RAPIDJSON_PARSE_ERROR(kParseErrorValueInvalid, is.Tell());
++        }
++        else {
++            RAPIDJSON_ASSERT(is.Peek() == 'n');
++            is.Take();
++
++            if (RAPIDJSON_LIKELY(Consume(is, 'u') && Consume(is, 'l') && Consume(is, 'l'))) {
++                if (RAPIDJSON_UNLIKELY(!handler.Null()))
++                    RAPIDJSON_PARSE_ERROR(kParseErrorTermination, is.Tell());
++            }
++            else
++                RAPIDJSON_PARSE_ERROR(kParseErrorValueInvalid, is.Tell());
+         }
+-        else
+-            RAPIDJSON_PARSE_ERROR(kParseErrorValueInvalid, is.Tell());
+     }
+ 
+     template<unsigned parseFlags, typename InputStream, typename Handler>
+     void ParseTrue(InputStream& is, Handler& handler) {
+-        RAPIDJSON_ASSERT(is.Peek() == 't');
+-        is.Take();
++        if (parseFlags & kParseIgnoreCaseForKeyword) {
++            RAPIDJSON_ASSERT(is.Peek() == 't' || is.Peek() == 'T');
++            is.Take();
+ 
+-        if (RAPIDJSON_LIKELY(Consume(is, 'r') && Consume(is, 'u') && Consume(is, 'e'))) {
+-            if (RAPIDJSON_UNLIKELY(!handler.Bool(true)))
+-                RAPIDJSON_PARSE_ERROR(kParseErrorTermination, is.Tell());
++            if (RAPIDJSON_LIKELY(ConsumeIgnoreCase(is, 'r') && ConsumeIgnoreCase(is, 'u') && ConsumeIgnoreCase(is, 'e'))) {
++                if (RAPIDJSON_UNLIKELY(!handler.Bool(true)))
++                    RAPIDJSON_PARSE_ERROR(kParseErrorTermination, is.Tell());
++            }
++            else
++                RAPIDJSON_PARSE_ERROR(kParseErrorValueInvalid, is.Tell());
++        } else {
++            RAPIDJSON_ASSERT(is.Peek() == 't');
++            is.Take();
++
++            if (RAPIDJSON_LIKELY(Consume(is, 'r') && Consume(is, 'u') && Consume(is, 'e'))) {
++                if (RAPIDJSON_UNLIKELY(!handler.Bool(true)))
++                    RAPIDJSON_PARSE_ERROR(kParseErrorTermination, is.Tell());
++            }
++            else
++                RAPIDJSON_PARSE_ERROR(kParseErrorValueInvalid, is.Tell());
+         }
+-        else
+-            RAPIDJSON_PARSE_ERROR(kParseErrorValueInvalid, is.Tell());
+     }
+ 
+     template<unsigned parseFlags, typename InputStream, typename Handler>
+     void ParseFalse(InputStream& is, Handler& handler) {
+-        RAPIDJSON_ASSERT(is.Peek() == 'f');
+-        is.Take();
++        if (parseFlags & kParseIgnoreCaseForKeyword) {
++            RAPIDJSON_ASSERT(is.Peek() == 'f' || is.Peek() == 'F');
++            is.Take();
+ 
+-        if (RAPIDJSON_LIKELY(Consume(is, 'a') && Consume(is, 'l') && Consume(is, 's') && Consume(is, 'e'))) {
+-            if (RAPIDJSON_UNLIKELY(!handler.Bool(false)))
+-                RAPIDJSON_PARSE_ERROR(kParseErrorTermination, is.Tell());
++            if (RAPIDJSON_LIKELY(ConsumeIgnoreCase(is, 'a') && ConsumeIgnoreCase(is, 'l') && ConsumeIgnoreCase(is, 's') && ConsumeIgnoreCase(is, 'e'))) {
++                if (RAPIDJSON_UNLIKELY(!handler.Bool(false)))
++                    RAPIDJSON_PARSE_ERROR(kParseErrorTermination, is.Tell());
++            }
++            else
++                RAPIDJSON_PARSE_ERROR(kParseErrorValueInvalid, is.Tell());
++        } else {
++            RAPIDJSON_ASSERT(is.Peek() == 'f');
++            is.Take();
++
++            if (RAPIDJSON_LIKELY(Consume(is, 'a') && Consume(is, 'l') && Consume(is, 's') && Consume(is, 'e'))) {
++                if (RAPIDJSON_UNLIKELY(!handler.Bool(false)))
++                    RAPIDJSON_PARSE_ERROR(kParseErrorTermination, is.Tell());
++            }
++            else
++                RAPIDJSON_PARSE_ERROR(kParseErrorValueInvalid, is.Tell());
++        }
++        
++    }
++
++    template<typename InputStream>
++    RAPIDJSON_FORCEINLINE static bool ConsumeIgnoreCase(InputStream& is, typename InputStream::Ch expect) {
++        if (RAPIDJSON_LIKELY(is.Peek() == expect || is.Peek() == expect - 'a' + 'A')) {
++            is.Take();
++            return true;
+         }
+         else
+-            RAPIDJSON_PARSE_ERROR(kParseErrorValueInvalid, is.Tell());
++            return false;
+     }
+ 
+     template<typename InputStream>
+@@ -960,13 +1015,22 @@ private:
+         internal::StreamLocalCopy<InputStream> copy(is);
+         InputStream& s(copy.s);
+ 
+-        RAPIDJSON_ASSERT(s.Peek() == '\"');
+-        s.Take();  // Skip '\"'
++        bool has_quote = false;
++        if ((parseFlags & kParseObjectKeyNoQuotesFlag) && isKey) {
++            if (s.Peek() == '\"') {
++                s.Take();  // Skip '\"'
++                has_quote = true;
++            }
++        } else {
++            RAPIDJSON_ASSERT(s.Peek() == '\"');
++            s.Take();  // Skip '\"'
++            has_quote = true;
++        }
+ 
+         bool success = false;
+         if (parseFlags & kParseInsituFlag) {
+             typename InputStream::Ch *head = s.PutBegin();
+-            ParseStringToStream<parseFlags, SourceEncoding, SourceEncoding>(s, s);
++            ParseStringToStream<parseFlags, SourceEncoding, SourceEncoding>(s, s, has_quote, isKey);
+             RAPIDJSON_PARSE_ERROR_EARLY_RETURN_VOID;
+             size_t length = s.PutEnd(head) - 1;
+             RAPIDJSON_ASSERT(length <= 0xFFFFFFFF);
+@@ -975,10 +1039,11 @@ private:
+         }
+         else {
+             StackStream<typename TargetEncoding::Ch> stackStream(stack_);
+-            ParseStringToStream<parseFlags, SourceEncoding, TargetEncoding>(s, stackStream);
++            ParseStringToStream<parseFlags, SourceEncoding, TargetEncoding>(s, stackStream, has_quote, isKey);
+             RAPIDJSON_PARSE_ERROR_EARLY_RETURN_VOID;
+             SizeType length = static_cast<SizeType>(stackStream.Length()) - 1;
+             const typename TargetEncoding::Ch* const str = stackStream.Pop();
++            RAPIDJSON_PARSE_ERROR_EARLY_RETURN_VOID;
+             success = (isKey ? handler.Key(str, length, true) : handler.String(str, length, true));
+         }
+         if (RAPIDJSON_UNLIKELY(!success))
+@@ -988,9 +1053,10 @@ private:
+     // Parse string to an output is
+     // This function handles the prefix/suffix double quotes, escaping, and optional encoding validation.
+     template<unsigned parseFlags, typename SEncoding, typename TEncoding, typename InputStream, typename OutputStream>
+-    RAPIDJSON_FORCEINLINE void ParseStringToStream(InputStream& is, OutputStream& os) {
++    RAPIDJSON_FORCEINLINE void ParseStringToStream(InputStream& is, OutputStream& os, bool has_quote = true, bool isKey = true) {
+ //!@cond RAPIDJSON_HIDDEN_FROM_DOXYGEN
+ #define Z16 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
++#define Z8 0,0,0,0,0,0,0,0
+         static const char escape[256] = {
+             Z16, Z16, 0, 0,'\"', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '/',
+             Z16, Z16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,'\\', 0, 0, 0,
+@@ -998,16 +1064,32 @@ private:
+             0, 0,'\r', 0,'\t', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+             Z16, Z16, Z16, Z16, Z16, Z16, Z16, Z16
+         };
++
++        static const bool illegalKeyNoQuotes[256] = {
++            Z16, Z16, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0,
++            1, 1, Z8, 0, 0, 1, 1, 1, 1, 1, 1, 1, Z16, Z8, 0, 0,
++            1, 1, 1, 1, 0, 1, Z16, Z8, 0, 0, 1, 1, 1, 0, 0,
++            Z16, Z16, Z16, Z16, Z16, Z16, Z16, Z16
++        };
+ #undef Z16
++#undef Z8
+ //!@endcond
+-
++        if ((parseFlags & kParseObjectKeyNoQuotesFlag) &&
++            !has_quote &&
++            RAPIDJSON_UNLIKELY(illegalKeyNoQuotes[static_cast<unsigned char>(is.Peek())])) {
++            RAPIDJSON_PARSE_ERROR(kParseErrorObjectMissName, is.Tell());
++        }
+         for (;;) {
+             // Scan and copy string before "\\\"" or < 0x20. This is an optional optimzation.
+             if (!(parseFlags & kParseValidateEncodingFlag))
+                 ScanCopyUnescapedString(is, os);
+ 
+             Ch c = is.Peek();
+-            if (RAPIDJSON_UNLIKELY(c == '\\')) {    // Escape
++            if ((parseFlags & kParseObjectKeyNoQuotesFlag) && !has_quote && RAPIDJSON_UNLIKELY(c == '\\')) {
++                // Escape sequences are not allowed in an object field that is not quoted
++                RAPIDJSON_PARSE_ERROR(kParseErrorStringEscapeInvalid, is.Tell());
++            }
++            else if (has_quote && RAPIDJSON_UNLIKELY(c == '\\')) {    // Escape
+                 size_t escapeOffset = is.Tell();    // For invalid escaping, report the initial '\\' as error offset
+                 is.Take();
+                 Ch e = is.Peek();
+@@ -1046,11 +1128,38 @@ private:
+                 else
+                     RAPIDJSON_PARSE_ERROR(kParseErrorStringEscapeInvalid, escapeOffset);
+             }
++            else if ((parseFlags & kParseObjectKeyNoQuotesFlag) &&
++                     !has_quote &&
++                     RAPIDJSON_UNLIKELY(c == '"')) {   // Closing double quote is unexpected without quote before
++                RAPIDJSON_PARSE_ERROR(kParseErrorTermination, is.Tell());
++            } else if ((parseFlags & kParseObjectKeyNoQuotesFlag) &&
++                        !isKey &&
++                        RAPIDJSON_UNLIKELY(c == '\t')) {
++                RAPIDJSON_PARSE_ERROR(kParseErrorStringEscapeInvalid, is.Tell());
++            }
+             else if (RAPIDJSON_UNLIKELY(c == '"')) {    // Closing double quote
+                 is.Take();
+                 os.Put('\0');   // null-terminate the string
+                 return;
+             }
++            else if ((parseFlags & kParseObjectKeyNoQuotesFlag) &&
++                     !has_quote &&
++                     RAPIDJSON_UNLIKELY(c == ':')) {   // End of key
++                os.Put('\0');   // null-terminate the string
++                return;
++            }
++            else if ((parseFlags & kParseObjectKeyNoQuotesFlag) &&
++                     !has_quote &&
++                     (RAPIDJSON_UNLIKELY(c == ' '))) {
++                SkipWhitespace(is);
++                if (RAPIDJSON_UNLIKELY(is.Peek() != ':'))
++                    RAPIDJSON_PARSE_ERROR(kParseErrorTermination, is.Tell());
++            }
++            else if ((parseFlags & kParseObjectKeyNoQuotesFlag) &&
++                     !has_quote &&
++                     RAPIDJSON_UNLIKELY(illegalKeyNoQuotes[static_cast<unsigned char>(c)])) {
++                RAPIDJSON_PARSE_ERROR(kParseErrorStringInvalidEncoding, is.Tell());
++            }
+             else if (RAPIDJSON_UNLIKELY(static_cast<unsigned>(c) < 0x20)) { // RFC 4627: unescaped = %x20-21 / %x23-5B / %x5D-10FFFF
+                 if (c == '\0')
+                     RAPIDJSON_PARSE_ERROR(kParseErrorStringMissQuotationMark, is.Tell());
+@@ -1481,13 +1590,28 @@ private:
+         bool useNanOrInf = false;
+ 
+         // Parse minus
+-        bool minus = Consume(s, '-');
++        bool minus = false;
++        if (RAPIDJSON_LIKELY(s.Peek() == '-')) {
++            s.Take();
++            minus = true;
++        }
++        else if ((parseFlags & kParseRelaxNumberFlag) && s.Peek() == '+') {
++            s.Take();
++        }
+ 
+         // Parse int: zero / ( digit1-9 *DIGIT )
+         unsigned i = 0;
+         uint64_t i64 = 0;
+         bool use64bit = false;
+         int significandDigit = 0;
++        bool skip_zero = false;   //  deal 0000/ multi zero
++        if ((parseFlags & kParseRelaxNumberFlag)) {
++            while (RAPIDJSON_UNLIKELY(s.Peek() == '0')) {
++                skip_zero = true;
++                s.TakePush();
++            }
++        }
++
+         if (RAPIDJSON_UNLIKELY(s.Peek() == '0')) {
+             i = 0;
+             s.TakePush();
+@@ -1544,6 +1668,21 @@ private:
+                 RAPIDJSON_PARSE_ERROR(kParseErrorValueInvalid, s.Tell());
+             }
+         }
++        else if ((parseFlags & kParseRelaxNumberFlag) &&
++                 (s.Peek() == '.' 
++                  || s.Peek() == 'e' 
++                  || s.Peek() == 'E' 
++                  || ((s.Peek() == 0 
++                      || s.Peek() == ',' 
++                      || s.Peek() == ' ' 
++                      || s.Peek() == ']' 
++                      || s.Peek() == '}' 
++                      || s.Peek() == '\n' 
++                      || s.Peek() == '\t' 
++                      || s.Peek() == '\r') && skip_zero))) {
++            // do nothing
++            i = 0;
++        }
+         else
+             RAPIDJSON_PARSE_ERROR(kParseErrorValueInvalid, s.Tell());
+ 
+@@ -1586,45 +1725,59 @@ private:
+         size_t decimalPosition;
+         if (Consume(s, '.')) {
+             decimalPosition = s.Length();
+-
+-            if (RAPIDJSON_UNLIKELY(!(s.Peek() >= '0' && s.Peek() <= '9')))
+-                RAPIDJSON_PARSE_ERROR(kParseErrorNumberMissFraction, s.Tell());
+-
+-            if (!useDouble) {
++                if (!(parseFlags & kParseRelaxNumberFlag) && RAPIDJSON_UNLIKELY(!(s.Peek() >= '0' && s.Peek() <= '9')))
++                    RAPIDJSON_PARSE_ERROR(kParseErrorNumberMissFraction, s.Tell());
++
++                if ((parseFlags & kParseRelaxNumberFlag) && RAPIDJSON_UNLIKELY(!(s.Peek() >= '0' && s.Peek() <= '9'))) {
++                    typename InputStream::Ch c = s.Peek();
++                    switch (c) {
++                        case '\0':
++                        case 'e':
++                        case 'E':
++                        case ',':
++                        case '}':
++                        case ']':
++                            // do nothing
++                            break;
++                        default:
++                            RAPIDJSON_PARSE_ERROR(kParseErrorNumberMissFraction, s.Tell());
++                            break;
++                    }
++                }
++                else if (!useDouble) {
+ #if RAPIDJSON_64BIT
+-                // Use i64 to store significand in 64-bit architecture
+-                if (!use64bit)
+-                    i64 = i;
++                    // Use i64 to store significand in 64-bit architecture
++                    if (!use64bit)
++                        i64 = i;
+ 
+-                while (RAPIDJSON_LIKELY(s.Peek() >= '0' && s.Peek() <= '9')) {
+-                    if (i64 > RAPIDJSON_UINT64_C2(0x1FFFFF, 0xFFFFFFFF)) // 2^53 - 1 for fast path
+-                        break;
+-                    else {
+-                        i64 = i64 * 10 + static_cast<unsigned>(s.TakePush() - '0');
+-                        --expFrac;
+-                        if (i64 != 0)
+-                            significandDigit++;
++                    while (RAPIDJSON_LIKELY(s.Peek() >= '0' && s.Peek() <= '9')) {
++                        if (i64 > RAPIDJSON_UINT64_C2(0x1FFFFF, 0xFFFFFFFF)) // 2^53 - 1 for fast path
++                            break;
++                        else {
++                            i64 = i64 * 10 + static_cast<unsigned>(s.TakePush() - '0');
++                            --expFrac;
++                            if (i64 != 0)
++                                significandDigit++;
++                        }
+                     }
+-                }
+ 
+-                d = static_cast<double>(i64);
++                    d = static_cast<double>(i64);
+ #else
+-                // Use double to store significand in 32-bit architecture
+-                d = static_cast<double>(use64bit ? i64 : i);
++                    // Use double to store significand in 32-bit architecture
++                    d = static_cast<double>(use64bit ? i64 : i);
+ #endif
+-                useDouble = true;
+-            }
+-
+-            while (RAPIDJSON_LIKELY(s.Peek() >= '0' && s.Peek() <= '9')) {
+-                if (significandDigit < 17) {
+-                    d = d * 10.0 + (s.TakePush() - '0');
+-                    --expFrac;
+-                    if (RAPIDJSON_LIKELY(d > 0.0))
+-                        significandDigit++;
++                    useDouble = true;
++                }
++                while (RAPIDJSON_LIKELY(s.Peek() >= '0' && s.Peek() <= '9')) {
++                    if (significandDigit < 17) {
++                        d = d * 10.0 + (s.TakePush() - '0');
++                        --expFrac;
++                        if (RAPIDJSON_LIKELY(d > 0.0))
++                            significandDigit++;
++                    }
++                    else
++                        s.TakePush();
+                 }
+-                else
+-                    s.TakePush();
+-            }
+         }
+         else
+             decimalPosition = s.Length(); // decimal position at the end of integer.
+@@ -1750,17 +1903,35 @@ private:
+     // Parse any JSON value
+     template<unsigned parseFlags, typename InputStream, typename Handler>
+     void ParseValue(InputStream& is, Handler& handler) {
+-        switch (is.Peek()) {
+-            case 'n': ParseNull  <parseFlags>(is, handler); break;
+-            case 't': ParseTrue  <parseFlags>(is, handler); break;
+-            case 'f': ParseFalse <parseFlags>(is, handler); break;
+-            case '"': ParseString<parseFlags>(is, handler); break;
+-            case '{': ParseObject<parseFlags>(is, handler); break;
+-            case '[': ParseArray <parseFlags>(is, handler); break;
+-            default :
+-                      ParseNumber<parseFlags>(is, handler);
+-                      break;
++        if (parseFlags & kParseIgnoreCaseForKeyword) {
++            switch (is.Peek()) {
++                case 'n': 
++                case 'N': ParseNull  <parseFlags>(is, handler); break;
++                case 't': 
++                case 'T': ParseTrue  <parseFlags>(is, handler); break;
++                case 'f': 
++                case 'F': ParseFalse <parseFlags>(is, handler); break;
++                case '"': ParseString<parseFlags>(is, handler); break;
++                case '{': ParseObject<parseFlags>(is, handler); break;
++                case '[': ParseArray <parseFlags>(is, handler); break;
++                default :
++                        ParseNumber<parseFlags>(is, handler);
++                        break;
++            }
++        }
++        else {
++            switch (is.Peek()) {
++                case 'n': ParseNull  <parseFlags>(is, handler); break;
++                case 't': ParseTrue  <parseFlags>(is, handler); break;
++                case 'f': ParseFalse <parseFlags>(is, handler); break;
++                case '"': ParseString<parseFlags>(is, handler); break;
++                case '{': ParseObject<parseFlags>(is, handler); break;
++                case '[': ParseArray <parseFlags>(is, handler); break;
++                default :
++                        ParseNumber<parseFlags>(is, handler);
++                        break;
+ 
++            }
+         }
+     }
+ 
+diff --git a/rpm/devdeps-relaxed-rapidjson.spec b/rpm/devdeps-relaxed-rapidjson.spec
+new file mode 100644
+index 0000000..38196e8
+--- /dev/null
++++ b/rpm/devdeps-relaxed-rapidjson.spec
+@@ -0,0 +1,34 @@
++Name: devdeps-relaxed-rapidjson
++Version: 1.0.0
++Release: %(echo $RELEASE)%{?dist}
++
++Summary: Relaxed-RapidJSON is based on RapidJSON.
++
++License: MIT and BSD
++Url: http://gitlab.alibaba-inc.com/oceanbase/relaxed-rapidjson.git
++AutoReqProv:no
++
++%undefine _missing_build_ids_terminate_build
++%define _build_id_links compat
++%define _prefix /usr/local/oceanbase/deps/devel
++%define debug_package %{nil}
++
++%description
++Relaxed-RapidJSON is based on RapidJSON. RapidJSON is a JSON parser and generator for C++.
++
++%install
++mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include
++cd $OLDPWD/../;
++source_dir=$(pwd)
++\cp -r ${source_dir}/include/rapidjson $RPM_BUILD_ROOT/%{_prefix}/include
++
++%files
++%defattr(-,root,root)
++%{_prefix}
++
++%post -p /sbin/ldconfig
++%postun -p /sbin/ldconfig
++
++%changelog
++* Thu Aug 11 2022 xuhao.yf
++- relaxed-rapidjson-1.0.0
+\ No newline at end of file
