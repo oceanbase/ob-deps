@@ -1,0 +1,21 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 635f506..07f3fd6 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -94,6 +94,7 @@ aux_source_directory(cos_c_sdk SRC_LIST)
+ 
+ add_library(${CMAKE_PROJECT_NAME} SHARED ${SRC_LIST})
+ add_library(${CMAKE_PROJECT_NAME}_static STATIC ${SRC_LIST})
++target_compile_options(${CMAKE_PROJECT_NAME}_static PRIVATE -fvisibility=hidden -Wno-unused-parameter -Wno-type-limits)
+ 
+ set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES VERSION ${CMAKE_VERSION}  SOVERSION ${CMAKE_VERSION})
+ 
+@@ -121,4 +122,4 @@ INSTALL(FILES
+   cos_c_sdk/cos_xml.h
+   DESTINATION include/cos_c_sdk)
+ 
+-add_subdirectory(cos_c_sdk_test)
++#add_subdirectory(cos_c_sdk_test)
+-- 
+2.17.0
+

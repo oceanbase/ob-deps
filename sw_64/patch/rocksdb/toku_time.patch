@@ -1,0 +1,5 @@
+135a136,139
+> #elif defined(__sw_64__)
+>   uint64_t Ra, Rb;
+>   __asm__ __volatile__("RTC %0,%1" :"=r"(Ra), "=r"(Rb));
+>   return Ra;

@@ -1,0 +1,34 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        image: ['centos:8', 'centos:7']
+    runs-on: ubuntu-20.04
+    container: ${{ matrix.image }}
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Init centos8
+      shell: bash
+      if: ${{ startsWith(matrix.image, 'centos:8') }}
+      run: |
+        sed -i -e "s|mirrorlist=|#mirrorlist=|g" /etc/yum.repos.d/CentOS-*
+        sed -i -e "s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" /etc/yum.repos.d/CentOS-*
+
+    - name: Install centos environment
+      shell: bash
+      run: |
+        yum update -y
+        yum install -y git wget rpm* cpio make glibc-devel glibc-headers binutils m4 rpm-build
+
+    - name: Build
+      shell: bash
+      run: cd rpm && bash ./build_all.sh
