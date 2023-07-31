@@ -31,4 +31,4 @@ jobs:
 
     - name: Build
       shell: bash
-      run: cd rpm && ./build_all.sh
+      run: cd rpm && bash ./build_all.sh
