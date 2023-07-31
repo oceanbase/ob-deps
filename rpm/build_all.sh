@@ -25,6 +25,6 @@ bash obdevtools-bison-build.sh
 
 if [ ${NEED_BUILD_COMPILER} = 1 ]; then
     bash obdevtools-binutils-build.sh
-    obdevtools-gcc-build.sh
+    bash obdevtools-gcc-build.sh
 fi
 
