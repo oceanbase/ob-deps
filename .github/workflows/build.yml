@@ -1,0 +1,25 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    strategy:
+      matrix: 
+        image: ['ubuntu:8', 'centos:7']
+    runs-on: ubuntu-20.04
+    container: ${{ matrix.image }}
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install centos environment
+      shell: bash
+      run: yum install -y git wget rpm* cpio make glibc-devel glibc-headers binutils m4
+
+    - name: Build
+      shell: bash
+      run: cd rpm && ./build_all.sh
