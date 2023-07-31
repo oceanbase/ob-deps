@@ -16,6 +16,13 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Init centos8
+      shell: bash
+      if: ${{ startsWith(matrix.image, 'centos:8') }}
+      run: |
+        sed -i -e "s|mirrorlist=|#mirrorlist=|g" /etc/yum.repos.d/CentOS-*
+        sed -i -e "s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" /etc/yum.repos.d/CentOS-*
+        
     - name: Install centos environment
       shell: bash
       run: |
