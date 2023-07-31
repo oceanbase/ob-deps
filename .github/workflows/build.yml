@@ -10,7 +10,7 @@ jobs:
   build:
     strategy:
       matrix: 
-        image: ['ubuntu:8', 'centos:7']
+        image: ['centos:8', 'centos:7']
     runs-on: ubuntu-20.04
     container: ${{ matrix.image }}
     steps:
