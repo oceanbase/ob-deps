@@ -22,7 +22,7 @@ yum install obdevtools-cmake-3.22.1 -y
 yum install zlib -y
 yum install zlib-devel -y
 yum install obdevtools-gcc9-9.3.0 -y
-yum install devdeps-openssl-static-1.1.1e -y
+yum install devdeps-openssl-static-1.1.1u -y
 yum install devdeps-libcurl-static-8.2.1 -y
 
 export PATH=/usr/local/oceanbase/devtools/bin:$PATH
