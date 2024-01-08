@@ -62,7 +62,8 @@ make install
 
 #step 5: install minixml
 cd ../mxml-3.3
-./configure --prefix=/usr/local/
+CFLAG="-O2" \
+./configure --prefix=/usr/local
 make
 make install
 

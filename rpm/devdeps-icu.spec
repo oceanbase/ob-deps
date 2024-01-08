@@ -48,6 +48,9 @@ make install
 # install files
 cp -r ${tmp_install_dir}/lib/*.a $RPM_BUILD_ROOT/%{_prefix}/lib
 cp -r ${tmp_install_dir}/include/* $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}
+mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/i18n/unicode
+cp ../icu4c/source/i18n/unicode/*.h $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/i18n/unicode/
+
 
 # package infomation
 %files 

@@ -1,5 +1,5 @@
 Name: obdevtools-llvm
-Version: 11.0.1
+Version: 11.1.0
 Release: %(echo $RELEASE)%{?dist}
 
 Summary: The LLVM Project is a collection of modular and reusable compiler and toolchain technologies.
@@ -124,8 +124,8 @@ make -j${CPU_CORES};
 make install;
 
 # step3: replace asan debuginfo lib
-rm -rf %{_rel_dir}/lib/clang/11.0.1/lib/linux
-cp -rf %{_relwithdebinfo_dir}/lib/clang/11.0.1/lib/linux %{_rel_dir}/lib/clang/11.0.1/lib/
+rm -rf %{_rel_dir}/lib/clang/11.1.0/lib/linux
+cp -rf %{_relwithdebinfo_dir}/lib/clang/11.1.0/lib/linux %{_rel_dir}/lib/clang/11.1.0/lib/
 
 %install
 # create dirs

@@ -35,6 +35,8 @@ if [ "${OS_ARCH}x" = "sw_64x" ]; then
     BUILD_OPTION='--build=sw_64-unknown-linux-gnu'
 elif [ "${OS_ARCH}x" = "aarch64x" ]; then
     BUILD_OPTION='--build=aarch64-unknown-linux-gnu'
+elif [ "${OS_ARCH}x" = "ppc64lex" ]; then
+    BUILD_OPTION='--build=ppc64le'
 fi
 
 ./configure --prefix=${RPM_BUILD_ROOT}/%{_prefix} ${BUILD_OPTION}
