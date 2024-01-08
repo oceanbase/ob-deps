@@ -26,6 +26,12 @@ ISA-L is a collection of optimized low-level functions targeting storage applica
 
 %build
 
+BUILD_OPTION=''
+OS_ARCH="$(uname -m)"
+if [ "${OS_ARCH}x" = "ppc64lex" ]; then
+    BUILD_OPTION='--build=ppc64le'
+fi
+
 rm -rf %{_tmppath}
 mkdir -p %{_tmppath}
 cd $OLDPWD/../
@@ -33,7 +39,7 @@ rm -rf %{_src}
 tar -xf %{_src}.tar.gz
 cd %{_src}
 ./autogen.sh
-./configure --enable-static --with-pic=yes --disable-shared --prefix=%{_tmppath}
+./configure ${BUILD_OPTION} --enable-static --with-pic=yes --disable-shared --prefix=%{_tmppath}
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES};
 make install
