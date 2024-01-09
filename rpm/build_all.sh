@@ -62,6 +62,8 @@ if [ "${OS_ARCH}x" = "ppc64lex" ]; then
         scp devdeps-openssl-static.1.1.1u.spec devdeps-openssl-static.spec
     fi
     bash devdeps-openssl-static-build.1.1.1u.sh
+
+    bash devdeps-rocksdb-build-with-system-gcc.sh
 fi
 
 
