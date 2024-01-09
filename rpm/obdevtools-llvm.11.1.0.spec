@@ -39,21 +39,6 @@ tar xf %{_lld_src}.tar.xz
 tar xf %{_clang_src}.tar.xz
 tar xf %{_compiler_rt_src}.tar.xz
 
-# LLVM_ENABLE_PROJECTS requires putting module source code directory and llvm source code directory into the same directory.
-# llvm_src_dir/
-# ├── clang
-# └── llvm
-rm -rf $source_dir/llvm_src_dir
-mkdir -p $source_dir/llvm_src_dir
-mv -f %{_llvm_src} $source_dir/llvm_src_dir/llvm
-sed -i 's/#include <vector>/#include <vector>\n#include <limits>/g' $source_dir/llvm_src_dir/llvm/utils/benchmark/src/benchmark_register.h
-mv -f %{_clang_src} $source_dir/llvm_src_dir/clang
-mv -f %{_compiler_rt_src} $source_dir/llvm_src_dir/compiler-rt
-mv -f %{_lld_src} $source_dir/llvm_src_dir/lld
-cd $source_dir/llvm_src_dir
-mkdir -p build-rpm
-cd build-rpm
-
 arch=`uname -p`
 if [[ x"$arch" == x"x86_64" ]]; then
     echo "Build arch: x86"
@@ -68,6 +53,23 @@ else
     echo "Unknown arch"
     exit 1
 fi
+
+# LLVM_ENABLE_PROJECTS requires putting module source code directory and llvm source code directory into the same directory.
+# llvm_src_dir/
+# ├── clang
+# └── llvm
+rm -rf $source_dir/llvm_src_dir
+mkdir -p $source_dir/llvm_src_dir
+mv -f %{_llvm_src} $source_dir/llvm_src_dir/llvm
+if [[ x"$arch" == x"ppc64le" ]]; then
+sed -i 's/#include <vector>/#include <vector>\n#include <limits>/g' $source_dir/llvm_src_dir/llvm/utils/benchmark/src/benchmark_register.h
+fi
+mv -f %{_clang_src} $source_dir/llvm_src_dir/clang
+mv -f %{_compiler_rt_src} $source_dir/llvm_src_dir/compiler-rt
+mv -f %{_lld_src} $source_dir/llvm_src_dir/lld
+cd $source_dir/llvm_src_dir
+mkdir -p build-rpm
+cd build-rpm
 
 cmake ../llvm  \
     -DCMAKE_CXX_FLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" \
@@ -102,7 +104,9 @@ tar xf %{_compiler_rt_src}.tar.xz
 rm -rf $source_dir/llvm_src_dir
 mkdir -p $source_dir/llvm_src_dir
 mv -f %{_llvm_src} $source_dir/llvm_src_dir/llvm
+if [[ x"$arch" == x"ppc64le" ]]; then
 sed -i 's/#include <vector>/#include <vector>\n#include <limits>/g' $source_dir/llvm_src_dir/llvm/utils/benchmark/src/benchmark_register.h
+fi
 mv -f %{_clang_src} $source_dir/llvm_src_dir/clang
 mv -f %{_compiler_rt_src} $source_dir/llvm_src_dir/compiler-rt
 mv -f %{_lld_src} $source_dir/llvm_src_dir/lld
