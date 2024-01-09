@@ -26,6 +26,7 @@ mkdir -p %{_tmppath}
 cd $OLDPWD/../
 rm -rf %{_src}
 tar -xf %{_src}.tar.gz
+sed -i 's/END()/ENDIF()/g' mariadb-connector-c-3.1.12/cmake/ConnectorName.cmake
 cd %{_src}
 mkdir -p build-rpm;
 cd build-rpm
