@@ -46,6 +46,7 @@ tar xf %{_compiler_rt_src}.tar.xz
 rm -rf $source_dir/llvm_src_dir
 mkdir -p $source_dir/llvm_src_dir
 mv -f %{_llvm_src} $source_dir/llvm_src_dir/llvm
+sed -i 's/#include <vector>/#include <vector>\n#include <limits>/g' $source_dir/llvm_src_dir/llvm/utils/benchmark/src/benchmark_register.h
 mv -f %{_clang_src} $source_dir/llvm_src_dir/clang
 mv -f %{_compiler_rt_src} $source_dir/llvm_src_dir/compiler-rt
 mv -f %{_lld_src} $source_dir/llvm_src_dir/lld
@@ -101,6 +102,7 @@ tar xf %{_compiler_rt_src}.tar.xz
 rm -rf $source_dir/llvm_src_dir
 mkdir -p $source_dir/llvm_src_dir
 mv -f %{_llvm_src} $source_dir/llvm_src_dir/llvm
+sed -i 's/#include <vector>/#include <vector>\n#include <limits>/g' $source_dir/llvm_src_dir/llvm/utils/benchmark/src/benchmark_register.h
 mv -f %{_clang_src} $source_dir/llvm_src_dir/clang
 mv -f %{_compiler_rt_src} $source_dir/llvm_src_dir/compiler-rt
 mv -f %{_lld_src} $source_dir/llvm_src_dir/lld
