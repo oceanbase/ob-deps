@@ -36,7 +36,7 @@ bash devdeps-boost-build.sh
 bash devdeps-s2geometry-build.sh
 bash devdeps-icu-build.sh
 bash devdeps-cos-c-sdk-build.sh
-
+bash devdeps-s3-cpp-sdk-build.sh
 
 
 if [ ${NEED_BUILD_COMPILER} = 1 ]; then
