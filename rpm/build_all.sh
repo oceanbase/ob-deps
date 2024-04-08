@@ -44,3 +44,26 @@ if [ ${NEED_BUILD_COMPILER} = 1 ]; then
     bash obdevtools-gcc9-build.sh
 fi
 
+if [ "${OS_ARCH}x" = "ppc64lex" ]; then
+    ##backup local spec file first
+    if ! grep 11.1.0 obdevtools-llvm.spec |grep -i version > /dev/null
+    then
+        scp  obdevtools-llvm.spec obdevtools-llvm.11.0.1.spec
+        scp  obdevtools-llvm.11.1.0.spec obdevtools-llvm.spec
+    fi
+    bash obdevtools-llvm-build-11.1.0.sh
+
+    bash devdeps-zlib-shared-build.sh
+
+    ##backup local spec file first
+    if ! grep 1.1.1u devdeps-openssl-static.spec |grep -i version > /dev/null
+    then
+        scp devdeps-openssl-static.spec devdeps-openssl-static.1.0.1e.spec 
+        scp devdeps-openssl-static.1.1.1u.spec devdeps-openssl-static.spec
+    fi
+    bash devdeps-openssl-static-build.1.1.1u.sh
+
+    bash devdeps-rocksdb-build-with-system-gcc.sh
+fi
+
+

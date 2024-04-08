@@ -1,11 +1,11 @@
-Name: devdeps-isa-l-static
-Version: 2.22.0
+Name: devdeps-zlib-shared
+Version: 1.2.7
 Release: %(echo $RELEASE)%{?dist}
+Url: https://curl.se/
+Summary: zlib is a general purpose data compression library.
 
-Summary: ISA-L is a collection of optimized low-level functions targeting storage applications
-Url: https://github.com/intel/isa-l
 Group: oceanbase-devel/dependencies
-License: BSD 3-Clause
+License: MIT
 
 %undefine _missing_build_ids_terminate_build
 %define _build_id_links compat
@@ -14,32 +14,32 @@ License: BSD 3-Clause
 %define __arch_install_post %{nil}
 
 %define _prefix /usr/local/oceanbase/deps/devel
-%define _src isa-l-%{version}
+%define _src zlib-%{version}
 
 %define debug_package %{nil}
 %define __strip /bin/true
+
 %define _buliddir %{_topdir}/BUILD
 %define _tmppath %{_buliddir}/_tmp
 
 %description
-ISA-L is a collection of optimized low-level functions targeting storage applications
+zlib is a general purpose data compression library.
 
 %build
-
-BUILD_OPTION=''
-OS_ARCH="$(uname -m)"
-if [ "${OS_ARCH}x" = "ppc64lex" ]; then
-    BUILD_OPTION='--build=ppc64le'
-fi
 
 rm -rf %{_tmppath}
 mkdir -p %{_tmppath}
 cd $OLDPWD/../
+
+cd rpm
+
 rm -rf %{_src}
-tar -xf %{_src}.tar.gz
+
+tar -zxvf %{_src}.tar.gz
 cd %{_src}
-./autogen.sh
-./configure ${BUILD_OPTION} --enable-static --with-pic=yes --disable-shared --prefix=%{_tmppath}
+
+CFLAGS='-fPIC -O3' SFLAGS='-shared' ./configure --prefix=%{_tmppath} --shared 
+
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES};
 make install
@@ -58,5 +58,5 @@ cp -r %{_tmppath}/lib %{_tmppath}/include $RPM_BUILD_ROOT/%{_prefix}
 %postun -p /sbin/ldconfig
 
 %changelog
-* Fri Mar 26 2021 oceanbase
-- add spec of isa-l
+* Tue Sep 29 2022 oceanbase
+- add spec of zlib
