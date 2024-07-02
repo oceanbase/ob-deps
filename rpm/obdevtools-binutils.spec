@@ -27,7 +27,7 @@ cd $OLDPWD/../
 rm -rf %{_src} 
 tar xf %{_src}.tar.bz2
 cd %{_src}
-./configure --prefix=${RPM_BUILD_ROOT}/%{_prefix}
+./configure --prefix=${RPM_BUILD_ROOT}/%{_prefix} --enable-install-libiberty
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES};
 
