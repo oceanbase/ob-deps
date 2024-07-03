@@ -27,7 +27,7 @@ cd $OLDPWD/../
 rm -rf %{_src} 
 tar xf %{_src}.tar.bz2
 cd %{_src}
-./configure --prefix=${RPM_BUILD_ROOT}/%{_prefix} --enable-install-libiberty
+./configure --prefix=${RPM_BUILD_ROOT}/%{_prefix} --enable-install-libiberty --enable-host-shared --with-pic
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES};
 
@@ -36,6 +36,7 @@ make -j${CPU_CORES};
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}
 cd $OLDPWD/../%{_src}
 make install
+cp libiberty/pic/libiberty.a ${RPM_BUILD_ROOT}%{_prefix}/lib/
 
 %files 
 
