@@ -17,7 +17,7 @@ fi
 
 # depends on cmake(suggest 3.13.0 or higher)
 cd $ROOT_DIR
-wget http://yum-test.obvos.alibaba-inc.com/oceanbase/OceanBaseTest.repo -P /etc/yum.repos.d/
+wget http://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
 yum install obdevtools-cmake-3.22.1 -y
 yum install zlib -y
 yum install zlib-devel -y

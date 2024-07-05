@@ -42,11 +42,12 @@ cd %{_src}
 sh prefetch_crt_dependency.sh
 mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DOPENSSL_ROOT_DIR=%{_openssl_path} \
+cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENSSL_ROOT_DIR=%{_openssl_path} \
          -DCURL_INCLUDE_DIR=%{_curl_path}/include -DCURL_LIBRARY=%{_curl_path}/lib/libcurl.a \
          -DCMAKE_INSTALL_PREFIX=%{_tmpdir} -DCMAKE_PREFIX_PATH=%{_openssl_path} \
          -DBUILD_ONLY="s3" -DBUILD_SHARED_LIBS=0 -DENABLE_TESTING=0 \
          -DCUSTOM_MEMORY_MANAGEMENT=1 -DAWS_CUSTOM_MEMORY_MANAGEMENT=1
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -LA | grep CMAKE_CXX_FLAGS_RELWITHDEBINFO
 make %{_smp_mflags}
 make install
 
