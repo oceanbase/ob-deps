@@ -71,7 +71,7 @@ mkdir -p ${build_dir}
 
 # compile and install
 cd ${build_dir}
-cmake .. -DBOOST_ROOT=${boost_install_dir}/include -DCMAKE_POSITION_INDEPENDENT_CODE=on -DBUILD_STATIC_AND_SHARED=on -DCMAKE_INSTALL_PREFIX=${tmp_install_dir}
+cmake .. -DBOOST_ROOT=${boost_install_dir}/include -DCMAKE_POSITION_INDEPENDENT_CODE=on -DBUILD_STATIC_AND_SHARED=on -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} -DCMAKE_C_FLAGS="-fno-reorder-blocks-and-partition" -DCMAKE_CXX_FLAGS="-fno-reorder-blocks-and-partition"
 make -j${CPU_CORES}
 make install
 
