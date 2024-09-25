@@ -16,6 +16,9 @@ fi
 # build dependencies
 OS_RELEASE=`grep -Po '(?<=release )\d' /etc/redhat-release`
 
+
+
+
 if [[ x"$OS_RELEASE" == x"3" ]]; then
     arch=`uname -p`
     target_dir_3rd=${PROJECT_DIR}/deps/3rd
@@ -46,9 +49,12 @@ else
     # prepare building environment
     # please prepare environment yourself if the following solution does not work for you.
     # depends on cmake(suggest 2.6.0 or higher)
-    wget http://yum-test.obvos.alibaba-inc.com/oceanbase/OceanBaseTest.repo -P /etc/yum.repos.d/
+    wget https://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
     yum remove cmake -y
-    yum install cmake-3.11.4 -y
+    yum install obdevtools-cmake-3.22.1 -y
+    #wget http://yum-test.obvos.alibaba-inc.com/oceanbase/OceanBaseTest.repo -P /etc/yum.repos.d/
+    #yum remove cmake -y
+    #yum install cmake-3.11.4 -y
 fi
 
 
