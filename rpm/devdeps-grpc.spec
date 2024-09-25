@@ -1,5 +1,5 @@
 Name: devdeps-grpc
-Version: 1.20.1
+Version: 1.46.7
 Release: %(echo $RELEASE)%{?dist}
 Url: https://github.com/grpc/grpc
 Summary: gRPC is a modern, open source, high-performance remote procedure call (RPC) framework that can run anywhere.
