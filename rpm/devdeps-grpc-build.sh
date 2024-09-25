@@ -13,58 +13,57 @@ if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/grpc-$VERSION.*[tar|gz|bz2|xz|zi
     bash $CUR_DIR/download.sh $PROJECT_NAME $VERSION $ROOT_DIR
 fi
 
-# build dependencies
-OS_RELEASE=`grep -Po '(?<=release )\d' /etc/redhat-release`
-
-
-
+# prepare building environment
+OS_RELEASE=$(grep -Po '(?<=release )\d' /etc/redhat-release)
+arch=`uname -p`
+target_dir_3rd=${PROJECT_DIR}/deps/3rd
+pkg_dir=$target_dir_3rd/pkg
+mkdir -p $pkg_dir
 
 if [[ x"$OS_RELEASE" == x"3" ]]; then
-    arch=`uname -p`
-    target_dir_3rd=${PROJECT_DIR}/deps/3rd
-    pkg_dir=$target_dir_3rd/pkg
-    mkdir -p $pkg_dir
-
-    dep_pkgs=(obdevtools-cmake-3.22.1-112024083015.al)
-    download_base_url="http://yum-test.obvos.alibaba-inc.com/oceanbase/development-kit/al"
-    os_release=8
-    for dep_pkg in ${dep_pkgs[@]}
-    do
-        TEMP=$(mktemp -p "/" -u ".XXXX")
-        deps_url=${download_base_url}/${os_release}/${arch}
-        pkg=${dep_pkg}${os_release}.${arch}.rpm
-        wget $deps_url/$pkg -O $pkg_dir/$TEMP
-        if [[ $? == 0 ]]; then
-            mv -f $pkg_dir/$TEMP $pkg_dir/$pkg
-        fi
-        (cd $target_dir_3rd && rpm2cpio $pkg_dir/$pkg | cpio -di -u --quiet)
-    done
-
-    # environmental parameters
-    export PATH=$target_dir_3rd/usr/local/oceanbase/devtools/bin:$PATH
-
-    ln -sf $target_dir_3rd/usr/local/oceanbase/devtools/bin/cmake  /usr/bin/cmake
-
+   dep_pkgs=(obdevtools-gcc9-9.3.0-82024081914.al obdevtools-cmake-3.22.1-42024081614.al)
+   download_base_url="http://yum-test.obvos.alibaba-inc.com/oceanbase/development-kit/al"
+   os_release=8
+   for dep_pkg in ${dep_pkgs[@]}
+   do
+      TEMP=$(mktemp -p "/" -u ".XXXX")
+      deps_url=${download_base_url}/${os_release}/${arch}
+      pkg=${dep_pkg}${os_release}.${arch}.rpm
+      wget $deps_url/$pkg -O $pkg_dir/$TEMP
+      if [[ $? == 0 ]]; then
+         mv -f $pkg_dir/$TEMP $pkg_dir/$pkg
+      fi
+      rpm -ivh --force $pkg_dir/$pkg
+      # (cd / && rpm2cpio $pkg_dir/$pkg | cpio -di -u --quiet)
+   done
 else
-    # prepare building environment
-    # please prepare environment yourself if the following solution does not work for you.
-    # depends on cmake(suggest 2.6.0 or higher)
-    #wget http://yum-test.obvos.alibaba-inc.com/oceanbase/OceanBaseTest.repo -P /etc/yum.repos.d/
-    #yum remove cmake -y
-    #yum install cmake-3.11.4 -y
+   dep_pkgs=(obdevtools-gcc9-9.3.0-72024081318.el obdevtools-cmake-3.22.1-22022100417.el)
+   download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/el"
+   os_release=$OS_RELEASE
 
-    bash $CUR_DIR/download.sh obdevtools-cmake 3.22.1 $ROOT_DIR
-    cd $ROOT_DIR
-    tar -zxf cmake-3.22.1.tar.gz
-    cd cmake-3.22.1
-    ./bootstrap --prefix=$ROOT_DIR/cmake_release -- -DCMAKE_USE_OPENSSL=ON;
-    CPU_CORES=`grep -c ^processor /proc/cpuinfo`
-    make -j${CPU_CORES};
-    make install
-    export PATH=$ROOT_DIR/cmake_release/bin:$PATH
-    cd $ROOT_DIR
+   for dep_pkg in ${dep_pkgs[@]}
+   do
+      TEMP=$(mktemp -p "/" -u ".XXXX")
+      deps_url=${download_base_url}/${OS_RELEASE}/${arch}
+      pkg=${dep_pkg}${os_release}.${arch}.rpm
+      wget $deps_url/$pkg -O $pkg_dir/$TEMP
+      if [[ $? == 0 ]]; then
+         mv -f $pkg_dir/$TEMP $pkg_dir/$pkg
+      fi
+      rpm -ivh --force $pkg_dir/$pkg
+      # (cd / && rpm2cpio $pkg_dir/$pkg | cpio -di -u --quiet)
+   done
+
+   # wget http://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
+   # yum install obdevtools-cmake-3.22.1 -y
+   # yum install obdevtools-gcc9-9.3.0 -y
 fi
 
+export PATH=/usr/local/oceanbase/devtools/bin:$PATH
+
+ln -sf /usr/local/oceanbase/devtools/bin/g++  /usr/bin/c++
+ln -sf /usr/local/oceanbase/devtools/bin/gcc  /usr/bin/cc
 
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE
+
