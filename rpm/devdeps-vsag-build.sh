@@ -10,7 +10,7 @@ RELEASE=${4:-"1"}
 # check source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/vsag-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download vsag source code"
-    bash $CUR_DIR/download_code.sh $PROJECT_NAME $VERSION $ROOT_DIR
+    bash $CUR_DIR/download.sh $PROJECT_NAME $VERSION $ROOT_DIR
 fi
 
 OS_RELEASE=`grep -Po '(?<=release )\d' /etc/redhat-release`
