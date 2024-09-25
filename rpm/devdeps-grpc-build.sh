@@ -60,6 +60,7 @@ else
 fi
 
 export PATH=/usr/local/oceanbase/devtools/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/oceanbase/devtools/lib:/usr/local/oceanbase/devtools/lib64:$LD_LIBRARY_PATH
 
 ln -sf /usr/local/oceanbase/devtools/bin/g++  /usr/bin/c++
 ln -sf /usr/local/oceanbase/devtools/bin/gcc  /usr/bin/cc
