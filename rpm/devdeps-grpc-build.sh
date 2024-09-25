@@ -49,12 +49,20 @@ else
     # prepare building environment
     # please prepare environment yourself if the following solution does not work for you.
     # depends on cmake(suggest 2.6.0 or higher)
-    wget https://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
-    yum remove cmake -y
-    yum install obdevtools-cmake-3.22.1 -y
     #wget http://yum-test.obvos.alibaba-inc.com/oceanbase/OceanBaseTest.repo -P /etc/yum.repos.d/
     #yum remove cmake -y
     #yum install cmake-3.11.4 -y
+
+    bash $CUR_DIR/download_code.sh obdevtools-cmake 3.22.1 $ROOT_DIR
+    cd $ROOT_DIR
+    tar -zxf cmake-3.22.1.tar.gz
+    cd cmake-3.22.1
+    ./bootstrap --prefix=$ROOT_DIR/cmake_release -- -DCMAKE_USE_OPENSSL=ON;
+    CPU_CORES=`grep -c ^processor /proc/cpuinfo`
+    make -j${CPU_CORES};
+    make install
+    export PATH=$ROOT_DIR/cmake_release/bin:$PATH
+    cd $ROOT_DIR
 fi
 
 
