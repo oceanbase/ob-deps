@@ -53,7 +53,7 @@ else
     #yum remove cmake -y
     #yum install cmake-3.11.4 -y
 
-    bash $CUR_DIR/download_code.sh obdevtools-cmake 3.22.1 $ROOT_DIR
+    bash $CUR_DIR/download.sh obdevtools-cmake 3.22.1 $ROOT_DIR
     cd $ROOT_DIR
     tar -zxf cmake-3.22.1.tar.gz
     cd cmake-3.22.1
