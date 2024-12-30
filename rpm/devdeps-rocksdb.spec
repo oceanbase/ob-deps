@@ -23,6 +23,8 @@ cd $OLDPWD/../
 rm -rf %{_rocksdb_src}
 tar xf %{_rocksdb_src}.tar.gz
 cd %{_default_version_src}
+mv ../patch/rocksdb.patch .
+patch -p1 < rocksdb.patch
 mkdir build
 cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=%{buildroot}/%{_prefix} -DCMAKE_BUILD_TYPE=Release -DWITH_GFLAGS=0 -DPORTABLE=ON \
