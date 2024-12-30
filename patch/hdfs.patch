@@ -1,0 +1,988 @@
+
+diff --git a/hadoop-hdfs-project/hadoop-hdfs-native-client/pom.xml b/hadoop-hdfs-project/hadoop-hdfs-native-client/pom.xml
+index 04cf060df4..e594c9f37b 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs-native-client/pom.xml
++++ b/hadoop-hdfs-project/hadoop-hdfs-native-client/pom.xml
+@@ -98,98 +98,6 @@ https://maven.apache.org/xsd/maven-4.0.0.xsd">
+     </plugins>
+   </build>
+   <profiles>
+-    <profile>
+-      <id>native-win</id>
+-      <activation>
+-        <activeByDefault>false</activeByDefault>
+-        <os>
+-          <family>windows</family>
+-        </os>
+-      </activation>
+-      <properties>
+-        <runningWithNative>true</runningWithNative>
+-      </properties>
+-      <build>
+-        <plugins>
+-          <plugin>
+-            <groupId>org.apache.maven.plugins</groupId>
+-            <artifactId>maven-enforcer-plugin</artifactId>
+-            <executions>
+-              <execution>
+-                <id>enforce-os</id>
+-                <goals>
+-                  <goal>enforce</goal>
+-                </goals>
+-                <configuration>
+-                  <rules>
+-                    <requireOS>
+-                      <family>windows</family>
+-                      <message>native-win build only supported on Windows</message>
+-                    </requireOS>
+-                  </rules>
+-                  <fail>true</fail>
+-                </configuration>
+-              </execution>
+-            </executions>
+-          </plugin>
+-          <plugin>
+-            <groupId>org.apache.maven.plugins</groupId>
+-            <artifactId>maven-antrun-plugin</artifactId>
+-            <executions>
+-              <execution>
+-                <id>make</id>
+-                <phase>compile</phase>
+-                <goals>
+-                  <goal>run</goal>
+-                </goals>
+-                <configuration>
+-                  <target>
+-                    <mkdir dir="${project.build.directory}/native"/>
+-                    <exec executable="cmake" dir="${project.build.directory}/native"
+-                          failonerror="true">
+-                      <arg line="${basedir}/src/ -DGENERATED_JAVAH=${project.build.directory}/native/javah -DJVM_ARCH_DATA_MODEL=${sun.arch.data.model} -DHADOOP_BUILD=1 -DREQUIRE_FUSE=${require.fuse} -DREQUIRE_VALGRIND=${require.valgrind} -A '${env.PLATFORM}'"/>
+-                      <arg line="${native_cmake_args}"/>
+-                    </exec>
+-                    <exec executable="msbuild" dir="${project.build.directory}/native"
+-                          failonerror="true">
+-                      <arg line="ALL_BUILD.vcxproj /nologo /p:Configuration=RelWithDebInfo /p:LinkIncremental=false"/>
+-                      <arg line="${native_make_args}"/>
+-                    </exec>
+-                    <!-- Copy for inclusion in distribution. -->
+-                    <copy todir="${project.build.directory}/bin">
+-                      <fileset dir="${project.build.directory}/native/bin/RelWithDebInfo"/>
+-                    </copy>
+-                  </target>
+-                </configuration>
+-              </execution>
+-              <execution>
+-                <id>native_tests</id>
+-                <phase>test</phase>
+-                <goals><goal>run</goal></goals>
+-                <configuration>
+-                  <skip>${skipTests}</skip>
+-                  <target>
+-                    <property name="compile_classpath" refid="maven.compile.classpath"/>
+-                    <property name="test_classpath" refid="maven.test.classpath"/>
+-                    <exec executable="ctest" failonerror="true" dir="${project.build.directory}/native">
+-                      <arg line="--output-on-failure"/>
+-                      <arg line="${native_ctest_args}"/>
+-                      <env key="CLASSPATH" value="${test_classpath}:${compile_classpath}"/>
+-                      <!-- HADOOP_HOME required to find winutils. -->
+-                      <env key="HADOOP_HOME" value="${hadoop.common.build.dir}"/>
+-                      <!-- Make sure hadoop.dll and jvm.dll are on PATH. -->
+-                      <env key="PATH" value="${env.PATH};${hadoop.common.build.dir}/bin;${java.home}/jre/bin/server;${java.home}/bin/server"/>
+-                      <!-- Make sure libhadoop.so is on LD_LIBRARY_PATH. -->
+-                      <env key="LD_LIBRARY_PATH" value="${env.LD_LIBRARY_PATH}:${project.build.directory}/native/target/usr/local/lib:${hadoop.common.build.dir}/native/target/usr/local/lib"/>
+-                    </exec>
+-                  </target>
+-                </configuration>
+-              </execution>
+-            </executions>
+-          </plugin>
+-        </plugins>
+-      </build>
+-    </profile>
+     <profile>
+       <id>native</id>
+       <activation>
+@@ -216,6 +124,8 @@ https://maven.apache.org/xsd/maven-4.0.0.xsd">
+                     <REQUIRE_FUSE>${require.fuse}</REQUIRE_FUSE>
+                     <REQUIRE_VALGRIND>${require.valgrind}</REQUIRE_VALGRIND>
+                     <HADOOP_BUILD>1</HADOOP_BUILD>
++                    <HDFSPP_LIBRARY_ONLY>1</HDFSPP_LIBRARY_ONLY>
++                    <GSASL_DIR>${env.GSASL_HOME}</GSASL_DIR>
+                     <REQUIRE_LIBWEBHDFS>${require.libwebhdfs}</REQUIRE_LIBWEBHDFS>
+                     <REQUIRE_OPENSSL>${require.openssl}</REQUIRE_OPENSSL>
+                     <CUSTOM_OPENSSL_PREFIX>${openssl.prefix}</CUSTOM_OPENSSL_PREFIX>
+@@ -257,73 +167,5 @@ https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         </plugins>
+       </build>
+     </profile>
+-    <profile>
+-      <id>native-clang</id>
+-      <activation>
+-        <activeByDefault>false</activeByDefault>
+-      </activation>
+-      <properties>
+-        <runningWithNative>true</runningWithNative>
+-      </properties>
+-      <build>
+-        <plugins>
+-          <plugin>
+-            <groupId>org.apache.hadoop</groupId>
+-            <artifactId>hadoop-maven-plugins</artifactId>
+-            <executions>
+-              <execution>
+-                <id>cmake-compile-clang</id>
+-                <phase>compile</phase>
+-                <goals><goal>cmake-compile</goal></goals>
+-                <configuration>
+-                  <source>${basedir}/src</source>
+-                  <vars>
+-                    <CMAKE_C_COMPILER>clang</CMAKE_C_COMPILER>
+-                    <CMAKE_CXX_COMPILER>clang++</CMAKE_CXX_COMPILER>
+-                    <GENERATED_JAVAH>${project.build.directory}/native/javah</GENERATED_JAVAH>
+-                    <JVM_ARCH_DATA_MODEL>${sun.arch.data.model}</JVM_ARCH_DATA_MODEL>
+-                    <REQUIRE_FUSE>${require.fuse}</REQUIRE_FUSE>
+-                    <REQUIRE_VALGRIND>${require.valgrind}</REQUIRE_VALGRIND>
+-                    <HADOOP_BUILD>1</HADOOP_BUILD>
+-                    <REQUIRE_LIBWEBHDFS>${require.libwebhdfs}</REQUIRE_LIBWEBHDFS>
+-                    <REQUIRE_OPENSSL>${require.openssl}</REQUIRE_OPENSSL>
+-                    <CUSTOM_OPENSSL_PREFIX>${openssl.prefix}</CUSTOM_OPENSSL_PREFIX>
+-                    <CUSTOM_OPENSSL_LIB>${openssl.lib}</CUSTOM_OPENSSL_LIB>
+-                    <CUSTOM_OPENSSL_INCLUDE>${openssl.include}</CUSTOM_OPENSSL_INCLUDE>
+-                  </vars>
+-                  <output>${project.build.directory}/clang</output>
+-                </configuration>
+-              </execution>
+-            </executions>
+-          </plugin>
+-          <plugin>
+-            <groupId>org.apache.maven.plugins</groupId>
+-            <artifactId>maven-antrun-plugin</artifactId>
+-            <executions>
+-              <execution>
+-                <id>native_tests_clang</id>
+-                <phase>test</phase>
+-                <goals><goal>run</goal></goals>
+-                <configuration>
+-                  <skip>${skipTests}</skip>
+-                  <target>
+-                    <property name="compile_classpath" refid="maven.compile.classpath"/>
+-                    <property name="test_classpath" refid="maven.test.classpath"/>
+-                    <exec executable="ctest" failonerror="true" dir="${project.build.directory}/clang">
+-                      <arg line="--output-on-failure"/>
+-                      <arg line="${native_ctest_args}"/>
+-                      <env key="CLASSPATH" value="${test_classpath}:${compile_classpath}"/>
+-                      <!-- Make sure libhadoop.so is on LD_LIBRARY_PATH. -->
+-                      <env key="LD_LIBRARY_PATH" value="${env.LD_LIBRARY_PATH}:${project.build.directory}/clang/target/usr/local/lib:${hadoop.common.build.dir}/native/target/usr/local/lib"/>
+-                      <env key="DYLD_LIBRARY_PATH" value="${env.DYLD_LIBRARY_PATH}:${project.build.directory}/clang/target/usr/local/lib:${hadoop.common.build.dir}/native/target/usr/local/lib"/>
+-                    </exec>
+-                  </target>
+-                </configuration>
+-              </execution>
+-            </executions>
+-          </plugin>
+-        </plugins>
+-      </build>
+-    </profile>
+   </profiles>
+ </project>
+diff --git a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/CMakeLists.txt b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/CMakeLists.txt
+index a7fb311125..f08bb77d4d 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/CMakeLists.txt
++++ b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/CMakeLists.txt
+@@ -18,6 +18,16 @@
+ 
+ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+ 
++if(UNIX)
++set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -std=c++11 -g -fPIC -fno-strict-aliasing")
++set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -fPIC -fno-strict-aliasing")
++endif()
++
++if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
++    add_definitions(-DASIO_HAS_STD_ADDRESSOF -DASIO_HAS_STD_ARRAY -DASIO_HAS_STD_ATOMIC -DASIO_HAS_CSTDINT -DASIO_HAS_STD_SHARED_PTR -DASIO_HAS_STD_TYPE_TRAITS -DASIO_HAS_VARIADIC_TEMPLATES -DASIO_HAS_STD_FUNCTION -DASIO_HAS_STD_CHRONO -DASIO_HAS_STD_SYSTEM_ERROR)
++endif ()
++
+ add_definitions(-DLIBHDFS_DLL_EXPORT)
+ 
+ include_directories(
+diff --git a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jni_helper.c b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jni_helper.c
+index 4efb3b61b4..cbf57bdf52 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jni_helper.c
++++ b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jni_helper.c
+@@ -714,26 +714,26 @@ static JNIEnv* getGlobalJNIEnv(void)
+         }
+         options[0].optionString = optHadoopClassPath;
+         hadoopJvmArgs = getenv("LIBHDFS_OPTS");
+-	if (hadoopJvmArgs != NULL)  {
+-          hadoopJvmArgs = strdup(hadoopJvmArgs);
+-          for (noArgs = 1, str = hadoopJvmArgs; ; noArgs++, str = NULL) {
+-            token = strtok_r(str, jvmArgDelims, &savePtr);
+-            if (NULL == token) {
+-              break;
++        if (hadoopJvmArgs != NULL)  {
++            hadoopJvmArgs = strdup(hadoopJvmArgs);
++            for (noArgs = 1, str = hadoopJvmArgs; ; noArgs++, str = NULL) {
++                token = strtok_r(str, jvmArgDelims, &savePtr);
++                if (NULL == token) {
++                break;
++                }
++                options[noArgs].optionString = token;
+             }
+-            options[noArgs].optionString = token;
+-          }
+         }
+ 
+         //Create the VM
+-        vm_args.version = JNI_VERSION_1_2;
++        vm_args.version = JNI_VERSION_1_8;
+         vm_args.options = options;
+         vm_args.nOptions = noArgs; 
+         vm_args.ignoreUnrecognized = 1;
+ 
+         rv = JNI_CreateJavaVM(&vm, (void*)&env, &vm_args);
+ 
+-        if (hadoopJvmArgs != NULL)  {
++        if (hadoopJvmArgs != NULL) {
+           free(hadoopJvmArgs);
+         }
+         free(optHadoopClassPath);
+@@ -744,7 +744,6 @@ static JNIEnv* getGlobalJNIEnv(void)
+                     "with error: %d\n", rv);
+             return NULL;
+         }
+-
+         // We use findClassAndInvokeMethod here because the jclasses in
+         // jclasses.h have not loaded yet
+         jthr = findClassAndInvokeMethod(env, NULL, STATIC, NULL, HADOOP_FS,
+@@ -758,6 +757,8 @@ static JNIEnv* getGlobalJNIEnv(void)
+         //Attach this thread to the VM
+         vm = vmBuf[0];
+         rv = (*vm)->AttachCurrentThread(vm, (void*)&env, 0);
++        fprintf(stderr, "DEBUG Call to AttachCurrentThread "
++                    "failed with error: %d\n", rv);
+         if (rv != 0) {
+             fprintf(stderr, "Call to AttachCurrentThread "
+                     "failed with error: %d\n", rv);
+@@ -768,6 +769,125 @@ static JNIEnv* getGlobalJNIEnv(void)
+     return env;
+ }
+ 
++static jint destroyGlobalJNIEnv(void)
++{
++    JavaVM* vmBuf[VM_BUF_LENGTH]; 
++    jint rv = 0; 
++    jint noVMs = 0;
++    JavaVM *vm;
++
++    rv = JNI_GetCreatedJavaVMs(&(vmBuf[0]), VM_BUF_LENGTH, &noVMs);
++    if (rv != 0) {
++        fprintf(stderr, "DEBUG destroyGlobalJNIEnv: JNI_GetCreatedJavaVMs failed with error: %d\n", rv);
++        return rv;
++    }
++    if (noVMs == 0) {
++        // do nothing
++        fprintf(stdout, "DEBUG destroyGlobalJNIEnv without exists jvm\n");
++        return 0;
++    }
++
++    if (noVMs != 1) {
++        fprintf(stderr, "DEBUG destroyGlobalJNIEnv with unexpected jvm count: %d\n", noVMs);
++        return 1;
++    } else {
++        fprintf(stderr, "DEBUG destroyGlobalJNIEnv with one jvm should destroy\n");
++        vm = vmBuf[0];
++        if (vm) {
++            rv = (*vm)->DestroyJavaVM(vm);
++            if (0 != rv) {
++                fprintf(stderr, "DEBUG destroyGlobalJNIEnv failed with error: %d\n", rv);
++                return rv;
++            }
++        } else {
++            fprintf(stderr, "DEBUG destroyGlobalJNIEnv with null vm\n");
++            return 2;
++        }
++    }
++
++    fprintf(stderr, "DEBUG destroyGlobalJNIEnv: make sure vm is cleaned\n");
++    rv = JNI_GetCreatedJavaVMs(&(vmBuf[0]), VM_BUF_LENGTH, &noVMs);
++    if (0 != rv) {
++      fprintf(stdout,
++              "DEBUG destroyGlobalJNIEnv: JNI_GetCreatedJavaVMs check failed with error: %d\n",
++              rv);
++      return rv;
++    }
++    if (0 != noVMs) {
++      fprintf(stderr,
++              "DEBUG destroyGlobalJNIEnv: JNI_GetCreatedJavaVMs check unexpected count vms: %d\n",
++              noVMs);
++      return 3;
++    }
++
++    fprintf(stderr, "DEBUG destroyGlobalJNIEnv: JNI_GetCreatedJavaVMs check success\n");
++    return 0;
++}
++
++jint detachCurrentThread(void)
++{
++    struct ThreadLocalState *state = NULL;
++    THREAD_LOCAL_STORAGE_GET_QUICK(&state);
++    mutexLock(&jvmMutex);
++    if (state) {
++        hdfsThreadDestructor(state);
++        THREAD_LOCAL_STORAGE_SET_QUICK(NULL);
++        if (threadLocalStorageSet(NULL)) {
++            fprintf(stderr, "DEBUG detachCurrentThread: threadLocalStorageSet null failed\n");
++        } else {
++            fprintf(stderr, "DEBUG detachCurrentThread: threadLocalStorageSet null success\n");
++        }
++        mutexUnlock(&jvmMutex);
++    } else if (threadLocalStorageGet(&state)) {
++      hdfsThreadDestructor(state);
++      THREAD_LOCAL_STORAGE_SET_QUICK(NULL);
++      if (threadLocalStorageSet(NULL)) {
++        fprintf(stderr, "DEBUG detachCurrentThread: threadLocalStorageGet and threadLocalStorageSet failed\n");
++      } else {
++        fprintf(stderr, "DEBUG detachCurrentThread: threadLocalStorageGet and threadLocalStorageSet success\n");
++      }
++      mutexUnlock(&jvmMutex);
++    } else if (state) {
++      // Free any stale exception strings.
++      free(state->lastExceptionRootCause);
++      free(state->lastExceptionStackTrace);
++      state->lastExceptionRootCause = NULL;
++      state->lastExceptionStackTrace = NULL;
++      hdfsThreadDestructor(state);
++      THREAD_LOCAL_STORAGE_SET_QUICK(NULL);
++      if (threadLocalStorageSet(NULL)) {
++        fprintf(stderr, "DEBUG detachCurrentThread: state and threadLocalStorageSet null failed\n");
++      } else {
++        fprintf(stderr, "DEBUG detachCurrentThread: state and threadLocalStorageSet null success\n");
++      }
++      mutexUnlock(&jvmMutex);
++    } else {
++      THREAD_LOCAL_STORAGE_SET_QUICK(NULL);
++      if (threadLocalStorageSet(NULL)) {
++        fprintf(stderr, "DEBUG detachCurrentThread: last set null failed\n");
++      } else {
++        fprintf(stderr, "DEBUG detachCurrentThread: last set null success\n");
++      }
++      mutexUnlock(&jvmMutex);
++    }
++    return 0;
++}
++
++jint destroyJNIEnv(void)
++{
++    mutexLock(&jvmMutex);
++    fprintf(stderr, "DEBUG destroyJNIEnv: destory global jni env\n");
++    jint rv = 0;
++    rv = destroyGlobalJNIEnv();
++    if (0 != rv) {
++        fprintf(stderr, "DEBUG destroyJNIEnv: destroyGlobalJNIEnv failed with error: %d\n", rv);
++    } else {
++        fprintf(stderr, "DEBUG destroyJNIEnv: destroyGlobalJNIEnv success\n");
++    }
++    mutexUnlock(&jvmMutex);
++    return rv;
++}
++
+ /**
+  * getJNIEnv: A helper function to get the JNIEnv* for the given thread.
+  * If no JVM exists, then one will be created. JVM command line arguments
+diff --git a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jni_helper.h b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jni_helper.h
+index 41d6fab2a7..f4a6036ca1 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jni_helper.h
++++ b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jni_helper.h
+@@ -36,6 +36,31 @@
+     #define PATH_SEPARATOR_STR ":"
+ #endif
+ 
++/**
++ *  Note: The #defines below are copied directly from libhdfs'
++ *  hdfs.h.  LIBHDFS_EXTERNAL gets explicitly #undefed at the
++ *  end of the file so it must be redefined here.
++ **/
++
++#ifdef WIN32
++    #ifdef LIBHDFS_DLL_EXPORT
++        #define LIBHDFS_EXTERNAL __declspec(dllexport)
++    #elif LIBHDFS_DLL_IMPORT
++        #define LIBHDFS_EXTERNAL __declspec(dllimport)
++    #else
++        #define LIBHDFS_EXTERNAL
++    #endif
++#else
++    #ifdef LIBHDFS_DLL_EXPORT
++        #define LIBHDFS_EXTERNAL __attribute__((visibility("default")))
++    #elif LIBHDFS_DLL_IMPORT
++        #define LIBHDFS_EXTERNAL __attribute__((visibility("default")))
++    #else
++        #define LIBHDFS_EXTERNAL
++    #endif
++#endif
++
++
+ // #define _LIBHDFS_JNI_HELPER_DEBUGGING_ON_
+ 
+ /** Denote the method we want to invoke as STATIC or INSTANCE */
+@@ -129,6 +154,30 @@ jthrowable methodIdFromClass(jclass cls, const char *className,
+  */
+ jthrowable classNameOfObject(jobject jobj, JNIEnv *env, char **name);
+ 
++/** detachCurrentThread: A helper function to detach the JNIEnv* for the given thread.
++ * It gets this from the ThreadLocalState if it exists. If a ThreadLocalState
++ * does not exist, one will be created in getJNIEnv.
++ * If no JVM exists, then method quits directly and return zero. 
++ * If not, then method will detach state and return zero if detach succeds.
++ * If return non-zero that means detach failed.
++ * @param: None.
++ * @return The status code corresponding to destroy the thread.
++ * */
++LIBHDFS_EXTERNAL
++jint detachCurrentThread(void);
++
++/** destroyJNIEnv: A helper function to destroy the JNIEnv* for the given thread.
++ * It gets this from the ThreadLocalState if it exists. If a ThreadLocalState
++ * does not exist, one will be created in getJNIEnv.
++ * If no JVM exists, then method quits directly and return zero. 
++ * If not, then method will destory state and return zero if destory succeds.
++ * If return non-zero that means destroy failed.
++ * @param: None.
++ * @return The status code corresponding to destroy the thread.
++ * */
++LIBHDFS_EXTERNAL
++jint destroyJNIEnv(void);
++
+ /** getJNIEnv: A helper function to get the JNIEnv* for the given thread.
+  * It gets this from the ThreadLocalState if it exists. If a ThreadLocalState
+  * does not exist, one will be created.
+@@ -137,6 +186,7 @@ jthrowable classNameOfObject(jobject jobj, JNIEnv *env, char **name);
+  * @param: None.
+  * @return The JNIEnv* corresponding to the thread.
+  * */
++LIBHDFS_EXTERNAL
+ JNIEnv* getJNIEnv(void);
+ 
+ /**
+diff --git a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/os/thread_local_storage.h b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/os/thread_local_storage.h
+index 025ceff148..334c92a430 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/os/thread_local_storage.h
++++ b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/os/thread_local_storage.h
+@@ -33,9 +33,10 @@
+  * is initialized by the linker.  The following macros use this technique on the
+  * operating systems that support it.
+  */
++static __thread struct ThreadLocalState *quickTlsEnv = NULL;
++
+ #ifdef HAVE_BETTER_TLS
+   #define THREAD_LOCAL_STORAGE_GET_QUICK(state) \
+-    static __thread struct ThreadLocalState *quickTlsEnv = NULL; \
+     { \
+       if (quickTlsEnv) { \
+         *state = quickTlsEnv; \
+diff --git a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfspp/CMakeLists.txt b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfspp/CMakeLists.txt
+index f4dd492234..d0b9facb5c 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfspp/CMakeLists.txt
++++ b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfspp/CMakeLists.txt
+@@ -31,11 +31,12 @@ cmake_minimum_required(VERSION 2.8)
+ enable_testing()
+ include (CTest)
+ 
+-SET(BUILD_SHARED_HDFSPP TRUE CACHE STRING "BUILD_SHARED_HDFSPP defaulting to 'TRUE'")
++SET(BUILD_SHARED_HDFSPP FALSE CACHE STRING "BUILD_SHARED_HDFSPP defaulting to 'FALSE'")
+ SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake" ${CMAKE_MODULE_PATH})
+ 
+ # If there's a better way to inform FindCyrusSASL.cmake, let's make this cleaner:
+ SET(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${CYRUS_SASL_DIR};${GSASL_DIR};$ENV{PROTOBUF_HOME}")
++# SET(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${CYRUS_SASL_DIR};${GSASL_DIR};${KRB5_HOME};$ENV{PROTOBUF_HOME}")
+ 
+ # Specify PROTOBUF_HOME so that find_package picks up the correct version
+ SET(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};$ENV{PROTOBUF_HOME}")
+
+diff --git a/hadoop-common-project/hadoop-common/src/main/java/org/apache/hadoop/fs/FileSystem.java b/hadoop-common-project/hadoop-common/src/main/java/org/apache/hadoop/fs/FileSystem.java
+index 6caf1e7167..bc345010a3 100644
+--- a/hadoop-common-project/hadoop-common/src/main/java/org/apache/hadoop/fs/FileSystem.java
++++ b/hadoop-common-project/hadoop-common/src/main/java/org/apache/hadoop/fs/FileSystem.java
+@@ -582,6 +582,19 @@ public FileSystem run() throws IOException {
+     });
+   }
+ 
++  public synchronized static FileSystem newInstanceFromKeytab(final URI uri, final Configuration conf,
++      final String principal, final String keytabPath)
++      throws IOException, InterruptedException {
++    UserGroupInformation.setConfiguration(conf);
++    UserGroupInformation.loginUserFromKeytab(principal, keytabPath);
++    return UserGroupInformation.getLoginUser().doAs(new PrivilegedExceptionAction<FileSystem>() {
++      @Override
++      public FileSystem run() throws IOException {
++        return newInstance(uri, conf);
++      }
++    });
++  }
++
+   /**
+    * Returns the FileSystem for this URI's scheme and authority.
+    * The entire URI is passed to the FileSystem instance's initialize method.
+diff --git a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs-examples/libhdfs_read.c b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs-examples/libhdfs_read.c
+index 419be1268b..fc9a07c4ca 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs-examples/libhdfs_read.c
++++ b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs-examples/libhdfs_read.c
+@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
+     curSize = bufferSize;
+     for (; curSize == bufferSize;) {
+         curSize = hdfsRead(fs, readFile, (void*)buffer, curSize);
+-    }
++        }
+ 
+ 
+     free(buffer);
+diff --git a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/exception.c b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/exception.c
+index fec9a103b4..ed61b77fca 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/exception.c
++++ b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/exception.c
+@@ -90,6 +90,16 @@ static const struct ExceptionInfo gExceptionInfo[] = {
+         0,
+         ESTALE,
+     },
++    {
++        "org.apache.hadoop.security.KerberosAuthException",
++        NOPRINT_EXC_ACCESS_CONTROL,
++        ETIME
++    },
++    {
++        "java.net.ConnectException",
++        0,
++        EFAULT
++    },
+ };
+ 
+ void getExceptionInfo(const char *excName, int noPrintFlags,
+diff --git a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/hdfs.c b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/hdfs.c
+index ed150925cd..b3ba27f867 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/hdfs.c
++++ b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/hdfs.c
+@@ -25,6 +25,7 @@
+ #include <fcntl.h>
+ #include <inttypes.h>
+ #include <stdio.h>
++#include <stdlib.h>
+ #include <string.h>
+ 
+ #define JAVA_VOID       "V"
+@@ -35,6 +36,7 @@
+ #define JMETHOD1(X, R)      "(" X ")" R
+ #define JMETHOD2(X, Y, R)   "(" X Y ")" R
+ #define JMETHOD3(X, Y, Z, R)   "(" X Y Z")" R
++#define JMETHOD4(X, Y, Z, A, R)   "(" X Y Z A")" R
+ 
+ #define KERBEROS_TICKET_CACHE_PATH "hadoop.security.kerberos.ticket.cache.path"
+ 
+@@ -495,6 +497,11 @@ done:
+     return ret;
+ }
+ 
++struct hdfsBuilderConfFileOpt {
++    struct hdfsBuilderConfFileOpt *next;
++    const char *currentPath;
++};
++
+ struct hdfsBuilderConfOpt {
+     struct hdfsBuilderConfOpt *next;
+     const char *key;
+@@ -506,10 +513,27 @@ struct hdfsBuilder {
+     const char *nn;
+     tPort port;
+     const char *kerbTicketCachePath;
++    const char *kerb5ConfPath;
++    const char *keyTabFile;
++    const char *kerbPrincipal;
+     const char *userName;
+     struct hdfsBuilderConfOpt *opts;
++    struct hdfsBuilderConfFileOpt *fileOpts;
+ };
+ 
++void hdfsBuilderSetKerb5Conf(struct hdfsBuilder *bld, const char *kerb5ConfPath) {
++    bld->kerb5ConfPath = kerb5ConfPath;
++    if (bld->kerb5ConfPath) {
++        systemPropertySetStr("java.security.krb5.conf", bld->kerb5ConfPath);
++        hdfsBuilderConfSetStr(bld, "hadoop.security.authorization", "true");
++        hdfsBuilderConfSetStr(bld, "hadoop.security.authentication", "kerberos");
++    }
++}
++
++void hdfsBuilderSetKeyTabFile(struct hdfsBuilder *bld, const char *keyTabFile) {
++    bld->keyTabFile = keyTabFile;
++}
++
+ struct hdfsBuilder *hdfsNewBuilder(void)
+ {
+     struct hdfsBuilder *bld = calloc(1, sizeof(struct hdfsBuilder));
+@@ -520,6 +544,42 @@ struct hdfsBuilder *hdfsNewBuilder(void)
+     return bld;
+ }
+ 
++int systemPropertySetStr(const char *key, const char *val) {
++    JNIEnv *env = 0;
++    jobject jRet = NULL;
++    jvalue  jVal;
++    jthrowable jthr;
++    int ret = EINTERNAL;
++    jstring jkey = NULL, jvalue0 = NULL;
++    env = getJNIEnv();
++    if (env == NULL) {
++        ret = EINTERNAL;
++        return ret;
++    }
++    jthr = newJavaStr(env, key, &jkey);
++    if (jthr) {
++        ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,"System::setProperty::new String");
++        goto done;
++    }
++    jthr = newJavaStr(env, val, &jvalue0);
++    if (jthr) {
++        ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,"System::setProperty::new String");
++        goto done;
++    }
++    jthr = invokeMethod(env, &jVal, STATIC, NULL, JC_SYSTEM, "setProperty", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;", jkey, jvalue0);
++    jRet = jVal.l;
++    ret = 0;
++    if (jthr) {
++        ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,"System::setProperty");
++        goto done;
++    }
++    done:
++        destroyLocalReference(env, jRet);
++        destroyLocalReference(env, jkey);
++        destroyLocalReference(env, jvalue0);
++        return ret;
++}
++
+ int hdfsBuilderConfSetStr(struct hdfsBuilder *bld, const char *key,
+                           const char *val)
+ {
+@@ -546,6 +606,13 @@ void hdfsFreeBuilder(struct hdfsBuilder *bld)
+         free(cur);
+         cur = next;
+     }
++    struct hdfsBuilderConfFileOpt *cur0, *next0;
++    cur0 = bld->fileOpts;
++    for (cur0 = bld->fileOpts; cur0;) {
++        next0 = cur0->next;
++        free(cur0);
++        cur0 = next0;
++    }
+     free(bld);
+ }
+ 
+@@ -569,6 +636,11 @@ void hdfsBuilderSetUserName(struct hdfsBuilder *bld, const char *userName)
+     bld->userName = userName;
+ }
+ 
++void hdfsBuilderSetPrincipal(struct hdfsBuilder *bld, const char *kerbPrincipal)
++{
++    bld->kerbPrincipal = kerbPrincipal;
++}
++
+ void hdfsBuilderSetKerbTicketCachePath(struct hdfsBuilder *bld,
+                                        const char *kerbTicketCachePath)
+ {
+@@ -688,17 +760,32 @@ static const char *hdfsBuilderToStr(const struct hdfsBuilder *bld,
+     return buf;
+ }
+ 
++jthrowable hadoopConfFileAdd(JNIEnv *env, jobject jConfiguration, const char *path) {
++    /* Create an object of org.apache.hadoop.fs.Path */
++    jobject jPath = NULL;
++    jthrowable jthr;
++    jthr = constructNewObjectOfPath(env, path, &jPath);
++    if (jthr) {
++        goto done;
++    }
++    jthr = invokeMethod(env, NULL, INSTANCE, jConfiguration, JC_CONFIGURATION, "addResource", JMETHOD1(JPARAM(HADOOP_PATH), JAVA_VOID), jPath);
++    done:
++    destroyLocalReference(env, jPath);
++    return jthr;
++}
++
+ hdfsFS hdfsBuilderConnect(struct hdfsBuilder *bld)
+ {
+     JNIEnv *env = 0;
+     jobject jConfiguration = NULL, jFS = NULL, jURI = NULL, jCachePath = NULL;
+-    jstring jURIString = NULL, jUserString = NULL;
++    jstring jURIString = NULL, jUserString = NULL, jPrincipalString = NULL, jKeyTabString = NULL;
+     jvalue  jVal;
+     jthrowable jthr = NULL;
+     char *cURI = 0, buf[512];
+     int ret;
+     jobject jRet = NULL;
+     struct hdfsBuilderConfOpt *opt;
++    struct hdfsBuilderConfFileOpt *fileOpt;
+ 
+     //Get the JNIEnv* corresponding to current thread
+     env = getJNIEnv();
+@@ -715,6 +802,18 @@ hdfsFS hdfsBuilderConnect(struct hdfsBuilder *bld)
+             "hdfsBuilderConnect(%s)", hdfsBuilderToStr(bld, buf, sizeof(buf)));
+         goto done;
+     }
++
++    for (fileOpt = bld->fileOpts; fileOpt; fileOpt = fileOpt->next) {
++        // conf.addResource(new Path(fileOpt->path))
++        jthr = hadoopConfFileAdd(env, jConfiguration, fileOpt->currentPath);
++        if (jthr) {
++            ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,
++                                        "hdfsBuilderConnect(%s): error adding conffile '%s'",
++                                        hdfsBuilderToStr(bld, buf, sizeof(buf)), fileOpt->currentPath);
++            goto done;
++        }
++    }
++
+     // set configuration values
+     for (opt = bld->opts; opt; opt = opt->next) {
+         jthr = hadoopConfSetStr(env, jConfiguration, opt->key, opt->val);
+@@ -746,7 +845,7 @@ hdfsFS hdfsBuilderConnect(struct hdfsBuilder *bld)
+             // fs = FileSytem#getLocal(conf);
+             jthr = invokeMethod(env, &jVal, STATIC, NULL,
+                     JC_FILE_SYSTEM, "getLocal",
+-                    JMETHOD1(JPARAM(HADOOP_CONF), JPARAM(HADOOP_LOCALFS)),
++                    JMETHOD1(JPARAM(HADOOP_CONF)    , JPARAM(HADOOP_LOCALFS)),
+                     jConfiguration);
+             if (jthr) {
+                 ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,
+@@ -794,6 +893,13 @@ hdfsFS hdfsBuilderConnect(struct hdfsBuilder *bld)
+             jURI = jVal.l;
+         }
+ 
++        jthr = newJavaStr(env, bld->userName, &jUserString);
++        if (jthr) {
++            ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,
++                                        "hdfsBuilderConnect(%s)",
++                                        hdfsBuilderToStr(bld, buf, sizeof(buf)));
++            goto done;
++        }
+         if (bld->kerbTicketCachePath) {
+             jthr = hadoopConfSetStr(env, jConfiguration,
+                 KERBEROS_TICKET_CACHE_PATH, bld->kerbTicketCachePath);
+@@ -803,33 +909,81 @@ hdfsFS hdfsBuilderConnect(struct hdfsBuilder *bld)
+                     hdfsBuilderToStr(bld, buf, sizeof(buf)));
+                 goto done;
+             }
+-        }
+-        jthr = newJavaStr(env, bld->userName, &jUserString);
+-        if (jthr) {
+-            ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,
+-                "hdfsBuilderConnect(%s)",
+-                hdfsBuilderToStr(bld, buf, sizeof(buf)));
+-            goto done;
++            invokeMethod(env, &jVal, STATIC, NULL, JC_SECURITY_CONFIGURATION, "setConfiguration",
++            JMETHOD1(JPARAM(HADOOP_CONF),JAVA_VOID), jConfiguration);
+         }
+         if (bld->forceNewInstance) {
+-            jthr = invokeMethod(env, &jVal, STATIC, NULL,
+-                    JC_FILE_SYSTEM, "newInstance",
+-                    JMETHOD3(JPARAM(JAVA_NET_URI), JPARAM(HADOOP_CONF),
+-                             JPARAM(JAVA_STRING), JPARAM(HADOOP_FS)), jURI,
+-                    jConfiguration, jUserString);
+-            if (jthr) {
+-                ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,
+-                    "hdfsBuilderConnect(%s)",
+-                    hdfsBuilderToStr(bld, buf, sizeof(buf)));
+-                goto done;
++            // need kerb5ConfPath to enable kerberos authentication
++            if (bld->kerb5ConfPath && bld->kerbPrincipal && bld->keyTabFile) {
++                jthr = newJavaStr(env, bld->kerbPrincipal, &jPrincipalString);
++                if (jthr) {
++                    ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,
++                                                "hdfsBuilderConnect(%s)",
++                                                hdfsBuilderToStr(bld, buf, sizeof(buf)));
++                    goto done;
++                }
++                jthr = newJavaStr(env, bld->keyTabFile, &jKeyTabString);
++                if (jthr) {
++                    ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,"hdfsBuilderConnect(%s)", hdfsBuilderToStr(bld, buf, sizeof(buf)));
++                    goto done;
++                }
++                jthr = invokeMethod(env, &jVal, STATIC, NULL,
++                                    JC_FILE_SYSTEM, "newInstanceFromKeytab",
++                                    JMETHOD4(JPARAM(JAVA_NET_URI), JPARAM(HADOOP_CONF),
++                                             JPARAM(JAVA_STRING), JPARAM(JAVA_STRING), JPARAM(HADOOP_FS)), jURI,
++                                    jConfiguration, jPrincipalString, jKeyTabString);
++                if (jthr) {
++                    ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,
++                                                "hdfsBuilderConnect(%s)",
++                                                hdfsBuilderToStr(bld, buf, sizeof(buf)));
++                    goto done;
++                }
++            } else {
++                jthr = invokeMethod(env, &jVal, STATIC, NULL,
++                                    JC_FILE_SYSTEM, "newInstance",
++                                    JMETHOD3(JPARAM(JAVA_NET_URI), JPARAM(HADOOP_CONF),
++                                             JPARAM(JAVA_STRING), JPARAM(HADOOP_FS)), jURI,
++                                    jConfiguration, jUserString);
++                if (jthr) {
++                    ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,
++                                                "hdfsBuilderConnect(%s)",
++                                                hdfsBuilderToStr(bld, buf, sizeof(buf)));
++                    goto done;
++                }
+             }
+             jFS = jVal.l;
+         } else {
+-            jthr = invokeMethod(env, &jVal, STATIC, NULL,
+-                    JC_FILE_SYSTEM, "get",
+-                    JMETHOD3(JPARAM(JAVA_NET_URI), JPARAM(HADOOP_CONF),
+-                            JPARAM(JAVA_STRING), JPARAM(HADOOP_FS)), jURI,
+-                            jConfiguration, jUserString);
++            if (bld->keyTabFile && bld->kerb5ConfPath && bld->kerbPrincipal) {
++                jthr = newJavaStr(env, bld->kerbPrincipal, &jPrincipalString);
++                if (jthr) {
++                    ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,
++                                                "hdfsBuilderConnect(%s)",
++                                                hdfsBuilderToStr(bld, buf, sizeof(buf)));
++                    goto done;
++                }
++                jthr = invokeMethod(env, NULL, STATIC, NULL, JC_SECURITY_CONFIGURATION, "setConfiguration", JMETHOD1(JPARAM(HADOOP_CONF),JAVA_VOID), jConfiguration);
++                if (jthr) {
++                    ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,"hdfsBuilderConnect(%s)", hdfsBuilderToStr(bld, buf, sizeof(buf)));
++                    goto done;
++                }
++                jthr = newJavaStr(env, bld->keyTabFile, &jKeyTabString);
++                if (jthr) {
++                    ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,"hdfsBuilderConnect(%s)", hdfsBuilderToStr(bld, buf, sizeof(buf)));
++                    goto done;
++                }
++                jthr = invokeMethod(env, NULL, STATIC, NULL, JC_SECURITY_CONFIGURATION, "loginUserFromKeytab", JMETHOD2(JPARAM(JAVA_STRING), JPARAM(JAVA_STRING), JAVA_VOID), jPrincipalString, jKeyTabString);
++                if (jthr) {
++                    ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,"hdfsBuilderConnect(%s)", hdfsBuilderToStr(bld, buf, sizeof(buf)));
++                    goto done;
++                }
++                jthr = invokeMethod(env, &jVal, STATIC, NULL, JC_FILE_SYSTEM, "get", JMETHOD1(JPARAM(HADOOP_CONF),
++                JPARAM(HADOOP_FS)), jConfiguration);
++            } else {
++                jthr = invokeMethod(env, &jVal, STATIC, NULL, JC_FILE_SYSTEM, "get",
++                                    JMETHOD3(JPARAM(JAVA_NET_URI), JPARAM(HADOOP_CONF),
++                                             JPARAM(JAVA_STRING), JPARAM(HADOOP_FS)),
++                                    jURI, jConfiguration, jUserString);
++            }
+             if (jthr) {
+                 ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,
+                     "hdfsBuilderConnect(%s)",
+@@ -856,6 +1010,7 @@ done:
+     destroyLocalReference(env, jCachePath);
+     destroyLocalReference(env, jURIString);
+     destroyLocalReference(env, jUserString);
++    destroyLocalReference(env, jKeyTabString);
+     free(cURI);
+     hdfsFreeBuilder(bld);
+ 
+diff --git a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/include/hdfs/hdfs.h b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/include/hdfs/hdfs.h
+index eba50ff6eb..f88545f3ba 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/include/hdfs/hdfs.h
++++ b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/include/hdfs/hdfs.h
+@@ -294,6 +294,9 @@ extern  "C" {
+     LIBHDFS_EXTERNAL
+     struct hdfsBuilder *hdfsNewBuilder(void);
+ 
++    LIBHDFS_EXTERNAL
++    int systemPropertySetStr(const char *key, const char *val);
++
+     /**
+      * Force the builder to always create a new instance of the FileSystem,
+      * rather than possibly finding one in the cache.
+@@ -344,6 +347,15 @@ extern  "C" {
+      */
+     LIBHDFS_EXTERNAL
+     void hdfsBuilderSetUserName(struct hdfsBuilder *bld, const char *userName);
++    
++    /**
++    * Set the principal to use when connecting to the HDFS cluster.
++    *
++    * @param bld The HDFS builder
++    * @param kerbPrincipal The principal.  The string will be shallow-copied.
++    */
++    LIBHDFS_EXTERNAL
++    void hdfsBuilderSetPrincipal(struct hdfsBuilder *bld, const char *kerbPrincipal);
+ 
+     /**
+      * Set the path to the Kerberos ticket cache to use when connecting to
+@@ -357,6 +369,12 @@ extern  "C" {
+     void hdfsBuilderSetKerbTicketCachePath(struct hdfsBuilder *bld,
+                                    const char *kerbTicketCachePath);
+ 
++    LIBHDFS_EXTERNAL
++    void hdfsBuilderSetKerb5Conf(struct hdfsBuilder *bld, const char *kerb5ConfPath);
++
++    LIBHDFS_EXTERNAL
++    void hdfsBuilderSetKeyTabFile(struct hdfsBuilder *bld, const char *keyTabFile);
++
+     /**
+      * Free an HDFS builder.
+      *
+diff --git a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jclasses.c b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jclasses.c
+index 9f589ac257..44acb08d27 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jclasses.c
++++ b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jclasses.c
+@@ -112,6 +112,10 @@ jthrowable initCachedClasses(JNIEnv* env) {
+                 "org/apache/commons/lang3/exception/ExceptionUtils";
+         cachedJavaClasses[JC_CFUTURE].className =
+                 "java/util/concurrent/CompletableFuture";
++        cachedJavaClasses[JC_SYSTEM].className =
++                "java/lang/System";
++        cachedJavaClasses[JC_SECURITY_CONFIGURATION].className =
++                "org/apache/hadoop/security/UserGroupInformation";
+ 
+         // Create and set the jclass objects based on the class names set above
+         jthrowable jthr;
+diff --git a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jclasses.h b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jclasses.h
+index 0b174e1fec..4f28ef2c02 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jclasses.h
++++ b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jclasses.h
+@@ -61,6 +61,8 @@ typedef enum {
+     JC_ENUM_SET,
+     JC_EXCEPTION_UTILS,
+     JC_CFUTURE,
++    JC_SYSTEM,
++    JC_SECURITY_CONFIGURATION,
+     // A special marker enum that counts the number of cached jclasses
+     NUM_CACHED_CLASSES
+ } CachedJavaClass;
+@@ -101,6 +103,7 @@ const char *getClassName(CachedJavaClass cachedJavaClass);
+ #define HADOOP_FS_BLDR  "org/apache/hadoop/fs/FSBuilder"
+ #define HADOOP_RO       "org/apache/hadoop/fs/ReadOption"
+ #define HADOOP_DS       "org/apache/hadoop/net/unix/DomainSocket"
++#define HADOOP_USER_INFORMATION "org/apache/hadoop/security/UserGroupInformation"
+ 
+ /* Some frequently used Java class names */
+ #define JAVA_NET_ISA    "java/net/InetSocketAddress"
+@@ -111,6 +114,7 @@ const char *getClassName(CachedJavaClass cachedJavaClass);
+ #define JAVA_CFUTURE    "java/util/concurrent/CompletableFuture"
+ #define JAVA_TIMEUNIT   "java/util/concurrent/TimeUnit"
+ #define JAVA_OBJECT     "java/lang/Object"
++#define JAVA_SYSTEM     "java/lang/System"
+ 
+ /* Some frequently used third-party class names */
+ 
+diff --git a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jni_helper.c b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jni_helper.c
+index cbf57bdf52..b0da655984 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jni_helper.c
++++ b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jni_helper.c
+@@ -237,7 +237,7 @@ jthrowable invokeMethod(JNIEnv *env, jvalue *retval, MethType methType,
+ static jthrowable constructNewObjectOfJclass(JNIEnv *env,
+         jobject *out, jclass cls, const char *className,
+                 const char *ctorSignature, va_list args) {
+-    jmethodID mid;
++    jmethodID mid = 0;
+     jobject jobj;
+     jthrowable jthr;
+ 
+@@ -655,7 +655,7 @@ static char* getClassPath()
+ static JNIEnv* getGlobalJNIEnv(void)
+ {
+     JavaVM* vmBuf[VM_BUF_LENGTH]; 
+-    JNIEnv *env;
++    JNIEnv *env = NULL;
+     jint rv = 0; 
+     jint noVMs = 0;
+     jthrowable jthr;
+-- 
+2.17.0

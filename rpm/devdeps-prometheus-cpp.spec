@@ -1,5 +1,5 @@
 Name: devdeps-prometheus-cpp
-Version: 0.8.0
+Version: 1.1.0
 Release: %(echo $RELEASE)%{?dist}
 Url: https://github.com/jupp0r/prometheus-cpp
 Summary: This library implements the Prometheus Data Model to enable Metrics-Driven Development for C++ services.
@@ -24,18 +24,19 @@ This library aims to enable Metrics-Driven Development for C++ services.
 It implements the Prometheus Data Model, a powerful abstraction on which to collect and expose metrics.
 
 %install
-
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}
 cd $OLDPWD/../;
 rm -rf %{_src}
-tar xvf %{_src}.tar.gz
+tar xf %{_src}.tar.gz
 cd %{_src}
 mkdir _build
 cd _build
+
 # Please use gcc5.2 or higher version
-export CFLAGS=-D_GLIBCXX_USE_CXX11_ABI=0
-export CXXFLAGS=-D_GLIBCXX_USE_CXX11_ABI=0
-cmake .. -DCMAKE_INSTALL_PREFIX=%{_prefix} -DBUILD_SHARED_LIBS=OFF
+export CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -fstack-protector-strong"
+export CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -fstack-protector-strong"
+export LDFLAGS="-pie -z noexecstack -z now"
+cmake .. -DCMAKE_INSTALL_PREFIX=%{_prefix} -DBUILD_SHARED_LIBS=OFF -DENABLE_TESTING=OFF
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES};
 make DESTDIR=$RPM_BUILD_ROOT install

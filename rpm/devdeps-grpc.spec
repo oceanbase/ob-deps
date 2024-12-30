@@ -1,5 +1,5 @@
 Name: devdeps-grpc
-Version: 1.20.1
+Version: 1.46.7
 Release: %(echo $RELEASE)%{?dist}
 Url: https://github.com/grpc/grpc
 Summary: gRPC is a modern, open source, high-performance remote procedure call (RPC) framework that can run anywhere.
@@ -35,8 +35,8 @@ cd %{_src}
 # # This means you will need to have external copies of these libraries available on your system.
 # # ref: https://github.com/grpc/grpc/blob/v1.21.0/test/distrib/cpp/run_distrib_test_cmake.sh
 
-export CFLAGS=-D_GLIBCXX_USE_CXX11_ABI=0
-export CXXFLAGS=-D_GLIBCXX_USE_CXX11_ABI=0
+export CFLAGS="-fPIC -D_GLIBCXX_USE_CXX11_ABI=0 -z noexecstack -z now -pie -fstack-protector-strong"
+export CXXFLAGS="-fPIC  -D_GLIBCXX_USE_CXX11_ABI=0 -z noexecstack -z now -pie -fstack-protector-strong"
 
 # Install c-ares
 cd third_party/cares/cares
@@ -63,13 +63,14 @@ rm -rf third_party/protobuf  # wipe out to prevent influencing the grpc build
 mkdir -p cmake/build
 cd cmake/build
 cmake ../.. -DgRPC_INSTALL=ON                \
-              -DgRPC_BUILD_TESTS=OFF           \
-              -DgRPC_PROTOBUF_PROVIDER=package  \
-              -DgRPC_ZLIB_PROVIDER=package      \
-              -DgRPC_CARES_PROVIDER=package     \
-              -DgRPC_SSL_PROVIDER=package       \
-              -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} \
-              -DBUILD_SHARED_LIBS=OFF
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo	\
+            -DgRPC_BUILD_TESTS=OFF           \
+            -DgRPC_PROTOBUF_PROVIDER=package  \
+            -DgRPC_ZLIB_PROVIDER=package      \
+            -DgRPC_CARES_PROVIDER=package     \
+            -DgRPC_SSL_PROVIDER=package       \
+            -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} \
+            -DBUILD_SHARED_LIBS=OFF
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES} install
 

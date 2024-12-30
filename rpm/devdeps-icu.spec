@@ -39,6 +39,10 @@ mkdir -p ${build_dir}
 export PATH=$TOOLS_DIR/bin/:$PATH
 export CC=$TOOLS_DIR/bin/gcc
 export CXX=$TOOLS_DIR/bin/g++
+
+export CFLAGS="-fPIC -D_GLIBCXX_USE_CXX11_ABI=0 -z noexecstack -z now -pie -fstack-protector-strong"
+export CXXFLAGS="-fPIC  -D_GLIBCXX_USE_CXX11_ABI=0 -z noexecstack -z now -pie -fstack-protector-strong"
+
 cd ${build_dir}
 cmake .. -DICU_VERSION_DIR=icu4c -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
@@ -48,9 +52,6 @@ make install
 # install files
 cp -r ${tmp_install_dir}/lib/*.a $RPM_BUILD_ROOT/%{_prefix}/lib
 cp -r ${tmp_install_dir}/include/* $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}
-mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/i18n/unicode
-cp ../icu4c/source/i18n/unicode/*.h $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/i18n/unicode/
-
 
 # package infomation
 %files 

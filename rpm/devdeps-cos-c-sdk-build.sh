@@ -14,7 +14,7 @@ if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/cos-c-sdk-$VERSION.*[tar|gz|bz2|
     git clone https://github.com/tencentyun/cos-c-sdk-v5.git cos-c-sdk-$VERSION
     cd cos-c-sdk-$VERSION
     git checkout v$VERSION
-    git apply ../cos_diff.patch
+    git apply ../patch/cos_diff.patch
     cd $ROOT_DIR
     tar -zcvf cos-c-sdk-$VERSION.tar.gz cos-c-sdk-$VERSION
 fi

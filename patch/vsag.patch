@@ -1,0 +1,1290 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 87d091b..2eee8a5 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -39,8 +39,8 @@ option (ENABLE_FRAME_POINTER "Whether to build with -fno-omit-frame-pointer" ON)
+ option (ENABLE_THIN_LTO "Whether to build with thin lto -flto=thin" OFF)
+ option (ENABLE_CCACHE "Whether to open ccache" OFF)
+ option (ENABLE_COVERAGE "Enable gcov (debug, Linux builds only)" OFF)
+-option (ENABLE_INTEL_MKL "Enable intel-mkl (x86 platform only)" ON)
+-option (ENABLE_CXX11_ABI "Use CXX11 ABI" ON)
++option (ENABLE_INTEL_MKL "Enable intel-mkl (x86 platform only)" OFF)
++option (ENABLE_CXX11_ABI "Use CXX11 ABI" OFF)
+ option (ENABLE_LIBCXX "Use libc++ instead of libstdc++" ON)
+ option (ENABLE_TOOLS "Whether compile vsag tools" ON)
+ option (DISABLE_SSE_FORCE "Force disable sse and higher instructions" OFF)
+@@ -48,6 +48,9 @@ option (DISABLE_AVX_FORCE "Force disable avx and higher instructions" OFF)
+ option (DISABLE_AVX2_FORCE "Force disable avx2 and higher instructions" OFF)
+ option (DISABLE_AVX512_FORCE "Force disable avx512 instructions" OFF)
+ 
++set (ROARING_DISABLE_AVX512 ON)
++set (ENABLE_PYBINDS ON)
++
+ if (ENABLE_CXX11_ABI)
+   add_definitions (-D_GLIBCXX_USE_CXX11_ABI=1)
+ else ()
+@@ -282,3 +285,32 @@ add_custom_target (version
+                    -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateVersionHeader.cmake
+   )
+ add_dependencies (vsag version)
++
++# set path
++set(VSAG_BASE_DIR ${CMAKE_BINARY_DIR})
++set(VSAG_LIB_DIR ${VSAG_BASE_DIR}/_deps)
++
++# Create shared library
++add_library(ob_vsag SHARED ob_vsag_lib.cpp)
++target_compile_options(ob_vsag PRIVATE -std=c++17)
++target_include_directories(ob_vsag PRIVATE
++                           ${VSAG_BASE_DIR}/include
++                           ${VSAG_LIB_DIR}/nlohmann_json-src/include
++                           ${VSAG_LIB_DIR}/roaringbitmap-src/include
++                           ${VSAG_LIB_DIR}/fmt-src/include)
++target_compile_definitions(ob_vsag PRIVATE _GLIBCXX_USE_CXX11_ABI=0)
++target_link_libraries(ob_vsag PUBLIC vsag_static -static-libstdc++ -static-libgcc)
++add_dependencies(ob_vsag vsag_static)
++
++# Create static library
++add_library(ob_vsag_static STATIC ob_vsag_lib.cpp)
++target_compile_options(ob_vsag_static PRIVATE -std=c++17)
++target_compile_definitions(ob_vsag_static PUBLIC _GLIBCXX_USE_CXX11_ABI=0)
++target_include_directories(ob_vsag_static PUBLIC
++                           ${VSAG_BASE_DIR}/include
++                           ${VSAG_LIB_DIR}/nlohmann_json-src/include
++                           ${VSAG_LIB_DIR}/roaringbitmap-src/include
++                           ${VSAG_LIB_DIR}/fmt-src/include)
++add_dependencies(ob_vsag vsag_static)
++
++add_subdirectory (example)
+\ No newline at end of file
+diff --git a/default_logger.h b/default_logger.h
+new file mode 100644
+index 0000000..6ec885d
+--- /dev/null
++++ b/default_logger.h
+@@ -0,0 +1,119 @@
++#ifndef DEFAULT_LOGGER_H
++#define DEFAULT_LOGGER_H
++
++#include "vsag/logger.h"
++#include "vsag/options.h"
++#include "fmt/format.h"
++
++namespace vsag {
++namespace logger {
++
++enum class level {
++    trace = Logger::Level::kTRACE,
++    debug = Logger::Level::kDEBUG,
++    info = Logger::Level::kINFO,
++    warn = Logger::Level::kWARN,
++    err = Logger::Level::kERR,
++    critical = Logger::Level::kCRITICAL,
++    off = Logger::Level::kOFF
++};
++
++class ObDefaultLogger : public Logger {
++public:
++    void
++    SetLevel(Logger::Level log_level) override;
++
++    void
++    Trace(const std::string& msg) override;
++
++    void
++    Debug(const std::string& msg) override;
++
++    void
++    Info(const std::string& msg) override;
++
++    void
++    Warn(const std::string& msg) override;
++
++    void
++    Error(const std::string& msg) override;
++
++    void
++    Critical(const std::string& msg) override;
++};
++
++
++inline void
++set_level(level log_level) {
++    Options::Instance().logger()->SetLevel((Logger::Level)log_level);
++}
++
++inline void
++trace(const std::string& msg) {
++    Options::Instance().logger()->Trace(msg);
++}
++
++inline void
++debug(const std::string& msg) {
++    Options::Instance().logger()->Debug(msg);
++}
++
++inline void
++info(const std::string& msg) {
++    Options::Instance().logger()->Info(msg);
++}
++
++inline void
++warn(const std::string& msg) {
++    Options::Instance().logger()->Warn(msg);
++}
++
++inline void
++error(const std::string& msg) {
++    Options::Instance().logger()->Error(msg);
++}
++
++inline void
++critical(const std::string& msg) {
++    Options::Instance().logger()->Critical(msg);
++}
++
++template <typename... Args>
++inline void
++trace(fmt::format_string<Args...> fmt, Args&&... args) {
++    trace(fmt::format(fmt, std::forward<Args>(args)...));
++}
++
++template <typename... Args>
++inline void
++debug(fmt::format_string<Args...> fmt, Args&&... args) {
++    debug(fmt::format(fmt, std::forward<Args>(args)...));
++}
++
++template <typename... Args>
++inline void
++info(fmt::format_string<Args...> fmt, Args&&... args) {
++    info(fmt::format(fmt, std::forward<Args>(args)...));
++}
++
++template <typename... Args>
++inline void
++warn(fmt::format_string<Args...> fmt, Args&&... args) {
++    warn(fmt::format(fmt, std::forward<Args>(args)...));
++}
++
++template <typename... Args>
++inline void
++error(fmt::format_string<Args...> fmt, Args&&... args) {
++    error(fmt::format(fmt, std::forward<Args>(args)...));
++}
++
++template <typename... Args>
++inline void
++critical(fmt::format_string<Args...> fmt, Args&&... args) {
++    critical(fmt::format(fmt, std::forward<Args>(args)...));
++}
++
++}  // namespace logger
++}  // namespace vsag
++#endif //DEFAULT_LOGGER_H
+diff --git a/example/CMakeLists.txt b/example/CMakeLists.txt
+new file mode 100644
+index 0000000..0629034
+--- /dev/null
++++ b/example/CMakeLists.txt
+@@ -0,0 +1,4 @@
++add_executable(hnsw_example hnsw_example.cpp default_allocator.cpp)
++target_compile_options(hnsw_example PRIVATE -std=c++17)
++target_link_libraries(hnsw_example PRIVATE ob_vsag_static vsag dl roaring fmt)
++target_include_directories(hnsw_example BEFORE PRIVATE ${VSAG_LIB_DIR}/_deps/roaringbitmap-src/include/)
+diff --git a/example/default_allocator.cpp b/example/default_allocator.cpp
+new file mode 100644
+index 0000000..44bf49f
+--- /dev/null
++++ b/example/default_allocator.cpp
+@@ -0,0 +1,60 @@
++#include "default_allocator.h"
++
++#include "vsag/options.h"
++#include "../default_logger.h"
++#include <stdio.h>
++
++#include <stdlib.h>
++#include <unistd.h>
++void *_malloc(size_t size, const char *filename, int line){
++    void *ptr = malloc(size);
++    
++    char buffer[128] = {0};
++    sprintf(buffer, "./%p.memory", ptr);
++
++    FILE *fp = fopen(buffer, "w");
++    fprintf(fp, "[+]addr: %p, filename: %s, line: %d\n", ptr, filename, line);
++
++    fflush(fp);
++    fclose(fp);
++
++    return ptr;
++}
++
++void _free(void *ptr, const char *filename, int line){
++    char buffer[1280] = {0};
++    sprintf(buffer, "./memory/%p.memory", ptr);
++
++    if (unlink(buffer) < 0){
++        printf("double free: %p\n", ptr);
++        return;
++    }
++
++    return free(ptr);
++}
++//#define malloc(size)    _malloc(size, __FILE__, __LINE__)
++//#define free(ptr)       _free(ptr, __FILE__, __LINE__)
++void*
++DefaultAllocator::Allocate(size_t size) {
++    void* ptr = malloc(size);
++    //vsag::logger::debug("allocate memoery,addr:{}, size:{}",ptr, size);
++    return malloc(size);
++}
++
++void
++DefaultAllocator::Deallocate(void* p) {
++    //vsag::logger::debug("free memoery, alloctor:{}, free_addr:{}", (void*)this, p);
++    free(p);
++}
++
++void*
++DefaultAllocator::Reallocate(void* p, size_t size) {
++    //vsag::logger::debug("re-allocate memoery,addr:{}, size:{}",p,size);
++    return realloc(p, size);
++}
++
++std::string
++DefaultAllocator::Name() {
++    return "DefaultAllocator";
++}
++
+diff --git a/example/default_allocator.h b/example/default_allocator.h
+new file mode 100644
+index 0000000..9d26252
+--- /dev/null
++++ b/example/default_allocator.h
+@@ -0,0 +1,26 @@
++#ifndef DEFAULT_ALLOCATOR_H
++#define DEFAULT_ALLOCATOR_H
++#include "vsag/allocator.h"
++
++class DefaultAllocator : public vsag::Allocator {
++public:
++    DefaultAllocator() = default;
++    virtual ~DefaultAllocator() = default;
++
++    DefaultAllocator(const DefaultAllocator&) = delete;
++    DefaultAllocator(DefaultAllocator&&) = delete;
++
++public:
++    std::string
++    Name() override;
++
++    void*
++    Allocate(size_t size) override;
++
++    void
++    Deallocate(void* p) override;
++
++    void*
++    Reallocate(void* p, size_t size) override;
++};
++#endif // DEFAULT_ALLOCATOR_H
+diff --git a/example/hnsw_example.cpp b/example/hnsw_example.cpp
+new file mode 100644
+index 0000000..a8e2f9b
+--- /dev/null
++++ b/example/hnsw_example.cpp
+@@ -0,0 +1,255 @@
++#include "../ob_vsag_lib.h"
++#include "default_allocator.h"
++#include <random>
++#include <dlfcn.h>
++#include "../ob_vsag_lib_c.h"
++#include <iostream>
++#include "../default_logger.h"
++#include "roaring/roaring64.h"
++#include <stdio.h>
++#include <stdlib.h>
++
++
++int64_t example() {
++    std::cout<<"test hnsw_example: "<<std::endl;
++    bool is_init = obvectorlib::is_init();
++    //set_log_level(1);
++    obvectorlib::VectorIndexPtr index_handler = NULL;
++    int dim = 128;
++    int max_degree = 16;
++    int ef_search = 200;
++    int ef_construction = 100;
++    DefaultAllocator default_allocator;
++    const char* const METRIC_L2 = "l2";
++    const char* const METRIC_IP = "ip";
++
++    const char* const DATATYPE_FLOAT32 = "float32";
++    void * test_ptr = default_allocator.Allocate(10);
++    int ret_create_index = obvectorlib::create_index(index_handler,
++                                                     obvectorlib::HNSW_TYPE,
++                                                     DATATYPE_FLOAT32,
++                                                     METRIC_IP,
++                                                     dim,
++                                                     max_degree,
++                                                     ef_construction,
++                                                     ef_search,
++                                                     &default_allocator);
++   
++    if (ret_create_index!=0) return 333;
++    int num_vectors = 10;
++    auto ids = new int64_t[num_vectors];
++    auto vectors = new float[dim * num_vectors];
++    std::mt19937 rng;
++    rng.seed(47);
++    std::uniform_real_distribution<> distrib_real;
++    for (int64_t i = 0; i < num_vectors; ++i) {
++        ids[i] = i*2;
++    }
++    for (int64_t i = 0; i < dim * num_vectors; ++i) {
++        vectors[i] = distrib_real(rng);
++    }
++    int ret_build_index = obvectorlib::build_index(index_handler, vectors, ids, dim, num_vectors);
++
++    int64_t num_size = 0;
++    int ret_get_element = obvectorlib::get_index_number(index_handler, num_size);
++    std::cout<<"after add index, size is "<<num_size<<" " <<ret_get_element<<std::endl;
++
++    int inc_num = 1000;
++    auto inc = new float[dim * inc_num];
++    for (int64_t i = 0; i < dim * inc_num; ++i) {
++        inc[i] = distrib_real(rng);
++    }
++    auto ids2 = new int64_t[inc_num];
++    for (int64_t i = 0; i < inc_num; ++i) {
++        ids2[i] = i*2+1;
++    }
++    
++    int ret_add_index = obvectorlib::add_index(index_handler, inc, ids2, dim,inc_num);
++    ret_get_element = obvectorlib::get_index_number(index_handler, num_size);
++    std::cout<<"after add index, size is "<<num_size<<" " <<ret_add_index<<std::endl;
++    
++    const float* result_dist;
++    const int64_t* result_ids;
++    int64_t result_size = 0;
++
++    roaring::api::roaring64_bitmap_t* r1 = roaring::api::roaring64_bitmap_create();
++
++    roaring::api::roaring64_bitmap_add(r1, 18);
++    roaring::api::roaring64_bitmap_add(r1, 1169);
++    roaring::api::roaring64_bitmap_add(r1, 1285);
++
++    int ret_knn_search = obvectorlib::knn_search(index_handler, vectors+dim*(num_vectors-1), dim, 10,
++                                                 result_dist,result_ids,result_size, 
++                                                 100, r1);
++    const std::string dir = "./";
++    int ret_serialize_single = obvectorlib::serialize(index_handler,dir);
++    int ret_deserilize_single_bin = 
++                    obvectorlib::deserialize_bin(index_handler,dir);
++ ret_knn_search = obvectorlib::knn_search(index_handler, vectors+dim*(num_vectors-1), dim, 10,
++                                                 result_dist,result_ids,result_size, 
++                                                 100, r1);
++     obvectorlib::delete_index(index_handler);
++    free(test_ptr);
++    return 0;
++}
++
++void
++vsag::logger::ObDefaultLogger::SetLevel(Logger::Level log_level) {
++    //
++}
++
++void
++vsag::logger::ObDefaultLogger::Trace(const std::string& msg) {
++    //
++}
++
++void
++vsag::logger::ObDefaultLogger::Debug(const std::string& msg) {
++    //
++}
++
++void
++vsag::logger::ObDefaultLogger::Info(const std::string& msg) {
++    //
++}
++
++void
++vsag::logger::ObDefaultLogger::Warn(const std::string& msg) {
++    //
++}
++
++void
++vsag::logger::ObDefaultLogger::Error(const std::string& msg) {
++    //
++}
++
++void
++vsag::logger::ObDefaultLogger::Critical(const std::string& msg) {
++    //
++}
++
++int example_so() {
++    std::cout<<"test hnsw_example with dlopen: "<<std::endl;
++    // Path to the dynamic library
++    const char* lib_path = "./libob_vsag.so";  // Linux
++    // const char* lib_path = "libexample.dylib";  // macOS
++
++    // Open the dynamic library
++    void* handle = dlopen(lib_path, RTLD_LAZY);
++    if (!handle) {
++        fprintf(stderr, "%s\n", dlerror());
++        return EXIT_FAILURE;
++    }
++    
++
++    obvectorlib::set_logger_ptr set_logger_c;
++    LOAD_FUNCTION(handle, obvectorlib::set_logger_ptr, set_logger_c);
++    //void* raw_memory = (void*)malloc(sizeof( vsag::logger::ObDefaultLogger));
++    //vsag::logger::ObDefaultLogger* ob_logger = new (raw_memory)vsag::logger::ObDefaultLogger();
++    //vsag::logger::ObDefaultLogger* ob_logger = new vsag::logger::ObDefaultLogger();
++    //set_logger_c(ob_logger);
++
++    //init
++    //obvectorlib::is_init_ptr is_init_c;
++    //LOAD_FUNCTION(handle, obvectorlib::is_init_ptr, is_init_c);
++    //bool is_vsag_init_ = is_init_c();
++    //std::cout << "is_vsag_init_: " << is_vsag_init_ << std::endl;
++
++    //create index
++    obvectorlib::create_index_ptr create_index_c;
++    LOAD_FUNCTION(handle, obvectorlib::create_index_ptr, create_index_c);
++    obvectorlib::VectorIndexPtr index_handler = NULL;
++    int dim = 128;
++    int max_degree = 16;
++    int ef_search = 200;
++    int ef_construction = 100;
++    DefaultAllocator default_allocator;
++    const char* const METRIC_L2 = "l2";
++    const char* const DATATYPE_FLOAT32 = "float32";
++    int ret_create_index = create_index_c(index_handler,
++                                                     obvectorlib::HNSW_TYPE,
++                                                     DATATYPE_FLOAT32,
++                                                     METRIC_L2,
++                                                     dim,
++                                                     max_degree,
++                                                     ef_construction,
++                                                     ef_search,
++                                                     &default_allocator);
++
++    //build index
++    obvectorlib::build_index_ptr build_index_c;
++    LOAD_FUNCTION(handle, obvectorlib::build_index_ptr, build_index_c);
++    obvectorlib::get_index_number_ptr get_index_number_c;
++    LOAD_FUNCTION(handle, obvectorlib::get_index_number_ptr, get_index_number_c);
++    int num_vectors = 10000;
++    auto ids = new int64_t[num_vectors];
++    auto vectors = new float[dim * num_vectors];
++    std::mt19937 rng;
++    rng.seed(47);
++    std::uniform_real_distribution<> distrib_real;
++    for (int64_t i = 0; i < num_vectors; ++i) {
++        ids[i] = i;
++    }
++    for (int64_t i = 0; i < dim * num_vectors; ++i) {
++        vectors[i] = distrib_real(rng);
++    }
++    int ret_build_index = build_index_c(index_handler, vectors, ids, dim, num_vectors);
++    
++    int64_t num_size = 0;
++    int ret_get_element = get_index_number_c(index_handler, num_size);
++
++    //add index
++    obvectorlib::add_index_ptr add_index_c;
++    LOAD_FUNCTION(handle, obvectorlib::add_index_ptr, add_index_c);
++    int inc_num = 10000;
++    auto inc = new float[dim * inc_num];
++    for (int64_t i = 0; i < dim * inc_num; ++i) {
++        inc[i] = distrib_real(rng);
++    }
++    auto ids2 = new int64_t[inc_num];
++    for (int64_t i = 0; i < inc_num; ++i) {
++        ids2[i] = num_size+i;
++    }
++    
++    int ret_add_index = add_index_c(index_handler, inc, ids2, dim,inc_num);
++    ret_get_element = get_index_number_c(index_handler, num_size);
++    
++    //knn_search
++    obvectorlib::knn_search_ptr knn_search_c;
++    LOAD_FUNCTION(handle, obvectorlib::knn_search_ptr, knn_search_c);
++    const float* result_dist;
++    const int64_t* result_ids;
++    int64_t result_size = 0;
++
++    roaring::api::roaring64_bitmap_t* r1 = roaring::api::roaring64_bitmap_create();
++
++    roaring::api::roaring64_bitmap_add(r1, 9999);
++    roaring::api::roaring64_bitmap_add(r1, 1169);
++    roaring::api::roaring64_bitmap_add(r1, 1285);
++
++    int ret_knn_search = knn_search_c(index_handler, vectors+dim*(num_vectors-1), dim, 10,
++                                                 result_dist,result_ids,result_size, 
++                                                 100, r1);
++
++    //serialize/deserialize
++    obvectorlib::serialize_ptr serialize_c;
++    LOAD_FUNCTION(handle, obvectorlib::serialize_ptr, serialize_c);
++    obvectorlib::deserialize_bin_ptr deserialize_bin_c;
++    LOAD_FUNCTION(handle, obvectorlib::deserialize_bin_ptr, deserialize_bin_c);
++    const std::string dir = "./";
++    int ret_serialize_single = serialize_c(index_handler,dir);
++    int ret_deserilize_single_bin = deserialize_bin_c(index_handler,dir);
++
++
++    // Clean up
++    dlclose(handle);
++    
++    return 0;
++}
++
++int
++main() {
++    example();
++    example_so();
++    return 0;
++}
+diff --git a/ob_vsag_lib.cpp b/ob_vsag_lib.cpp
+new file mode 100644
+index 0000000..1e0eaa6
+--- /dev/null
++++ b/ob_vsag_lib.cpp
+@@ -0,0 +1,568 @@
++
++#include "ob_vsag_lib.h"
++#include "ob_vsag_lib_c.h"
++#include "nlohmann/json.hpp"
++#include "roaring/roaring64.h"
++#include <vsag/vsag.h>
++#include "vsag/errors.h"
++#include "vsag/dataset.h"
++#include "vsag/bitset.h"
++#include "vsag/allocator.h"
++#include "vsag/factory.h"
++#include "vsag/constants.h"
++
++#include "default_logger.h"
++#include "vsag/logger.h"
++
++#include <fstream>
++#include <chrono>
++
++namespace obvectorlib {
++
++struct SlowTaskTimer {
++    SlowTaskTimer(const std::string& name, int64_t log_threshold_ms = 0);
++    ~SlowTaskTimer();
++
++    std::string name;
++    int64_t threshold;
++    std::chrono::steady_clock::time_point start;
++};
++
++SlowTaskTimer::SlowTaskTimer(const std::string& n, int64_t log_threshold_ms)
++    : name(n), threshold(log_threshold_ms) {
++    start = std::chrono::steady_clock::now();
++}
++
++SlowTaskTimer::~SlowTaskTimer() {
++    auto finish = std::chrono::steady_clock::now();
++    std::chrono::duration<double, std::milli> duration = finish - start;
++    if (duration.count() > threshold) {
++        if (duration.count() >= 1000) {
++            vsag::logger::debug("  {0} cost {1:.3f}s", name, duration.count() / 1000);
++        } else {
++            vsag::logger::debug("  {0} cost {1:.3f}ms", name, duration.count());
++        }
++    }
++}
++
++class HnswIndexHandler
++{
++public:
++  HnswIndexHandler() = delete;
++
++  HnswIndexHandler(bool is_create, bool is_build, bool use_static,
++                   int max_degree, int ef_construction, int ef_search, int dim,
++                   std::shared_ptr<vsag::Index> index, vsag::Allocator* allocator):
++      is_created_(is_create),
++      is_build_(is_build),
++      use_static_(use_static),
++      max_degree_(max_degree),
++      ef_construction_(ef_construction),
++      ef_search_(ef_search),
++      dim_(dim),
++      index_(index),
++      allocator_(allocator)
++  {}
++
++  ~HnswIndexHandler() {
++    index_ = nullptr;
++    vsag::logger::debug("   after deconstruction, hnsw index addr {} : use count {}", (void*)allocator_, index_.use_count());
++  }
++  void set_build(bool is_build) { is_build_ = is_build;}
++  bool is_build(bool is_build) { return is_build_;}
++  int build_index(const vsag::DatasetPtr& base);
++  int get_index_number();
++  int add_index(const vsag::DatasetPtr& incremental);
++  int knn_search(const vsag::DatasetPtr& query, int64_t topk,
++                const std::string& parameters,
++                const float*& dist, const int64_t*& ids, int64_t &result_size,
++                const std::function<bool(int64_t)>& filter);
++  std::shared_ptr<vsag::Index>& get_index() {return index_;}
++  void set_index(std::shared_ptr<vsag::Index> hnsw) {index_ = hnsw;}
++  vsag::Allocator* get_allocator() {return allocator_;}
++  inline bool get_use_static() {return use_static_;}
++  inline int get_max_degree() {return max_degree_;}
++  inline int get_ef_construction() {return ef_construction_;}
++  inline int get_ef_search() {return ef_search_;}
++  inline int get_dim() {return dim_;}
++  
++private:
++  bool is_created_;
++  bool is_build_;
++  bool use_static_;
++  int max_degree_;
++  int ef_construction_;
++  int ef_search_;
++  int dim_;
++  std::shared_ptr<vsag::Index> index_;
++  vsag::Allocator* allocator_;
++};
++
++int HnswIndexHandler::build_index(const vsag::DatasetPtr& base) 
++{
++    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
++    if (const auto num = index_->Build(base); num.has_value()) {
++        return 0;
++    } else {
++        error = num.error().type;
++    }
++    return static_cast<int>(error);
++}
++
++int HnswIndexHandler::get_index_number() 
++{
++    return index_->GetNumElements();
++}
++
++int HnswIndexHandler::add_index(const vsag::DatasetPtr& incremental) 
++{
++    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
++    if (const auto num = index_->Add(incremental); num.has_value()) {
++        vsag::logger::debug(" after add index, index count {}", get_index_number());
++        return 0;
++    } else {
++        error = num.error().type;
++    }
++    return static_cast<int>(error);
++}
++
++int HnswIndexHandler::knn_search(const vsag::DatasetPtr& query, int64_t topk,
++               const std::string& parameters,
++               const float*& dist, const int64_t*& ids, int64_t &result_size,
++               const std::function<bool(int64_t)>& filter) {
++    vsag::logger::debug("  search_parameters:{}", parameters);
++    vsag::logger::debug("  topk:{}", topk);
++    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
++
++    auto result = index_->KnnSearch(query, topk, parameters, filter);
++    if (result.has_value()) {
++        //result的生命周期
++        result.value()->Owner(false);
++        ids = result.value()->GetIds();
++        dist = result.value()->GetDistances();
++        result_size = result.value()->GetDim();
++        // print the results
++        for (int64_t i = 0; i < result_size; ++i) {
++            vsag::logger::debug("  knn search id : {}, distance : {}",ids[i],dist[i]);
++        }
++        return 0; 
++    } else {
++        error = result.error().type;
++    }
++
++    return static_cast<int>(error);
++}
++
++bool is_init_ = vsag::init();
++
++void
++set_log_level(int64_t level_num) {
++    vsag::Logger::Level log_level = static_cast<vsag::Logger::Level>(level_num);
++    vsag::Options::Instance().logger()->SetLevel(log_level);
++}
++
++bool is_init() {
++    vsag::logger::debug("TRACE LOG[Init VsagLib]:");
++    if (is_init_) {
++        vsag::logger::debug("   Init VsagLib success");
++    } else {
++        vsag::logger::debug("   Init VsagLib fail");
++    }
++    return is_init_; 
++}
++
++
++void set_logger(void *logger_ptr) {
++    vsag::Options::Instance().set_logger(static_cast<vsag::Logger*>(logger_ptr));
++    vsag::Logger::Level log_level = static_cast<vsag::Logger::Level>(1);//default is debug level
++    vsag::Options::Instance().logger()->SetLevel(log_level);
++}
++
++void set_block_size_limit(uint64_t size) {
++    vsag::Options::Instance().set_block_size_limit(size);
++}
++
++bool is_supported_index(IndexType index_type) {
++    return INVALID_INDEX_TYPE < index_type && index_type < MAX_INDEX_TYPE;
++}
++
++int create_index(VectorIndexPtr& index_handler, IndexType index_type,
++                 const char* dtype,
++                 const char* metric, int dim,
++                 int max_degree, int ef_construction, int ef_search, void* allocator)
++{   
++    vsag::logger::debug("TRACE LOG[create_index]:");
++    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
++    int ret = 0;
++    if (dtype == nullptr || metric == nullptr) {
++        vsag::logger::debug("   null pointer addr, dtype:{}, metric:{}", (void*)dtype, (void*)metric);
++        return static_cast<int>(error);
++    }
++    SlowTaskTimer t("create_index");
++    vsag::Allocator* vsag_allocator = NULL;
++    bool is_support = is_supported_index(index_type);
++    vsag::logger::debug("   index type : {}, is_supported : {}", static_cast<int>(index_type), is_support);
++    if (allocator == NULL) {
++        vsag_allocator = NULL;
++        vsag::logger::debug("   allocator is null ,use default_allocator");
++    } else {
++        vsag_allocator =  static_cast<vsag::Allocator*>(allocator);
++        vsag::logger::debug("   allocator_addr:{}",allocator);
++    }
++
++    if (is_support) {
++        // create index
++        std::shared_ptr<vsag::Index> hnsw;
++        bool use_static = false;
++        nlohmann::json hnsw_parameters{{"max_degree", max_degree},
++                                {"ef_construction", ef_construction},
++                                {"ef_search", ef_search},
++                                {"use_static", use_static}};
++        nlohmann::json index_parameters{{"dtype", dtype}, {"metric_type", metric}, {"dim", dim}, {"hnsw", hnsw_parameters}}; 
++        if (auto index = vsag::Factory::CreateIndex("hnsw", index_parameters.dump(), vsag_allocator);
++            index.has_value()) {
++            hnsw = index.value();
++            HnswIndexHandler* hnsw_index = new HnswIndexHandler(true,
++                                                                false,
++                                                                use_static,
++                                                                max_degree,
++                                                                ef_construction,
++                                                                ef_search,
++                                                                dim,
++                                                                hnsw,
++                                                                vsag_allocator);
++            index_handler = static_cast<VectorIndexPtr>(hnsw_index);
++            vsag::logger::debug("   success to create hnsw index , index parameter:{}, allocator addr:{}",index_parameters.dump(), (void*)vsag_allocator);
++            return 0;
++        } else {
++            error = index.error().type;
++            vsag::logger::debug("   fail to create hnsw index , index parameter:{}", index_parameters.dump());
++        }
++    } else {
++        error = vsag::ErrorType::UNSUPPORTED_INDEX;
++        vsag::logger::debug("   fail to create hnsw index , index type not supported:{}", static_cast<int>(index_type));
++    }
++    ret = static_cast<int>(error);
++    if (ret != 0) {
++        vsag::logger::error("   create index error happend, ret={}", static_cast<int>(error));
++    }
++    return ret;
++}
++
++int build_index(VectorIndexPtr& index_handler,float* vector_list, int64_t* ids, int dim, int size) {
++    vsag::logger::debug("TRACE LOG[build_index]:");
++    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
++    int ret =  0;
++    if (index_handler == nullptr || vector_list == nullptr || ids == nullptr) {
++        vsag::logger::debug("   null pointer addr, index_handler:{}, ids:{}, ids:{}",
++                                                   (void*)index_handler, (void*)vector_list, (void*)ids);
++        return static_cast<int>(error);
++    }
++    SlowTaskTimer t("build_index");
++    HnswIndexHandler* hnsw = static_cast<HnswIndexHandler*>(index_handler);
++    auto dataset = vsag::Dataset::Make();
++    dataset->Dim(dim)
++    ->NumElements(size)
++    ->Ids(ids)
++    ->Float32Vectors(vector_list)
++    ->Owner(false);
++    ret = hnsw->build_index(dataset);
++    if (ret != 0) {
++        vsag::logger::error("   build index error happend, ret={}", ret);
++    }
++    return ret;
++}
++
++
++int add_index(VectorIndexPtr& index_handler,float* vector, int64_t* ids, int dim, int size) {
++    vsag::logger::debug("TRACE LOG[add_index]:");
++    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
++    int ret = 0;
++    if (index_handler == nullptr || vector == nullptr || ids == nullptr) {
++        vsag::logger::debug("   null pointer addr, index_handler:{}, ids:{}, ids:{}",
++                                                   (void*)index_handler, (void*)vector, (void*)ids);
++        return static_cast<int>(error);
++    }
++    HnswIndexHandler* hnsw = static_cast<HnswIndexHandler*>(index_handler);
++    SlowTaskTimer t("add_index");
++    // add index
++    auto incremental = vsag::Dataset::Make();
++        incremental->Dim(dim)
++            ->NumElements(size)
++            ->Ids(ids)
++            ->Float32Vectors(vector)
++            ->Owner(false);
++    ret = hnsw->add_index(incremental);
++    if (ret != 0) {
++        vsag::logger::error("   add index error happend, ret={}", ret);
++    }
++    return ret;
++}
++
++int get_index_number(VectorIndexPtr& index_handler, int64_t &size) {
++    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
++    if (index_handler == nullptr) {
++        vsag::logger::debug("   null pointer addr, index_handler:{}", (void*)index_handler);
++        return static_cast<int>(error);
++    }
++    HnswIndexHandler* hnsw = static_cast<HnswIndexHandler*>(index_handler);
++    size = hnsw->get_index_number();
++    return 0;
++}
++
++int knn_search(VectorIndexPtr& index_handler,float* query_vector,int dim, int64_t topk,
++               const float*& dist, const int64_t*& ids, int64_t &result_size, int ef_search,
++               void* invalid) {
++    vsag::logger::debug("TRACE LOG[knn_search]:");
++    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
++    int ret = 0;
++    if (index_handler == nullptr || query_vector == nullptr) {
++        vsag::logger::debug("   null pointer addr, index_handler:{}, query_vector:{}",
++                                                   (void*)index_handler, (void*)query_vector);
++        return static_cast<int>(error);
++    }
++    SlowTaskTimer t("knn_search");
++    roaring::api::roaring64_bitmap_t *bitmap = static_cast<roaring::api::roaring64_bitmap_t*>(invalid);
++    auto filter = [bitmap](int64_t id) -> bool {
++        return roaring::api::roaring64_bitmap_contains(bitmap, id);
++    };
++    nlohmann::json search_parameters{{"hnsw", {{"ef_search", ef_search}}}};
++    HnswIndexHandler* hnsw = static_cast<HnswIndexHandler*>(index_handler);
++    auto query = vsag::Dataset::Make();
++    query->NumElements(1)->Dim(dim)->Float32Vectors(query_vector)->Owner(false);
++    ret = hnsw->knn_search(query, topk, search_parameters.dump(), dist, ids, result_size, filter);
++    if (ret != 0) {
++        vsag::logger::error("   knn search error happend, ret={}", ret);
++    }
++    return ret;
++}
++
++int serialize(VectorIndexPtr& index_handler, const std::string dir) {
++    vsag::logger::debug("TRACE LOG[serialize]:");
++    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
++    int ret =  0;
++    if (index_handler == nullptr) {
++        vsag::logger::debug("   null pointer addr, index_handler:{}", (void*)index_handler);
++        return static_cast<int>(error);
++    }
++    HnswIndexHandler* hnsw = static_cast<HnswIndexHandler*>(index_handler);
++    if (auto bs = hnsw->get_index()->Serialize(); bs.has_value()) {
++        hnsw = nullptr;
++        auto keys = bs->GetKeys();
++        for (auto key : keys) {
++            vsag::Binary b = bs->Get(key);
++            std::ofstream file(dir + "hnsw.index." + key, std::ios::binary);
++            file.write((const char*)b.data.get(), b.size);
++            file.close();
++        }
++        std::ofstream metafile(dir + "hnsw.index._meta", std::ios::out);
++        for (auto key : keys) {
++            metafile << key << std::endl;
++        }
++        metafile.close();
++        return 0;
++    } else {
++        error = bs.error().type;
++    }
++    ret = static_cast<int>(error);
++    if (ret != 0) {
++        vsag::logger::error("   serialize error happend, ret={}", ret);
++    }
++    return ret;
++}
++
++int fserialize(VectorIndexPtr& index_handler, std::ostream& out_stream) {
++    vsag::logger::debug("TRACE LOG[fserialize]:");
++    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
++    int ret = 0;
++    if (index_handler == nullptr) {
++        vsag::logger::debug("   null pointer addr, index_handler:{}", (void*)index_handler);
++        return static_cast<int>(error);
++    }
++    HnswIndexHandler* hnsw = static_cast<HnswIndexHandler*>(index_handler);
++    if (auto bs = hnsw->get_index()->Serialize(out_stream); bs.has_value()) {
++        return 0;
++    } else {
++        error = bs.error().type;
++    }
++    ret = static_cast<int>(error);
++    if (ret != 0) {
++        vsag::logger::error("   fserialize error happend, ret={}", ret);
++    }
++    return ret;
++}
++
++int fdeserialize(VectorIndexPtr& index_handler, std::istream& in_stream) {
++    vsag::logger::debug("TRACE LOG[fdeserialize]:");
++    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
++    int ret = 0;
++    if (index_handler == nullptr) {
++        vsag::logger::debug("   null pointer addr, index_handler:{}", (void*)index_handler);
++        return static_cast<int>(error);
++    }
++    HnswIndexHandler* hnsw = static_cast<HnswIndexHandler*>(index_handler);
++    std::shared_ptr<vsag::Index> hnsw_index;
++    bool use_static = hnsw->get_use_static();
++    int max_degree = hnsw->get_max_degree();
++    int ef_construction = hnsw->get_ef_construction();
++    int ef_search = hnsw->get_ef_search();
++    int dim = hnsw->get_dim();
++    nlohmann::json hnsw_parameters{{"max_degree", max_degree},
++                                {"ef_construction", ef_construction},
++                                {"ef_search", ef_search},
++                                {"use_static", use_static}};
++    nlohmann::json index_parameters{
++        {"dtype", "float32"}, {"metric_type", "l2"}, {"dim", dim}, {"hnsw", hnsw_parameters}};
++    vsag::logger::debug("   Deserilize hnsw index , index parameter:{}, allocator addr:{}",index_parameters.dump(),(void*)hnsw->get_allocator());
++    if (auto index = vsag::Factory::CreateIndex("hnsw", index_parameters.dump(), hnsw->get_allocator());
++        index.has_value()) {
++        hnsw_index = index.value();
++    } else {
++        error = index.error().type;
++        ret = static_cast<int>(error);
++    }
++    if (ret != 0) {
++
++    } else if (auto bs = hnsw_index->Deserialize(in_stream); bs.has_value()) {
++        hnsw->set_index(hnsw_index);
++        return 0;
++    } else {
++        error = bs.error().type;
++        ret = static_cast<int>(error);
++    }
++    if (ret != 0) {
++        vsag::logger::error("   fdeserialize error happend, ret={}", ret);
++    }
++    return ret;
++}
++
++int deserialize_bin(VectorIndexPtr& index_handler,const std::string dir) {
++    vsag::logger::debug("TRACE LOG[deserialize]:");
++    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
++    int ret = 0;
++    if (index_handler == nullptr) {
++        vsag::logger::debug("   null pointer addr, index_handler={}", (void*)index_handler);
++        return static_cast<int>(error);
++    }
++    HnswIndexHandler* hnsw = static_cast<HnswIndexHandler*>(index_handler);
++    std::ifstream metafile(dir + "hnsw.index._meta", std::ios::in);
++    std::vector<std::string> keys;
++    std::string line;
++    while (std::getline(metafile, line)) {
++        keys.push_back(line);
++    }
++    metafile.close();
++
++    vsag::BinarySet bs;
++    for (auto key : keys) {
++        std::ifstream file(dir + "hnsw.index." + key, std::ios::in);
++        file.seekg(0, std::ios::end);
++        vsag::Binary b;
++        b.size = file.tellg();
++        b.data.reset(new int8_t[b.size]);
++        file.seekg(0, std::ios::beg);
++        file.read((char*)b.data.get(), b.size);
++        bs.Set(key, b);
++    }
++    bool use_static = hnsw->get_use_static();
++    int max_degree = hnsw->get_max_degree();
++    int ef_construction = hnsw->get_ef_construction();
++    int ef_search = hnsw->get_ef_search();
++    int dim = hnsw->get_dim();
++    nlohmann::json hnsw_parameters{{"max_degree", max_degree},
++                                {"ef_construction", ef_construction},
++                                {"ef_search", ef_search},
++                                {"use_static", use_static}};
++    nlohmann::json index_parameters{
++        {"dtype", "float32"}, {"metric_type", "l2"}, {"dim", dim}, {"hnsw", hnsw_parameters}};
++    vsag::logger::debug("   Deserilize hnsw index , index parameter:{}, allocator addr:{}",index_parameters.dump(),(void*)hnsw->get_allocator());
++    std::shared_ptr<vsag::Index> hnsw_index;
++    if (auto index = vsag::Factory::CreateIndex("hnsw", index_parameters.dump(),hnsw->get_allocator());
++        index.has_value()) {
++        hnsw_index = index.value();
++    } else {
++        error = index.error().type;
++        return static_cast<int>(error);
++    }
++    hnsw_index->Deserialize(bs);
++    hnsw->set_index(hnsw_index);
++    return 0;
++}
++
++int delete_index(VectorIndexPtr& index_handler) {
++    vsag::logger::debug("TRACE LOG[delete_index]");
++    vsag::logger::debug("   delete index handler addr {} : hnsw index use count {}",(void*)static_cast<HnswIndexHandler*>(index_handler)->get_index().get(),static_cast<HnswIndexHandler*>(index_handler)->get_index().use_count());
++    if (index_handler != NULL) {
++        delete static_cast<HnswIndexHandler*>(index_handler);
++        index_handler = NULL;
++    }
++    return 0;
++}
++
++int64_t example() {
++    return 0;
++}
++
++extern bool is_init_c() {
++    return is_init();
++}
++
++extern void set_logger_c(void *logger_ptr) {
++    set_logger(logger_ptr);
++}
++
++extern void set_block_size_limit_c(uint64_t size) {
++    set_block_size_limit(size);
++}
++
++extern bool is_supported_index_c(IndexType index_type) {
++    return is_supported_index(index_type);
++}
++
++extern int create_index_c(VectorIndexPtr& index_handler, IndexType index_type,
++                 const char* dtype,
++                 const char* metric, int dim,
++                 int max_degree, int ef_construction, int ef_search, void* allocator)
++{   
++    return create_index(index_handler, index_type, dtype, metric, dim, max_degree, ef_construction, ef_search, allocator);
++}
++
++extern int build_index_c(VectorIndexPtr& index_handler,float* vector_list, int64_t* ids, int dim, int size) {
++
++    return build_index(index_handler, vector_list, ids, dim, size);
++}
++
++
++extern int add_index_c(VectorIndexPtr& index_handler,float* vector, int64_t* ids, int dim, int size) {
++    return  add_index(index_handler, vector, ids, dim, size);
++}
++
++extern int get_index_number_c(VectorIndexPtr& index_handler, int64_t &size) {
++    return get_index_number(index_handler, size);
++}
++
++extern int knn_search_c(VectorIndexPtr& index_handler,float* query_vector,int dim, int64_t topk,
++               const float*& dist, const int64_t*& ids, int64_t &result_size, int ef_search, void* invalid) {
++    return knn_search(index_handler, query_vector, dim, topk, dist, ids, result_size, ef_search, invalid);
++}
++
++extern int serialize_c(VectorIndexPtr& index_handler, const std::string dir) {
++    return serialize(index_handler, dir);
++}
++
++extern int fserialize_c(VectorIndexPtr& index_handler, std::ostream& out_stream) {
++    return fserialize(index_handler, out_stream);
++}
++
++extern int delete_index_c(VectorIndexPtr& index_handler) {
++    return delete_index(index_handler);
++}
++extern int fdeserialize_c(VectorIndexPtr& index_handler, std::istream& in_stream) {
++    return fdeserialize(index_handler, in_stream);
++}
++
++extern int deserialize_bin_c(VectorIndexPtr& index_handler,const std::string dir) {
++    return deserialize_bin(index_handler, dir);
++}
++
++} //namespace obvectorlib
+\ No newline at end of file
+diff --git a/ob_vsag_lib.h b/ob_vsag_lib.h
+new file mode 100644
+index 0000000..c2b3ea1
+--- /dev/null
++++ b/ob_vsag_lib.h
+@@ -0,0 +1,62 @@
++#ifndef OB_VSAG_LIB_H
++#define OB_VSAG_LIB_H
++#include <stdint.h>
++#include <iostream>
++#include <map>
++namespace obvectorlib {
++
++
++int64_t example();
++typedef void* VectorIndexPtr;
++extern bool is_init_;
++enum IndexType {
++  INVALID_INDEX_TYPE = -1,
++  HNSW_TYPE = 0,
++  MAX_INDEX_TYPE
++};
++/**
++ *   * Get the version based on git revision
++ *     * 
++ *       * @return the version text
++ *         */
++extern std::string
++version();
++
++/**
++ *   * Init the vsag library
++ *     * 
++ *       * @return true always
++ *         */
++extern bool is_init();
++
++/*
++ * *trace = 0
++ * *debug = 1
++ * *info = 2
++ * *warn = 3
++ * *err = 4
++ * *critical = 5
++ * *off = 6
++ * */
++extern void set_log_level(int64_t level_num);
++extern void set_logger(void *logger_ptr);
++extern void set_block_size_limit(uint64_t size);
++extern bool is_supported_index(IndexType index_type);
++extern int create_index(VectorIndexPtr& index_handler, IndexType index_type,
++                        const char* dtype,
++                        const char* metric,int dim,
++                        int max_degree, int ef_construction, int ef_search, void* allocator = NULL);
++extern int build_index(VectorIndexPtr& index_handler, float* vector_list, int64_t* ids, int dim, int size);
++extern int add_index(VectorIndexPtr& index_handler, float* vector, int64_t* ids, int dim, int size);
++extern int get_index_number(VectorIndexPtr& index_handler, int64_t &size);
++extern int knn_search(VectorIndexPtr& index_handler,float* query_vector, int dim, int64_t topk,
++                      const float*& dist, const int64_t*& ids, int64_t &result_size, int ef_search,
++                       void* invalid = NULL);
++extern int serialize(VectorIndexPtr& index_handler, const std::string dir);
++extern int deserialize_bin(VectorIndexPtr& index_handler, const std::string dir);
++extern int fserialize(VectorIndexPtr& index_handler, std::ostream& out_stream);
++extern int fdeserialize(VectorIndexPtr& index_handler, std::istream& in_stream);
++extern int delete_index(VectorIndexPtr& index_handler);
++} // namesapce obvectorlib
++#endif // OB_VSAG_LIB_H
++
+diff --git a/ob_vsag_lib_c.h b/ob_vsag_lib_c.h
+new file mode 100644
+index 0000000..af46203
+--- /dev/null
++++ b/ob_vsag_lib_c.h
+@@ -0,0 +1,87 @@
++#ifndef OB_VSAG_LIB_C_H
++#define OB_VSAG_LIB_C_H
++#include "ob_vsag_lib.h"
++#include <dlfcn.h>
++// Define a macro to load function symbols
++#define LOAD_FUNCTION(handle, typeName, funcName)                             \
++    do {                                                            \
++        dlerror();  /* Clear existing errors */                     \
++        funcName = (typeName)dlsym((handle), (#funcName));          \
++        const char* dlsym_error = dlerror();                        \
++        if (dlsym_error) {                                          \
++            fprintf(stderr, "Cannot load symbol '" #funcName "': %s\n", dlsym_error); \
++            dlclose(handle);                                        \
++            return EXIT_FAILURE;                                    \
++        }                                                           \
++    } while (0)
++
++
++
++namespace obvectorlib {
++#ifdef __cplusplus
++extern "C" {
++#endif
++typedef bool (*is_init_ptr)();
++extern bool is_init_c();
++
++typedef void (*set_log_level_ptr)(int64_t level_num);
++extern void set_log_level_c(int64_t level_num);
++
++typedef void (*set_logger_ptr)(void *logger_ptr);
++extern void set_logger_c(void *logger_ptr);
++
++typedef void (*set_block_size_limit_ptr)(uint64_t size);
++extern void set_block_size_limit_c(uint64_t size);
++
++typedef bool (*is_supported_index_ptr)(IndexType index_type);
++extern bool is_supported_index_c(IndexType index_type);
++
++typedef int (*create_index_ptr)(VectorIndexPtr& index_handler, IndexType index_type,
++                        const char* dtype,
++                        const char* metric,int dim,
++                        int max_degree, int ef_construction, int ef_search, void* allocator);
++extern int create_index_c(VectorIndexPtr& index_handler, IndexType index_type,
++                        const char* dtype,
++                        const char* metric,int dim,
++                        int max_degree, int ef_construction, int ef_search, void* allocator = NULL);
++
++typedef int (*build_index_ptr)(VectorIndexPtr& index_handler, float* vector_list, int64_t* ids, int dim, int size);              
++extern int build_index_c(VectorIndexPtr& index_handler, float* vector_list, int64_t* ids, int dim, int size);
++
++typedef int (*add_index_ptr)(VectorIndexPtr& index_handler, float* vector, int64_t* ids, int dim, int size);
++extern int add_index_c(VectorIndexPtr& index_handler, float* vector, int64_t* ids, int dim, int size);
++
++typedef int (*get_index_number_ptr)(VectorIndexPtr& index_handler, int64_t &size);
++extern int get_index_number_c(VectorIndexPtr& index_handler, int64_t &size);
++
++typedef int (*knn_search_ptr)(VectorIndexPtr& index_handler,float* query_vector, int dim, int64_t topk,
++                      const float*& dist, const int64_t*& ids, int64_t &result_size, int ef_search,
++                       void* invalid);
++extern int knn_search_c(VectorIndexPtr& index_handler,float* query_vector, int dim, int64_t topk,
++                      const float*& dist, const int64_t*& ids, int64_t &result_size, int ef_search,
++                      void* invalid = NULL);
++
++typedef int (*serialize_ptr)(VectorIndexPtr& index_handler, const std::string dir);          
++extern int serialize_c(VectorIndexPtr& index_handler, const std::string dir);
++
++typedef int (*deserialize_bin_ptr)(VectorIndexPtr& index_handler, const std::string dir);
++extern int deserialize_bin_c(VectorIndexPtr& index_handler, const std::string dir);
++ 
++typedef int (*delete_index_ptr)(VectorIndexPtr& index_handler);
++extern int delete_index_c(VectorIndexPtr& index_handler);
++
++typedef int (*fserialize_ptr)(VectorIndexPtr& index_handler, std::ostream& out_stream);
++extern int fserialize_c(VectorIndexPtr& index_handler, std::ostream& out_stream);
++
++typedef int (*fdeserialize_ptr)(VectorIndexPtr& index_handler, std::istream& in_stream);
++extern int fdeserialize_c(VectorIndexPtr& index_handler, std::istream& in_stream);
++
++
++
++
++#ifdef __cplusplus
++}  // extern "C"
++#endif
++} // namesapce obvectorlib
++
++#endif // OB_VSAG_LIB_H
+

@@ -1,15 +1,15 @@
 Name: devdeps-s2geometry
-Version: 0.9.0
+Version: 0.10.0
 Release: %(echo $RELEASE)%{?dist}
 Summary: This is a package for manipulating geometric shapes.
 Group: alibaba/application
-License: Apache2.0
+License: Apache 2.0
 AutoReqProv:no
 %undefine _missing_build_ids_terminate_build
 %define _build_id_links compat
 %define _prefix /usr/local/oceanbase/deps/devel
 %define _product_prefix s2
-%define _src s2geometry-0.9.0
+%define _src s2geometry-%{version}
 
 
 %description
@@ -24,7 +24,7 @@ This makes it especially suitable for working with geographic data.
 %install
 # create dirs
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}
-mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib
+mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib64
 cd $OLDPWD/../;
 rm -rf %{_src}
 tar xf %{_src}.tar.gz
@@ -37,35 +37,21 @@ rm -rf ${build_dir}
 mkdir -p ${tmp_install_dir}
 mkdir -p ${build_dir}
 
-# disable compiling python interface
-sed -i '/find_package(SWIG)/d' ${source_dir}/CMakeLists.txt
-sed -i '/find_package(PythonInterp)/d' ${source_dir}/CMakeLists.txt
-sed -i '/find_package(PythonLibs)/d' ${source_dir}/CMakeLists.txt
-
-# disable compiling test file
-sed -i '/add_library(s2testing STATIC/d' ${source_dir}/CMakeLists.txt
-sed -i '/s2builderutil_testing.cc/d' ${source_dir}/CMakeLists.txt
-sed -i '/s2shapeutil_testing.cc/d' ${source_dir}/CMakeLists.txt
-sed -i '/s2testing.cc/d' ${source_dir}/CMakeLists.txt
-sed -i 's/install(TARGETS s2 s2testing DESTINATION lib)/install(TARGETS s2 DESTINATION lib)/' ${source_dir}/CMakeLists.txt
-
-# fix uint64 error in aarch64: https://github.com/google/s2geometry/pull/166
-cp ${source_dir}/../s2geometry-0.9.0-uint64.patch ${source_dir}
-patch -p0 < s2geometry-0.9.0-uint64.patch
-
 # compile and install
-export PATH=$TOOLS_DIR/bin/:$PATH
-export CC=$TOOLS_DIR/bin/gcc
-export CXX=$TOOLS_DIR/bin/g++
+export CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
+export CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
+export LDFLAGS="-pie -z noexecstack -z now"
+
 cd ${build_dir}
-OPENSSL_ROOT_DIR=$DEP_DIR cmake .. -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} -DBUILD_SHARED_LIBS=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
+OPENSSL_ROOT_DIR=$DEP_DIR
+cmake .. -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} -DCMAKE_PREFIX_PATH=$DEP_DIR -DCMAKE_CXX_STANDARD=14 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DBUILD_SHARED_LIBS=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES}
 make install
 
 # install files
 cp -r ${tmp_install_dir}/include/s2/* $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}
-cp -r ${tmp_install_dir}/lib/* $RPM_BUILD_ROOT/%{_prefix}/lib
+cp -r ${tmp_install_dir}/lib64/* $RPM_BUILD_ROOT/%{_prefix}/lib64/
 
 # package infomation
 %files 
@@ -78,5 +64,7 @@ cp -r ${tmp_install_dir}/lib/* $RPM_BUILD_ROOT/%{_prefix}/lib
 %postun -p /sbin/ldconfig
 
 %changelog
+* Thu Dec 19 2024 huaixin.lmy
+- version 0.10.0
 * Mon Mar 09 2022 xuhao.yf
 - version 0.9.0

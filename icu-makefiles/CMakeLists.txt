@@ -485,12 +485,21 @@ ADD_DEPENDENCIES(icu_all icuuc icui18n icustubdata)
 
 
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/${ICU_VERSION_DIR}/source/common/unicode/
-      DESTINATION include/unicode
-      PATTERN "*.h")
+      DESTINATION include/common/unicode
+      FILES_MATCHING PATTERN "*.h")
 
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/${ICU_VERSION_DIR}/source/common/
-      DESTINATION include/
-      PATTERN "*.h")
+      DESTINATION include/common
+      FILES_MATCHING PATTERN "*.h")
+
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/${ICU_VERSION_DIR}/source/i18n/unicode/
+      DESTINATION include/i18n/unicode
+      FILES_MATCHING PATTERN "*.h")
+
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/${ICU_VERSION_DIR}/source/i18n/
+      DESTINATION include/i18n
+      FILES_MATCHING PATTERN "*.h")
 
 install(TARGETS icuuc icui18n icustubdata
         DESTINATION lib)
+

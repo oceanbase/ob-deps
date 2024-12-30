@@ -28,7 +28,7 @@ cd $ROOT_DIR
 unzip $ROOT_DIR/devdeps-relaxed-rapidjson-$VERSION.zip
 cd $ROOT_DIR/rapidjson-27c3a8dc0e2c9218fe94986d249a12b5ed838f1d
 echo "move patch file here "$(pwd)
-mv $ROOT_DIR/devdeps-relaxed-rapidjson.diff .
+mv $ROOT_DIR/patch/devdeps-relaxed-rapidjson.diff .
 patch -p1 < devdeps-relaxed-rapidjson.diff
 
 cd rpm
