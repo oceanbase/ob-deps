@@ -1,0 +1,15 @@
+diff --git a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jni_helper.c b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jni_helper.c
+index 1c833a7756..ecb4cf862d 100644
+--- a/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jni_helper.c
++++ b/hadoop-hdfs-project/hadoop-hdfs-native-client/src/main/native/libhdfs/jni_helper.c
+@@ -962,6 +962,8 @@ JNIEnv* getJNIEnv(void)
+ fail:
+     fprintf(stderr, "getJNIEnv: getGlobalJNIEnv failed\n");
+     hdfsThreadDestructor(state);
++    threadLocalStorageSet(NULL);
++    THREAD_LOCAL_STORAGE_SET_QUICK(NULL);
+     return NULL;
+ }
+ 
+-- 
+2.17.0

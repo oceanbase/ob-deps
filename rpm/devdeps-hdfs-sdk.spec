@@ -105,6 +105,7 @@ tar xf %{_src}.tar.gz
 cd %{_src_path}
 git init
 git apply --whitespace=fix ../patch/hdfs.patch
+git apply --whitespace=fix ../patch/hdfs2.patch
 
 mvn -pl :hadoop-hdfs-native-client -Pnative compile -Dnative_make_args="copy_hadoop_files"
 
