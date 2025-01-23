@@ -13,7 +13,7 @@ if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/vsag-$VERSION.*[tar|gz|bz2|xz|zi
     for cnt in {1..6}
     do
         echo "Download source code with retry cnt = "$cnt
-        wget --no-check-certificate http://github.com/alipay/vsag/archive/refs/tags/v0.11.11.tar.gz -O $ROOT_DIR/vsag-$VERSION.tar.gz
+        wget --no-check-certificate http://github.com/alipay/vsag/archive/refs/tags/v0.12.0.tar.gz -O $ROOT_DIR/vsag-$VERSION.tar.gz
 	if [[ $? == 0 ]];then
             break
         fi
