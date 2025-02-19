@@ -29,8 +29,9 @@ export CC=/usr/local/oceanbase/devtools/bin/gcc
 export CXX=/usr/local/oceanbase/devtools/bin/g++
 export FC=/usr/local/oceanbase/devtools/bin/gfortran
 
-export CFLAGS="-fPIC -D_GLIBCXX_USE_CXX11_ABI=0 -z noexecstack -z now -pie -fstack-protector-strong"
-export CXXFLAGS="-fPIC  -D_GLIBCXX_USE_CXX11_ABI=0 -z noexecstack -z now -pie -fstack-protector-strong"
+export CFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
+export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
+export LDFLAGS="-z noexecstack -z now -pie"
  
 git init
 git apply ../patch/vsag.patch
