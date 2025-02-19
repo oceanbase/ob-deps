@@ -1,19 +1,19 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 905ddde..b1c6723 100644
+index c0fd1df..58a9f22 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -39,8 +39,8 @@ option (ENABLE_FRAME_POINTER "Whether to build with -fno-omit-frame-pointer" ON)
+@@ -38,8 +38,8 @@ option (ENABLE_TSAN "Whether to turn Thread Sanitizer ON or OFF" OFF)
+ option (ENABLE_FRAME_POINTER "Whether to build with -fno-omit-frame-pointer" ON)
  option (ENABLE_THIN_LTO "Whether to build with thin lto -flto=thin" OFF)
  option (ENABLE_CCACHE "Whether to open ccache" OFF)
- option (ENABLE_COVERAGE "Enable gcov (debug, Linux builds only)" OFF)
 -option (ENABLE_INTEL_MKL "Enable intel-mkl (x86 platform only)" ON)
 -option (ENABLE_CXX11_ABI "Use CXX11 ABI" ON)
 +option (ENABLE_INTEL_MKL "Enable intel-mkl (x86 platform only)" OFF)
 +option (ENABLE_CXX11_ABI "Use CXX11 ABI" OFF)
  option (ENABLE_LIBCXX "Use libc++ instead of libstdc++" OFF) # only support in clang
  option (ENABLE_TOOLS "Whether compile vsag tools" ON)
- option (ENABLE_EXAMPLES "Whether compile examples" OFF)
-@@ -50,6 +50,8 @@ option (DISABLE_AVX_FORCE "Force disable avx and higher instructions" OFF)
+ option (ENABLE_EXAMPLES "Whether compile examples" ON)
+@@ -49,6 +49,8 @@ option (DISABLE_AVX_FORCE "Force disable avx and higher instructions" OFF)
  option (DISABLE_AVX2_FORCE "Force disable avx2 and higher instructions" OFF)
  option (DISABLE_AVX512_FORCE "Force disable avx512 instructions" OFF)
  
@@ -22,7 +22,7 @@ index 905ddde..b1c6723 100644
  
  if (ENABLE_CXX11_ABI)
      add_definitions (-D_GLIBCXX_USE_CXX11_ABI=1)
-@@ -294,3 +296,32 @@ add_custom_target (version
+@@ -302,3 +304,32 @@ add_custom_target (version
          -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateVersionHeader.cmake
  )
  add_dependencies (vsag version)
@@ -291,10 +291,10 @@ index 0000000..9d26252
 +#endif // DEFAULT_ALLOCATOR_H
 diff --git a/example/hnsw_example.cpp b/example/hnsw_example.cpp
 new file mode 100644
-index 0000000..a58c0e9
+index 0000000..048dd5e
 --- /dev/null
 +++ b/example/hnsw_example.cpp
-@@ -0,0 +1,255 @@
+@@ -0,0 +1,347 @@
 +#include "../ob_vsag_lib.h"
 +#include "default_allocator.h"
 +#include <random>
@@ -312,7 +312,7 @@ index 0000000..a58c0e9
 +    bool is_init = obvectorlib::is_init();
 +    //set_log_level(1);
 +    obvectorlib::VectorIndexPtr index_handler = NULL;
-+    int dim = 128;
++    int dim = 1536;
 +    int max_degree = 16;
 +    int ef_search = 200;
 +    int ef_construction = 100;
@@ -325,7 +325,7 @@ index 0000000..a58c0e9
 +    int ret_create_index = obvectorlib::create_index(index_handler,
 +                                                     obvectorlib::HNSW_TYPE,
 +                                                     DATATYPE_FLOAT32,
-+                                                     METRIC_IP,
++                                                     METRIC_L2,
 +                                                     dim,
 +                                                     max_degree,
 +                                                     ef_construction,
@@ -333,14 +333,14 @@ index 0000000..a58c0e9
 +                                                     &default_allocator);
 +   
 +    if (ret_create_index!=0) return 333;
-+    int num_vectors = 10;
++    int num_vectors = 10000;
 +    auto ids = new int64_t[num_vectors];
 +    auto vectors = new float[dim * num_vectors];
 +    std::mt19937 rng;
 +    rng.seed(47);
 +    std::uniform_real_distribution<> distrib_real;
 +    for (int64_t i = 0; i < num_vectors; ++i) {
-+        ids[i] = i*2;
++        ids[i] = i;
 +    }
 +    for (int64_t i = 0; i < dim * num_vectors; ++i) {
 +        vectors[i] = distrib_real(rng);
@@ -351,16 +351,16 @@ index 0000000..a58c0e9
 +    int ret_get_element = obvectorlib::get_index_number(index_handler, num_size);
 +    std::cout<<"after add index, size is "<<num_size<<" " <<ret_get_element<<std::endl;
 +
-+    int inc_num = 1000;
++    int inc_num = 10000;
 +    auto inc = new float[dim * inc_num];
 +    for (int64_t i = 0; i < dim * inc_num; ++i) {
 +        inc[i] = distrib_real(rng);
 +    }
 +    auto ids2 = new int64_t[inc_num];
 +    for (int64_t i = 0; i < inc_num; ++i) {
-+        ids2[i] = i*2+1;
++        ids2[i] = i + num_vectors;
 +    }
-+    
++ 
 +    int ret_add_index = obvectorlib::add_index(index_handler, inc, ids2, dim,inc_num);
 +    ret_get_element = obvectorlib::get_index_number(index_handler, num_size);
 +    std::cout<<"after add index, size is "<<num_size<<" " <<ret_add_index<<std::endl;
@@ -371,21 +371,22 @@ index 0000000..a58c0e9
 +
 +    roaring::api::roaring64_bitmap_t* r1 = roaring::api::roaring64_bitmap_create();
 +
-+    roaring::api::roaring64_bitmap_add(r1, 18);
-+    roaring::api::roaring64_bitmap_add(r1, 1169);
-+    roaring::api::roaring64_bitmap_add(r1, 1285);
-+
 +    int ret_knn_search = obvectorlib::knn_search(index_handler, vectors+dim*(num_vectors-1), dim, 10,
 +                                                 result_dist,result_ids,result_size, 
-+                                                 100, r1);
-+    const std::string dir = "./";
-+    int ret_serialize_single = obvectorlib::serialize(index_handler,dir);
-+    int ret_deserilize_single_bin = 
-+                    obvectorlib::deserialize_bin(index_handler,dir);
-+ ret_knn_search = obvectorlib::knn_search(index_handler, vectors+dim*(num_vectors-1), dim, 10,
++                                                 100, r1, false, 1);
++    
++    roaring64_bitmap_add_range(r1, 0, 19800);
++
++    ret_knn_search = obvectorlib::knn_search(index_handler, vectors+dim*(num_vectors-1), dim, 10,
 +                                                 result_dist,result_ids,result_size, 
-+                                                 100, r1);
-+     obvectorlib::delete_index(index_handler);
++                                                 100, r1, false, 0.01);
++    const float *distances;
++    ret_knn_search = obvectorlib::cal_distance_by_id(index_handler, vectors+dim*(num_vectors-1), result_ids, result_size, distances);
++    for (int i = 0; i < result_size; i++) {
++        std::cout << "result: " << result_ids[i] << " " << result_dist[i] << std::endl;
++        std::cout << "calres: " << result_ids[i] << " " << distances[i] << std::endl;
++    }
++    obvectorlib::delete_index(index_handler);
 +    free(test_ptr);
 +    return 0;
 +}
@@ -536,7 +537,7 @@ index 0000000..a58c0e9
 +    const std::string dir = "./";
 +    int ret_serialize_single = serialize_c(index_handler,dir);
 +    int ret_deserilize_single_bin = deserialize_bin_c(index_handler,dir);
-+
++    obvectorlib::delete_index_c(index_handler);
 +
 +    // Clean up
 +    dlclose(handle);
@@ -544,18 +545,109 @@ index 0000000..a58c0e9
 +    return 0;
 +}
 +
++int64_t hnswsq_example() {
++    std::cout<<"test hns_sq_example: "<<std::endl;
++    bool is_init = obvectorlib::is_init();
++    obvectorlib::VectorIndexPtr index_handler = NULL;
++    int dim = 128;
++    int max_degree = 16;
++    int ef_search = 200;
++    int ef_construction = 100;
++    DefaultAllocator default_allocator;
++    const char* const METRIC_L2 = "l2";
++    const char* const METRIC_IP = "ip";
++
++    const char* const DATATYPE_FLOAT32 = "float32";
++    void * test_ptr = default_allocator.Allocate(10);
++    int ret_create_index = obvectorlib::create_index(index_handler,
++                                                     obvectorlib::HNSW_SQ_TYPE,
++                                                     DATATYPE_FLOAT32,
++                                                     METRIC_L2,
++                                                     dim,
++                                                     max_degree,
++                                                     ef_construction,
++                                                     ef_search,
++                                                     &default_allocator);
++   
++    if (ret_create_index!=0) return 333;
++    int num_vectors = 10000;
++    auto ids = new int64_t[num_vectors];
++    auto vectors = new float[dim * num_vectors];
++    std::mt19937 rng;
++    rng.seed(47);
++    std::uniform_real_distribution<> distrib_real;
++    for (int64_t i = 0; i < num_vectors; ++i) {
++        ids[i] = i + num_vectors*10;
++    }
++    for (int64_t i = 0; i < dim * num_vectors; ++i) {
++        vectors[i] = distrib_real(rng);
++    }
++    int ret_build_index = obvectorlib::build_index(index_handler, vectors, ids, dim, num_vectors);
++
++    int64_t num_size = 0;
++    int ret_get_element = obvectorlib::get_index_number(index_handler, num_size);
++    std::cout<<"after add index, size is "<<num_size<<" " <<ret_get_element<<std::endl;
++    
++    const float* result_dist;
++    const int64_t* result_ids;
++    int64_t result_size = 0;
++    auto query_vector = new float[dim];
++    for (int64_t i = 0; i < dim; ++i) {
++        query_vector[i] = distrib_real(rng);
++    }
++
++    roaring::api::roaring64_bitmap_t* r1 = roaring::api::roaring64_bitmap_create();
++
++    roaring::api::roaring64_bitmap_add(r1, 18);
++    roaring::api::roaring64_bitmap_add(r1, 1169);
++    roaring::api::roaring64_bitmap_add(r1, 1285);
++    std::cout << "before search" << std::endl;
++
++    int ret_knn_search = obvectorlib::knn_search(index_handler, query_vector, dim, 10,
++                                                 result_dist,result_ids,result_size, 
++                                                 100, r1);
++    
++    for (int i = 0; i < result_size; i++) {
++        std::cout << "result: " << result_ids[i] << " " << result_dist[i] << std::endl;
++    }
++    int inc_num = 1000;
++    auto inc = new float[dim * inc_num];
++    for (int64_t i = 0; i < dim * inc_num; ++i) {
++        inc[i] = distrib_real(rng);
++    }
++    auto ids2 = new int64_t[inc_num];
++    for (int64_t i = 0; i < inc_num; ++i) {
++        ids2[i] = i + num_vectors*100;
++    }
++
++    // const std::string dir = "./";
++    // int ret_serialize_single = obvectorlib::serialize(index_handler,dir);
++    // int ret_deserilize_single_bin = 
++    //                 obvectorlib::deserialize_bin(index_handler,dir);
++    // ret_knn_search = obvectorlib::knn_search(index_handler, query_vector, dim, 10,
++    //                                              result_dist,result_ids,result_size, 
++    //                                              100, r1);
++    // for (int i = 0; i < result_size; i++) {
++    //     std::cout << "result: " << result_ids[i] << " " << result_dist[i] << std::endl;
++    // }
++    obvectorlib::delete_index(index_handler);
++    free(test_ptr);
++    return 0;
++}
++
 +int
 +main() {
++    hnswsq_example();
 +    example();
-+    example_so();
++    //example_so();
 +    return 0;
 +}
 diff --git a/ob_vsag_lib.cpp b/ob_vsag_lib.cpp
 new file mode 100644
-index 0000000..55c68c4
+index 0000000..8e772e1
 --- /dev/null
 +++ b/ob_vsag_lib.cpp
-@@ -0,0 +1,672 @@
+@@ -0,0 +1,737 @@
 +
 +#include "ob_vsag_lib.h"
 +#include "ob_vsag_lib_c.h"
@@ -568,6 +660,7 @@ index 0000000..55c68c4
 +#include "vsag/allocator.h"
 +#include "vsag/factory.h"
 +#include "vsag/constants.h"
++#include "vsag/filter.h"
 +
 +#include "default_logger.h"
 +#include "vsag/logger.h"
@@ -603,6 +696,28 @@ index 0000000..55c68c4
 +    }
 +}
 +
++class ObVasgFilter : public vsag::Filter
++{
++public:
++    ObVasgFilter(float valid_ratio, const std::function<bool(int64_t)>& fallback_func) 
++        : valid_ratio_(valid_ratio), fallback_func_(fallback_func) 
++    {};
++
++    ~ObVasgFilter() {}
++    
++    bool CheckValid(int64_t id) const override {
++        return !fallback_func_(id);
++    }
++
++    float ValidRatio() const override {
++        return valid_ratio_;
++    }
++
++private:
++    float valid_ratio_;
++    std::function<bool(int64_t)> fallback_func_{nullptr};
++};
++
 +class HnswIndexHandler
 +{
 +public:
@@ -634,9 +749,11 @@ index 0000000..55c68c4
 +  int build_index(const vsag::DatasetPtr& base);
 +  int get_index_number();
 +  int add_index(const vsag::DatasetPtr& incremental);
++  int cal_distance_by_id(const float* vector, const int64_t* ids, int64_t count, const float*& dist);
 +  int knn_search(const vsag::DatasetPtr& query, int64_t topk,
 +                const std::string& parameters,
 +                const float*& dist, const int64_t*& ids, int64_t &result_size,
++                float valid_ratio, int index_type,
 +                const std::function<bool(int64_t)>& filter);
 +  std::shared_ptr<vsag::Index>& get_index() {return index_;}
 +  void set_index(std::shared_ptr<vsag::Index> hnsw) {index_ = hnsw;}
@@ -693,15 +810,32 @@ index 0000000..55c68c4
 +    return static_cast<int>(error);
 +}
 +
++int HnswIndexHandler::cal_distance_by_id(const float* vector, const int64_t* ids, int64_t count, const float*& dist)
++{
++    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
++    auto result = index_->CalDistanceById(vector, ids, count);
++    if (result.has_value()) {
++        result.value()->Owner(false);
++        dist = result.value()->GetDistances();
++        return 0;
++    } else {
++        error = result.error().type;
++    }
++    return static_cast<int>(error);
++}
++
 +int HnswIndexHandler::knn_search(const vsag::DatasetPtr& query, int64_t topk,
 +               const std::string& parameters,
 +               const float*& dist, const int64_t*& ids, int64_t &result_size,
++               float valid_ratio, int index_type,
 +               const std::function<bool(int64_t)>& filter) {
 +    vsag::logger::debug("  search_parameters:{}", parameters);
 +    vsag::logger::debug("  topk:{}", topk);
 +    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
-+
-+    auto result = index_->KnnSearch(query, topk, parameters, filter);
++    auto vsag_filter = std::make_shared<ObVasgFilter>(valid_ratio, filter);
++    auto result = index_type == HNSW_TYPE ? 
++                    index_->KnnSearch(query, topk, parameters, vsag_filter) : 
++                    index_->KnnSearch(query, topk, parameters, filter);
 +    if (result.has_value()) {
 +        //result的生命周期
 +        result.value()->Owner(false);
@@ -814,7 +948,8 @@ index 0000000..55c68c4
 +        bool use_static = false;
 +        nlohmann::json hnswsq_parameters{{"base_quantization_type", "sq8"}, 
 +                                            {"max_degree", max_degree}, 
-+                                            {"ef_construction", ef_construction},{"build_thread_count", 1}};
++                                            {"ef_construction", ef_construction},
++                                            {"build_thread_count", 1}};
 +        nlohmann::json index_parameters{{"dtype", dtype}, {"metric_type", metric}, {"dim", dim}, {"index_param", hnswsq_parameters}}; 
 +        if (auto index = vsag::Factory::CreateIndex("hgraph", index_parameters.dump(), vsag_allocator);
 +            index.has_value()) {
@@ -915,9 +1050,28 @@ index 0000000..55c68c4
 +    return 0;
 +}
 +
++int cal_distance_by_id(VectorIndexPtr& index_handler, 
++                        const float* vector, 
++                        const int64_t* ids, 
++                        int64_t count, 
++                        const float *&distances)
++{
++    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
++    if (index_handler == nullptr) {
++        vsag::logger::debug("   null pointer addr, index_handler:{}", (void*)index_handler);
++        return static_cast<int>(error);
++    }
++    HnswIndexHandler* hnsw = static_cast<HnswIndexHandler*>(index_handler); 
++    int ret = hnsw->cal_distance_by_id(vector, ids, count, distances);
++    if (ret != 0) {
++        vsag::logger::error("   knn search error happend, ret={}", ret);
++    }
++    return ret;
++}
++
 +int knn_search(VectorIndexPtr& index_handler,float* query_vector,int dim, int64_t topk,
 +               const float*& dist, const int64_t*& ids, int64_t &result_size, int ef_search,
-+               void* invalid, bool reverse_filter) {
++               void* invalid, bool reverse_filter, float valid_ratio) {
 +    vsag::logger::debug("TRACE LOG[knn_search]:");
 +    vsag::ErrorType error = vsag::ErrorType::UNKNOWN_ERROR;
 +    int ret = 0;
@@ -946,7 +1100,7 @@ index 0000000..55c68c4
 +    }
 +    auto query = vsag::Dataset::Make();
 +    query->NumElements(1)->Dim(dim)->Float32Vectors(query_vector)->Owner(false);
-+    ret = hnsw->knn_search(query, topk, search_parameters.dump(), dist, ids, result_size, filter);
++    ret = hnsw->knn_search(query, topk, search_parameters.dump(), dist, ids, result_size, valid_ratio, hnsw->get_index_type(), filter);
 +    if (ret != 0) {
 +        vsag::logger::error("   knn search error happend, ret={}", ret);
 +    }
@@ -1036,7 +1190,8 @@ index 0000000..55c68c4
 +    } else {
 +        nlohmann::json hnswsq_parameters{{"base_quantization_type", "sq8"}, 
 +                                            {"max_degree", max_degree}, 
-+                                            {"ef_construction", ef_construction},{"build_thread_count", 1}};  
++                                            {"ef_construction", ef_construction},
++                                            {"build_thread_count", 1}};  
 +        index_parameters = {{"dtype", dtype}, {"metric_type", metric}, {"dim", dim}, {"index_param", hnswsq_parameters}};
 +    }
 +
@@ -1119,7 +1274,8 @@ index 0000000..55c68c4
 +    } else {
 +        nlohmann::json hnswsq_parameters{{"base_quantization_type", "sq8"}, 
 +                                            {"max_degree", max_degree}, 
-+                                            {"ef_construction", ef_construction},{"build_thread_count", 1}};  
++                                            {"ef_construction", ef_construction},
++                                            {"build_thread_count", 1}};  
 +        index_parameters = {{"dtype", dtype}, {"metric_type", metric}, {"dim", dim}, {"index_param", hnswsq_parameters}};
 +    }
 +   
@@ -1204,7 +1360,8 @@ index 0000000..55c68c4
 +}
 +
 +extern int knn_search_c(VectorIndexPtr& index_handler,float* query_vector,int dim, int64_t topk,
-+               const float*& dist, const int64_t*& ids, int64_t &result_size, int ef_search, void* invalid, bool reverse_filter) {
++               const float*& dist, const int64_t*& ids, int64_t &result_size, int ef_search, 
++               void* invalid, bool reverse_filter) {
 +    return knn_search(index_handler, query_vector, dim, topk, dist, ids, result_size, ef_search, invalid, reverse_filter);
 +}
 +
@@ -1231,10 +1388,10 @@ index 0000000..55c68c4
 \ No newline at end of file
 diff --git a/ob_vsag_lib.h b/ob_vsag_lib.h
 new file mode 100644
-index 0000000..52ee146
+index 0000000..d00ffa5
 --- /dev/null
 +++ b/ob_vsag_lib.h
-@@ -0,0 +1,64 @@
+@@ -0,0 +1,65 @@
 +#ifndef OB_VSAG_LIB_H
 +#define OB_VSAG_LIB_H
 +#include <stdint.h>
@@ -1288,9 +1445,10 @@ index 0000000..52ee146
 +extern int add_index(VectorIndexPtr& index_handler, float* vector, int64_t* ids, int dim, int size);
 +extern int get_index_number(VectorIndexPtr& index_handler, int64_t &size);
 +extern int get_index_type(VectorIndexPtr& index_handler);
++extern int cal_distance_by_id(VectorIndexPtr& index_handler, const float* vector, const int64_t* ids, int64_t count, const float *&distances);
 +extern int knn_search(VectorIndexPtr& index_handler,float* query_vector, int dim, int64_t topk,
 +                      const float*& dist, const int64_t*& ids, int64_t &result_size, int ef_search,
-+                       void* invalid = NULL, bool reverse_filter = false);
++                      void* invalid = NULL, bool reverse_filter = false, float valid_ratio = 1);
 +extern int serialize(VectorIndexPtr& index_handler, const std::string dir);
 +extern int deserialize_bin(VectorIndexPtr& index_handler, const std::string dir);
 +extern int fserialize(VectorIndexPtr& index_handler, std::ostream& out_stream);
@@ -1301,7 +1459,7 @@ index 0000000..52ee146
 +
 diff --git a/ob_vsag_lib_c.h b/ob_vsag_lib_c.h
 new file mode 100644
-index 0000000..cd6260c
+index 0000000..42d9137
 --- /dev/null
 +++ b/ob_vsag_lib_c.h
 @@ -0,0 +1,90 @@
