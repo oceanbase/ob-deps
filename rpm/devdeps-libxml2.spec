@@ -3,7 +3,7 @@
 # http://www.rpm.org/max-rpm/ch-rpm-inside.html              #
 ##############################################################
 Name: devdeps-libxml2
-Version: 2.10.3
+Version: 2.13.6
 Release: %(echo $RELEASE)%{?dist}
 # if you want use the parameter of rpm_create on build time,
 # uncomment below
@@ -13,7 +13,7 @@ License: Commercial
 Url: http://www.linuxfromscratch.org/blfs/view/svn/general/libxml2.html
 
 %define _prefix /usr/local/oceanbase/deps/devel
-%define _src libxml2-2.10.3
+%define _src libxml2-%{version}
 # disable check-buildroot
 %define __arch_install_post %{nil}
 %define __strip /bin/true
@@ -87,6 +87,8 @@ make install;
 %postun -p /sbin/ldconfig
 
 %changelog
+* Mon Mar 17 2025 huaixin.lmy
+- upgrade to 2.13.6
 * Mon Nov 14 2022 xuhao.yf
 - upgrade to 2.10.3 to fix CVE Security Vulnerability
 * Tue Sep 6 2022 wenxignsen.wxs
