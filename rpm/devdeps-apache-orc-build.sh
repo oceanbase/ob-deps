@@ -4,7 +4,7 @@ CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
 PROJECT_NAME=${2:-"devdeps-apache-orc"}
-VERSION=${3:-"1.8.8"}
+VERSION=${3:-"2.1.1"}
 RELEASE=${4:-"1"}
 
 # Configure custom source file directory

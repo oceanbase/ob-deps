@@ -1,5 +1,5 @@
 Name: devdeps-libcurl-static
-Version: 7.29.0
+Version: 8.12.1
 Release: %(echo $RELEASE)%{?dist}
 Url: https://curl.se/
 Summary: curl is a tool for transferring data with URL syntax, supporting HTTP, HTTPS, FILE
@@ -9,26 +9,28 @@ License: MIT
 
 %undefine _missing_build_ids_terminate_build
 %define _build_id_links compat
-
 # disable check-buildroot
 %define __arch_install_post %{nil}
-
-%define _prefix /usr/local/oceanbase/deps/devel
-%define _src curl-%{version}
-
 %define debug_package %{nil}
 %define __strip /bin/true
 
+%define _prefix /usr/local/oceanbase/deps/devel
+%define _src curl-%{version}
 %define _buliddir %{_topdir}/BUILD
 %define _tmppath %{_buliddir}/_tmp
 
 %description
 curl is a tool for transferring data with URL syntax, supporting HTTP, HTTPS, FILE. curl supports SSL certificates
 
-%build
-
+%install
+export CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
+export CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
+export LDFLAGS="-pie -z noexecstack -z now"
+CPU_CORES=`grep -c ^processor /proc/cpuinfo`
+mkdir -p $RPM_BUILD_ROOT/%{_prefix}
 rm -rf %{_tmppath}
 mkdir -p %{_tmppath}
+
 cd $OLDPWD/../
 rm -rf %{_src}
 tar -xf %{_src}.tar.gz
@@ -44,16 +46,14 @@ elif [ "${OS_ARCH}x" = "ppc64lex" ]; then
     BUILD_OPTION='--build=ppc64le'
 fi
 
-./configure --prefix=%{_tmppath} --without-libssh2 --without-nss --disable-ftp --disable-ldap --disable-ldaps --without-cyassl \
-            --without-polarssl --without-winssl --without-gnutls --with-ssl --without-darwinssl --disable-cookies --disable-rtsp  \
-            --disable-pop3 --disable-smtp --disable-imap --disable-telnet --disable-tftp --disable-verbose --disable-gopher --enable-shared=no --with-pic=yes ${BUILD_OPTION}
-CPU_CORES=`grep -c ^processor /proc/cpuinfo`
+./configure --prefix=%{_tmppath} PKG_CONFIG="pkg-config SSL_LIBS=-l:libssl.a -l:libcrypto.a" --without-libssh2 --without-nss --disable-ftp \
+            --disable-ldap --disable-ldaps --without-cyassl --without-polarssl --without-winssl --without-gnutls --with-ssl=${DEP_DIR} \
+            --disable-cookies --disable-rtsp --without-zlib --disable-pop3 --without-libpsl --disable-smtp --disable-imap --disable-telnet \
+            --disable-tftp --disable-verbose --disable-gopher --enable-shared=no --with-pic=yes ${BUILD_OPTION}
+make curl_LDFLAGS=-all-static
 make -j${CPU_CORES};
-make install
+make curl_LDFLAGS=-all-static install
 
-%install
-
-mkdir -p $RPM_BUILD_ROOT/%{_prefix}
 cp -r %{_tmppath}/lib %{_tmppath}/include $RPM_BUILD_ROOT/%{_prefix}
 
 %files 
@@ -65,5 +65,7 @@ cp -r %{_tmppath}/lib %{_tmppath}/include $RPM_BUILD_ROOT/%{_prefix}
 %postun -p /sbin/ldconfig
 
 %changelog
+* Thu Mar 20 2025 huaixin.lmy
+- upgrade curl version to 8.12.1
 * Fri Mar 26 2021 oceanbase
 - add spec of libcurl
