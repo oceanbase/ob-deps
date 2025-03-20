@@ -25,8 +25,9 @@ cd $OLDPWD/../
 rm -rf %{_src}
 tar -xf %{_src}.tar.gz
 cd %{_src}
-export CFLAGS="-fPIC"
-export CXXFLAGS="-fPIC"
+export CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
+export CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
+export LDFLAGS="-pie -z noexecstack -z now"
 ./configure --with-normal --enable-overwrite
 make install DESTDIR=%{_tmppath}
 
@@ -43,5 +44,7 @@ cp -r %{_tmppath}/usr/lib %{_tmppath}/usr/include $RPM_BUILD_ROOT/%{_prefix}
 %postun -p /sbin/ldconfig
 
 %changelog
+* Thu Mar 20 2025 huaixin.lmy
+- upgrade version to 6.4
 * Fri Mar 26 2021 oceanbase
 - add spec of ncurses

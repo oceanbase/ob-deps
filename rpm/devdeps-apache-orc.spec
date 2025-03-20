@@ -1,5 +1,5 @@
 Name: devdeps-apache-orc
-Version: 1.8.8
+Version: 2.1.1
 Release: %(echo $RELEASE)%{?dist}
 Summary: This is the repository for in-memory analytics
 License: https://github.com/apache/orc?tab=Apache-2.0-1-ov-file
