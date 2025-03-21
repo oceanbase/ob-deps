@@ -4,7 +4,7 @@ CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$CUR_DIR"}
 PROJECT_NAME=${2:-"devdeps-ncurses-static"}
-VERSION=${3:-"6.4"}
+VERSION=${3:-"6.5"}
 RELEASE=${4:-"1"}
 
 # check source code

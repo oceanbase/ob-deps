@@ -1,5 +1,5 @@
 Name: devdeps-ncurses-static
-Version: 6.4
+Version: 6.5
 Release: %(echo $RELEASE)%{?dist}
 Url: http://invisible-island.net/ncurses/ncurses.html
 Summary: Static libraries for the ncurses library
@@ -28,12 +28,14 @@ cd %{_src}
 export CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
 export CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
 export LDFLAGS="-pie -z noexecstack -z now"
-./configure --with-normal --enable-overwrite
+./configure --with-normal  --enable-overwrite --enable-terminal --with-shared --with-termlib --enable-tinfo --enable-widec=no
 make install DESTDIR=%{_tmppath}
 
 %install
-mkdir -p $RPM_BUILD_ROOT/%{_prefix}
-cp -r %{_tmppath}/usr/lib %{_tmppath}/usr/include $RPM_BUILD_ROOT/%{_prefix}
+mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib
+cp -r %{_tmppath}/usr/include $RPM_BUILD_ROOT/%{_prefix}
+cp -r %{_tmppath}/usr/lib/terminfo $RPM_BUILD_ROOT/%{_prefix}/lib
+cp -r %{_tmppath}/usr/lib/*.a $RPM_BUILD_ROOT/%{_prefix}/lib
 
 %files 
 
