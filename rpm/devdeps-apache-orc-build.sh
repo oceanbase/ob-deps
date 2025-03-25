@@ -13,8 +13,8 @@ RELEASE=${4:-"1"}
 # check source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/orc-${VERSION}.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download apache-orc source code"
-    wget https://github.com/apache/orc/archive/refs/tags/rel/release-${VERSION}.tar.gz -O $ROOT_DIR/orc-${VERSION}.tar.gz --no-check-certificate
-    # wget https://github.com/apache/orc/archive/refs/tags/v${VERSION}.tar.gz -O $ROOT_DIR/orc-${VERSION}.tar.gz --no-check-certificate
+    wget --no-check-certificate https://downloads.apache.org/orc/orc-${VERSION}/orc-${VERSION}.tar.gz -O $ROOT_DIR/orc-${VERSION}.tar.gz
+    # wget https://github.com/apache/orc/archive/refs/tags/rel/release-${VERSION}.tar.gz -O $ROOT_DIR/orc-${VERSION}.tar.gz --no-check-certificate
 fi
  
 # build cmake source to fix ssl problem

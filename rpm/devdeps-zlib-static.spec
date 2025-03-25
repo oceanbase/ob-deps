@@ -1,5 +1,5 @@
 Name: devdeps-zlib-static
-Version: 1.2.7
+Version: 1.3.1
 Release: %(echo $RELEASE)%{?dist}
 Url: https://curl.se/
 Summary: zlib is a general purpose data compression library.
