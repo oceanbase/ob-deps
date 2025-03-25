@@ -7,10 +7,13 @@ PROJECT_NAME=${2:-"obdevtools-cmake"}
 VERSION=${3:-"3.22.1"}
 RELEASE=${4:-"1"}
 
+# Configure custom source file directory
+[ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
+
 # check source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/cmake-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download source code"
-    wget https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1.tar.gz -P $ROOT_DIR
+    wget https://github.com/Kitware/CMake/releases/download/v$VERSION/cmake-$VERSION.tar.gz -P $ROOT_DIR
 fi
 
 cd $CUR_DIR
