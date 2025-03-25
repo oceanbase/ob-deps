@@ -19,11 +19,19 @@ if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/curl-$VERSION.*[tar|gz|bz2|xz|zi
     wget --no-check-certificate https://curl.se/download/curl-$VERSION.tar.gz -P $ROOT_DIR
 fi
 
+export CFLAGS="-fPIC -pie -fstack-protector-strong"
+export CXXFLAGS="-fPIC -pie -fstack-protector-strong"
+
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
- 
+arch=$(uname -p)
+
 if [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install -y devdeps-openssl-static-1.1.1u
+    if [[ "$arch" == "aarch64" ]]; then
+        export CFLAGS="$CFLAGS -mno-outline-atomics"
+        export CXXFLAGS="$CXXFLAGS -mno-outline-atomics"
+    fi
 else
     wget http://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
     yum install -y devdeps-openssl-static-1.1.1u

@@ -50,34 +50,40 @@ mkdir -p ${tmp_install_dir}
 mkdir -p ${build_dir}
 
 # compile and install
-export CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"
+export CPPFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"
+export LDFLAGS="-pie -z noexecstack -z now"
+export CFLAGS="-fPIC -pie -fstack-protector-strong"
+export CXXFLAGS="-fPIC -pie -fstack-protector-strong"
 
 cd ${build_dir}
-cmake .. -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} \
-         -DBUILD_JAVA=OFF -DBUILD_CPP_TESTS=OFF -DBUILD_TOOLS=OFF \
-         -DSTOP_BUILD_ON_WARNING=OFF -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/gcc \
-         -DCMAKE_CXX_COMPILER=$TOOLS_DIR/bin/g++ -DBUILD_POSITION_INDEPENDENT_LIB=ON -DBUILD_LIBHDFSPP=OFF
-cp $tmp_dir/zlib-1.2.11.tar.gz $build_dir/zlib_ep-prefix/src/
-cp $tmp_dir/1.1.7.tar.gz $build_dir/snappy_ep-prefix/src/
-cp $tmp_dir/v3.5.1.tar.gz $build_dir/protobuf_ep-prefix/src/
-cp $tmp_dir/v1.9.3.tar.gz $build_dir/lz4_ep-prefix/src/
-cp $tmp_dir/v1.5.2.tar.gz $build_dir/zstd_ep-prefix/src/
-sed -i '17s/FALSE/TRUE/' $build_dir/zlib_ep-prefix/src/zlib_ep-stamp/download-zlib_ep.cmake
-sed -i '18s/FALSE/TRUE/' $build_dir/zlib_ep-prefix/src/zlib_ep-stamp/download-zlib_ep.cmake
-sed -i '17s/FALSE/TRUE/' $build_dir/snappy_ep-prefix/src/snappy_ep-stamp/download-snappy_ep.cmake
-sed -i '18s/FALSE/TRUE/' $build_dir/snappy_ep-prefix/src/snappy_ep-stamp/download-snappy_ep.cmake
-sed -i '17s/FALSE/TRUE/' $build_dir/protobuf_ep-prefix/src/protobuf_ep-stamp/download-protobuf_ep.cmake
-sed -i '18s/FALSE/TRUE/' $build_dir/protobuf_ep-prefix/src/protobuf_ep-stamp/download-protobuf_ep.cmake
-sed -i '17s/FALSE/TRUE/' $build_dir/lz4_ep-prefix/src/lz4_ep-stamp/download-lz4_ep.cmake
-sed -i '18s/FALSE/TRUE/' $build_dir/lz4_ep-prefix/src/lz4_ep-stamp/download-lz4_ep.cmake
-sed -i '17s/FALSE/TRUE/' $build_dir/zstd_ep-prefix/src/zstd_ep-stamp/download-zstd_ep.cmake
-sed -i '18s/FALSE/TRUE/' $build_dir/zstd_ep-prefix/src/zstd_ep-stamp/download-zstd_ep.cmake
-make -j${CPU_CORES}
+cmake .. -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} -DBUILD_JAVA=OFF -DBUILD_CPP_TESTS=OFF -DBUILD_TOOLS=OFF \
+         -DSTOP_BUILD_ON_WARNING=OFF -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/gcc -DCMAKE_CXX_COMPILER=$TOOLS_DIR/bin/g++ \
+         -DBUILD_POSITION_INDEPENDENT_LIB=ON -DBUILD_LIBHDFSPP=OFF
+
+set +e
+MAX_RETRIES=6
+retry_count=1
+while [ $retry_count -le $MAX_RETRIES ]; do
+    make -j${CPU_CORES}
+    if [ $? -eq 0 ]; then
+        echo "Build succeeded!"
+        break
+    else
+        echo "Compile failed (attempt $retry_count/$MAX_RETRIES), retrying..."
+        retry_count=$((retry_count+1))
+    fi
+done
+# Re-enable error exit
+set -e
+# All retries failed, exiting with an error
+if [ $retry_count -gt $MAX_RETRIES ]; then
+    echo "FATAL: All retries failed!"
+    exit 1
+fi
+
 make install
  
 # install files
-mv $RPM_BUILD_ROOT/%{_prefix}/lib/* $RPM_BUILD_ROOT/%{_prefix}/lib64
-rm -rf $RPM_BUILD_ROOT/%{_prefix}/lib
 mv $RPM_BUILD_ROOT/%{_prefix}/include/orc $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/
 
 %files 

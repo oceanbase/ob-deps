@@ -3,7 +3,7 @@
 # http://www.rpm.org/max-rpm/ch-rpm-inside.html              #
 ##############################################################
 Name: devdeps-apr
-Version: 1.6.5
+Version: 1.7.5
 Release: %(echo $RELEASE)%{?dist}
 # if you want use the parameter of rpm_create on build time,
 # uncomment below
@@ -14,7 +14,7 @@ Url: https://github.com/yasm/yasm
 %define _build_id_links none
 %define _prefix /usr/local/oceanbase/deps/devel
 %define _src apr-%{version}
-%define _util_src apr-util-1.6.1
+%define _util_src apr-util-1.6.3
 # disable check-buildroot
 %define __arch_install_post %{nil}
 %define __strip /bin/true
@@ -46,8 +46,10 @@ CodeRev:%{_source_revision}
 # can set by rpm_create, default is "/home/a"
 # _lib is an inner var, maybe "lib" or "lib64" depend on OS
 
+export CPPFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"
+export LDFLAGS="-pie -z noexecstack -z now"
+
 # create dirs
-export CFLAGS=-fPIC
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}
 cd $OLDPWD/../;
 rm -rf %{_src}

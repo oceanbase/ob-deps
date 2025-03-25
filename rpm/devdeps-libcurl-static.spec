@@ -23,8 +23,7 @@ License: MIT
 curl is a tool for transferring data with URL syntax, supporting HTTP, HTTPS, FILE. curl supports SSL certificates
 
 %install
-export CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
-export CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
+export CPPFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"
 export LDFLAGS="-pie -z noexecstack -z now"
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}
