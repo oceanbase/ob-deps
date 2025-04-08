@@ -22,7 +22,7 @@ mkdir -p %{buildroot}/%{_prefix}
 cd $OLDPWD/../
 rm -rf %{_vsag_src}
 tar xf %{_vsag_src}.tar.gz
-mv vsag-0.13.4 %{_default_version_src}
+mv vsag-0.14.0 %{_default_version_src}
 cd %{_default_version_src}
  
 export CC=/usr/local/oceanbase/devtools/bin/gcc
@@ -45,6 +45,7 @@ mkdir -p %{buildroot}/%{_prefix}/include/vsag
 cp ./ob_vsag_lib.h %{buildroot}/%{_prefix}/include/vsag
 cp ./ob_vsag_lib_c.h %{buildroot}/%{_prefix}/include/vsag
 cp ./include/vsag/logger.h %{buildroot}/%{_prefix}/include/vsag
+cp ./include/vsag/iterator_context.h %{buildroot}/%{_prefix}/include/vsag
 cp ./include/vsag/allocator.h %{buildroot}/%{_prefix}/include/vsag
 cp /usr/local/oceanbase/devtools/lib64/libgfortran.so.5 %{buildroot}/%{_prefix}/lib/vsag_lib/libgfortran.so
 cp /usr/local/oceanbase/devtools/lib64/libgfortran.a %{buildroot}/%{_prefix}/lib/vsag_lib/libgfortran_static.a
