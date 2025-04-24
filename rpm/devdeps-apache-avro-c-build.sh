@@ -38,7 +38,7 @@ arch=$(uname -p)
 if [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install obdevtools-gcc9-9.3.0 -y
-    yum install obdevtools-cmake-3.22.1-142025032516 -y
+    yum install obdevtools-cmake-3.22.1 -y
 else
     target_dir_3rd=${PROJECT_DIR}/deps/3rd
     pkg_dir=$target_dir_3rd/pkg
