@@ -32,7 +32,9 @@ else
     wget http://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
     yum install obdevtools-gcc9-9.3.0 -y
 fi
- 
+
+yum -y remove bzip2-devel
+
 export TOOLS_DIR=/usr/local/oceanbase/devtools
 export DEP_DIR=/usr/local/oceanbase/deps/devel
 export LD_LIBRARY_PATH=$TOOLS_DIR/lib64/:$LD_LIBRARY_PATH
