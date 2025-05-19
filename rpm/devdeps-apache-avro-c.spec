@@ -59,6 +59,10 @@ rm -rf %{_src}
 mkdir -p %{_src}
 tar zxf %{_src}.tar.gz --strip-components=1 -C %{_src}
 cd %{_src}
+
+git init
+git apply --whitespace=fix ../patch/avro-c.patch
+
 cmake -S. -Bbuild \
           -DCMAKE_INSTALL_PREFIX=./build/installed \
           -DCMAKE_BUILD_TYPE=Release \
