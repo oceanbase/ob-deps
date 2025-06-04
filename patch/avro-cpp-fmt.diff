@@ -1,0 +1,46 @@
+--- format.h	2025-05-26 17:29:50.198049910 +0800
++++ format-copy.h	2025-05-26 17:32:47.245252871 +0800
+@@ -2814,7 +2814,7 @@
+   // Computes *this -= other assuming aligned bigints and *this >= other.
+   FMT_CONSTEXPR20 void subtract_aligned(const bigint& other) {
+     FMT_ASSERT(other.exp_ >= exp_, "unaligned bigints");
+-    FMT_ASSERT(compare(*this, other) >= 0, "");
++    FMT_ASSERT(compare1(*this, other) >= 0, "");
+     bigit borrow = 0;
+     int i = other.exp_ - exp_;
+     for (size_t j = 0, n = other.bigits_.size(); j != n; ++i, ++j)
+@@ -2913,7 +2913,7 @@
+     return *this;
+   }
+ 
+-  friend FMT_CONSTEXPR20 auto compare(const bigint& lhs, const bigint& rhs)
++  friend FMT_CONSTEXPR20 auto compare1(const bigint& lhs, const bigint& rhs)
+       -> int {
+     int num_lhs_bigits = lhs.num_bigits(), num_rhs_bigits = rhs.num_bigits();
+     if (num_lhs_bigits != num_rhs_bigits)
+@@ -3022,14 +3022,14 @@
+   // returning the quotient.
+   FMT_CONSTEXPR20 auto divmod_assign(const bigint& divisor) -> int {
+     FMT_ASSERT(this != &divisor, "");
+-    if (compare(*this, divisor) < 0) return 0;
++    if (compare1(*this, divisor) < 0) return 0;
+     FMT_ASSERT(divisor.bigits_[divisor.bigits_.size() - 1u] != 0, "");
+     align(divisor);
+     int quotient = 0;
+     do {
+       subtract_aligned(divisor);
+       ++quotient;
+-    } while (compare(*this, divisor) >= 0);
++    } while (compare1(*this, divisor) >= 0);
+     return quotient;
+   }
+ };
+@@ -3114,7 +3114,7 @@
+     char* data = buf.data();
+     for (;;) {
+       int digit = numerator.divmod_assign(denominator);
+-      bool low = compare(numerator, lower) - even < 0;  // numerator <[=] lower.
++      bool low = compare1(numerator, lower) - even < 0;  // numerator <[=] lower.
+       // numerator + upper >[=] pow10:
+       bool high = add_compare(numerator, *upper, denominator) + even > 0;
+       data[num_digits++] = static_cast<char>('0' + digit);
