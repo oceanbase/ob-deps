@@ -4,7 +4,7 @@ CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/../
 PROJECT_DIR=${1:-"$CUR_DIR"}
 PROJECT_NAME=${2:-"obdevtools-cmake"}
-VERSION=${3:-"3.22.1"}
+VERSION=${3:-"3.30.3"}
 RELEASE=${4:-"1"}
 
 # Configure custom source file directory

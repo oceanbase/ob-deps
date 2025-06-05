@@ -1,5 +1,5 @@
 Name: obdevtools-cmake
-Version: 3.22.1
+Version: %(echo $VERSION)
 Release: %(echo $RELEASE)%{?dist}
 
 Summary: Cross-platform make system
@@ -34,7 +34,7 @@ if [ "${OS_ARCH}x" = "sw_64x" ]; then
     patch -p0 ./Utilities/KWIML/include/kwiml/abi.h ../sw_64/patch/cmake/abi.patch
 fi
 
-./bootstrap --prefix=${RPM_BUILD_ROOT}/%{_prefix} -- -DCMAKE_USE_OPENSSL=ON;
+./bootstrap --prefix=${RPM_BUILD_ROOT}/%{_prefix} -- -DCMAKE_USE_OPENSSL=ON
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES};
 
