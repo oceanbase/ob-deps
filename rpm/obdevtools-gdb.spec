@@ -16,7 +16,7 @@ AutoReqProv:no
 %undefine _missing_build_ids_terminate_build
 %define _build_id_links compat
 
-%define _prefix /usr/
+%define _prefix /usr/local
 %define _gdb_src gdb-%{version}
 
 %description
