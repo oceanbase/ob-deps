@@ -29,15 +29,22 @@ cd $OLDPWD/../;
 rm -rf %{_gdb_src}
 tar -xf %{_gdb_src}.tar.xz
 source_dir=$(pwd)
+tmp_dir=${source_dir}/install
+rm -rf ${tmp_dir} && mkdir -p ${tmp_dir}
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 
 cd ${source_dir}/%{_gdb_src}
 mkdir -p build && cd build
-LDFLAGS="-static-libgcc -static-libstdc++" ../configure --prefix=${RPM_BUILD_ROOT}/%{_prefix}
+LDFLAGS="-static-libgcc -static-libstdc++" ../configure --prefix=${tmp_dir}
 make -j${CPU_CORES}
 make install
 
-%files 
+mkdir -p ${RPM_BUILD_ROOT}/%{_prefix}
+cp -r ${tmp_dir}/bin ${RPM_BUILD_ROOT}/%{_prefix}
+cp -r ${tmp_dir}/lib ${RPM_BUILD_ROOT}/%{_prefix}
+cp -r ${tmp_dir}/include ${RPM_BUILD_ROOT}/%{_prefix}
+
+%files
 
 %defattr(-,root,root)
 %{_prefix}
