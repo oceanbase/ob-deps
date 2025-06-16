@@ -39,10 +39,10 @@ LDFLAGS="-static-libgcc -static-libstdc++" ../configure --prefix=${tmp_dir}
 make -j${CPU_CORES}
 make install
 
-mkdir -p ${RPM_BUILD_ROOT}/%{_prefix}
+mkdir -p ${RPM_BUILD_ROOT}/%{_prefix}/lib
 cp -r ${tmp_dir}/bin ${RPM_BUILD_ROOT}/%{_prefix}
-cp -r ${tmp_dir}/lib ${RPM_BUILD_ROOT}/%{_prefix}
-cp -r ${tmp_dir}/include ${RPM_BUILD_ROOT}/%{_prefix}
+cp -r ${tmp_dir}/lib/*.a ${RPM_BUILD_ROOT}/%{_prefix}/lib
+cp -r ${tmp_dir}/include/gdb ${RPM_BUILD_ROOT}/%{_prefix}
 
 %files
 
