@@ -16,7 +16,7 @@ AutoReqProv:no
 %undefine _missing_build_ids_terminate_build
 %define _build_id_links compat
 
-%define _prefix /usr/local
+%define _prefix /usr/local/gdb-13
 %define _gdb_src gdb-%{version}
 
 %description
@@ -45,12 +45,38 @@ cp -r ${tmp_dir}/lib/*.a ${RPM_BUILD_ROOT}/%{_prefix}/lib
 cp -r ${tmp_dir}/include/gdb ${RPM_BUILD_ROOT}/%{_prefix}
 
 %files
-
 %defattr(-,root,root)
 %{_prefix}
 
-%post -p /sbin/ldconfig
-%postun -p /sbin/ldconfig
+%post
+# update shard lib cache
+/sbin/ldconfig
+
+# Detect the user home directory
+USER_HOME=$(getent passwd $(logname) | cut -d: -f6)
+BASHRC_FILE="$USER_HOME/.bashrc"
+
+# Add /usr/local/gdb-13/bin to PATH if it's not already added
+if [ -f "$BASHRC_FILE" ]; then
+    if ! grep -q "/usr/local/gdb-13/bin" "$BASHRC_FILE"; then
+        cat << EOF >> "$BASHRC_FILE"
+if [ -d "/usr/local/gdb-13/bin" ]; then
+    export PATH=/usr/local/gdb-13/bin:\$PATH
+fi
+EOF
+        echo "Added GDB path to $BASHRC_FILE"
+    else
+        echo "GDB path already exists in $BASHRC_FILE"
+    fi
+    echo "Please run 'source ~/.bashrc' or re-login to apply the new PATH settings."
+else
+    echo "$BASHRC_FILE not found, skipping PATH update."
+fi
+
+%postun
+/sbin/ldconfig
+# Detect the user home directory
+echo "Please run 'source ~/.bashrc' or re-login to apply the new PATH settings."
 
 %changelog
 * Mon Jun 9 2025 huaixin.lmy
