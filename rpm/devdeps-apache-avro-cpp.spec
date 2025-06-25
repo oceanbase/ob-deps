@@ -43,7 +43,10 @@ make install
 
 # install apache-avro-cpp
 cd $ROOT_DIR
-cd %{_src}/lang/c++
+cd %{_src}
+git init
+git apply --whitespace=fix ../patch/avro-cpp-source.patch
+cd lang/c++
 
 cmake -S. -Bbuild \
           -DCMAKE_INSTALL_PREFIX=./build/installed \
