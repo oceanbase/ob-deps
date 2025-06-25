@@ -1,0 +1,61 @@
+Index: lang/c++/include/avro/DataFile.hh
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/lang/c++/include/avro/DataFile.hh b/lang/c++/include/avro/DataFile.hh
+--- a/lang/c++/include/avro/DataFile.hh	(revision 82a2bc8b034de34626e2ab8bf091234122474d50)
++++ b/lang/c++/include/avro/DataFile.hh	(date 1750646069850)
+@@ -122,6 +122,9 @@
+                        size_t syncInterval, Codec codec = NULL_CODEC);
+     DataFileWriterBase(std::unique_ptr<OutputStream> outputStream,
+                        const ValidSchema &schema, size_t syncInterval, Codec codec);
++    DataFileWriterBase(std::unique_ptr<OutputStream> outputStream,
++                       const ValidSchema &schema, size_t syncInterval, Codec codec,
++                       const std::map<std::string, std::string> &metadata);
+ 
+     DataFileWriterBase(const DataFileWriterBase &) = delete;
+     DataFileWriterBase &operator=(const DataFileWriterBase &) = delete;
+@@ -306,6 +309,8 @@
+      * Return the last synchronization point before our current position.
+      */
+     int64_t previousSync() const;
++
++    const Metadata &metadata() const { return metadata_; }
+ };
+ 
+ /**
+Index: lang/c++/impl/DataFile.cc
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/lang/c++/impl/DataFile.cc b/lang/c++/impl/DataFile.cc
+--- a/lang/c++/impl/DataFile.cc	(revision 82a2bc8b034de34626e2ab8bf091234122474d50)
++++ b/lang/c++/impl/DataFile.cc	(date 1750646069845)
+@@ -93,6 +93,25 @@
+     init(schema, syncInterval, codec);
+ }
+ 
++DataFileWriterBase::DataFileWriterBase(std::unique_ptr<OutputStream> outputStream,
++                                       const ValidSchema &schema, size_t syncInterval, Codec codec,
++                                       const std::map<std::string, std::string> &metadata): filename_(),
++                                                                                            schema_(schema),
++                                                                                            encoderPtr_(binaryEncoder()),
++                                                                                            syncInterval_(syncInterval),
++                                                                                            codec_(codec),
++                                                                                            stream_(std::move(outputStream)),
++                                                                                            buffer_(memoryOutputStream()),
++                                                                                            sync_(makeSync()),
++                                                                                            objectCount_(0),
++                                                                                            lastSync_(0) {
++    for (const auto &kv : metadata) {
++        setMetadata(kv.first, kv.second);
++    }
++    init(schema, syncInterval, codec);
++}
++
++
+ void DataFileWriterBase::init(const ValidSchema &schema, size_t syncInterval, const Codec &codec) {
+     if (syncInterval < minSyncInterval || syncInterval > maxSyncInterval) {
+         throw Exception(
