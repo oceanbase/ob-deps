@@ -33,6 +33,9 @@ export CFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
 export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
 export LDFLAGS="-z noexecstack -z now -pie"
 
+git init
+git apply ../patch/vsag.1.1.0.patch
+
 cmake . -DENABLE_CXX11_ABI=OFF -DENABLE_INTEL_MKL=OFF -DROARING_DISABLE_AVX512=ON
  
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
