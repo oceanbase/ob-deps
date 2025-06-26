@@ -1,0 +1,180 @@
+diff --git a/src/algorithm/hgraph.cpp b/src/algorithm/hgraph.cpp
+index 040998b..c69dd04 100644
+--- a/src/algorithm/hgraph.cpp
++++ b/src/algorithm/hgraph.cpp
+@@ -790,55 +790,56 @@ HGraph::Serialize(StreamWriter& writer) const {
+     }
+ 
+     // FIXME(wxyu): only for testing, remove before merge into the main branch
+-    // if (not Options::Instance().new_version()) {
+-    //     this->serialize_basic_info_v0_14(writer);
+-    //     this->basic_flatten_codes_->Serialize(writer);
+-    //     this->bottom_graph_->Serialize(writer);
+-    //     if (this->use_reorder_) {
+-    //         this->high_precise_codes_->Serialize(writer);
+-    //     }
+-    //     for (const auto& route_graph : this->route_graphs_) {
+-    //         route_graph->Serialize(writer);
+-    //     }
+-    //     if (this->extra_info_size_ > 0 && this->extra_infos_ != nullptr) {
+-    //         this->extra_infos_->Serialize(writer);
+-    //     }
+-    //     if (this->use_attribute_filter_ and this->attr_filter_index_ != nullptr) {
+-    //         this->attr_filter_index_->Serialize(writer);
+-    //     }
+-    //     return;
+-    // }
+-
+-    this->serialize_label_info(writer);
+-    this->basic_flatten_codes_->Serialize(writer);
+-    this->bottom_graph_->Serialize(writer);
+-    if (this->use_reorder_) {
+-        this->high_precise_codes_->Serialize(writer);
+-    }
+-    for (const auto& route_graph : this->route_graphs_) {
+-        route_graph->Serialize(writer);
+-    }
+-    if (this->extra_info_size_ > 0 && this->extra_infos_ != nullptr) {
+-        this->extra_infos_->Serialize(writer);
+-    }
+-    if (this->use_attribute_filter_ and this->attr_filter_index_ != nullptr) {
+-        this->attr_filter_index_->Serialize(writer);
++    {
++        this->serialize_basic_info_v0_14(writer);
++        this->basic_flatten_codes_->Serialize(writer);
++        this->bottom_graph_->Serialize(writer);
++        if (this->use_reorder_) {
++            this->high_precise_codes_->Serialize(writer);
++        }
++        for (const auto& route_graph : this->route_graphs_) {
++            route_graph->Serialize(writer);
++        }
++        if (this->extra_info_size_ > 0 && this->extra_infos_ != nullptr) {
++            this->extra_infos_->Serialize(writer);
++        }
++        if (this->use_attribute_filter_ and this->attr_filter_index_ != nullptr) {
++            this->attr_filter_index_->Serialize(writer);
++        }
++        return;
+     }
+ 
+-    // serialize footer (introduced since v0.15)
+-    auto jsonify_basic_info = this->serialize_basic_info();
+-    auto metadata = std::make_shared<Metadata>();
+-    metadata->Set("basic_info", jsonify_basic_info);
+-    logger::debug(jsonify_basic_info.dump());
++    // this->serialize_label_info(writer);
++    // this->basic_flatten_codes_->Serialize(writer);
++    // this->bottom_graph_->Serialize(writer);
++    // if (this->use_reorder_) {
++    //     this->high_precise_codes_->Serialize(writer);
++    // }
++    // for (const auto& route_graph : this->route_graphs_) {
++    //     route_graph->Serialize(writer);
++    // }
++    // if (this->extra_info_size_ > 0 && this->extra_infos_ != nullptr) {
++    //     this->extra_infos_->Serialize(writer);
++    // }
++    // if (this->use_attribute_filter_ and this->attr_filter_index_ != nullptr) {
++    //     this->attr_filter_index_->Serialize(writer);
++    // }
++
++    // // serialize footer (introduced since v0.15)
++    // auto jsonify_basic_info = this->serialize_basic_info();
++    // auto metadata = std::make_shared<Metadata>();
++    // metadata->Set("basic_info", jsonify_basic_info);
++    // logger::debug(jsonify_basic_info.dump());
+ 
+-    auto footer = std::make_shared<Footer>(metadata);
+-    footer->Write(writer);
++    // auto footer = std::make_shared<Footer>(metadata);
++    // footer->Write(writer);
+ }
+ 
+ void
+ HGraph::Deserialize(StreamReader& reader) {
+     // try to deserialize footer (only in new version)
+-    auto footer = Footer::Parse(reader);
++    // auto footer = Footer::Parse(reader);
++    FooterPtr footer = nullptr;
+ 
+     if (footer == nullptr) {  // old format, DON'T EDIT, remove in the future
+         logger::debug("parse with v0.14 version format");
+diff --git a/src/index/hnsw.cpp b/src/index/hnsw.cpp
+index 8918436..d4aafcb 100644
+--- a/src/index/hnsw.cpp
++++ b/src/index/hnsw.cpp
+@@ -647,16 +647,17 @@ HNSW::serialize(std::ostream& out_stream) {
+     HNSW_CHECK_SELF_VALID;
+ 
+     SlowTaskTimer t("hnsw serialize");
+-    auto metadata = std::make_shared<Metadata>();
+ 
+     if (GetNumElements() == 0) {
+-        metadata->SetEmptyIndex(true);
++        LOG_ERROR_AND_RETURNS(ErrorType::INDEX_EMPTY, "failed to serialize: hnsw index is empty");
+ 
+-        auto footer = std::make_shared<Footer>(metadata);
+-        IOStreamWriter writer(out_stream);
+-        footer->Write(writer);
+-
+-        return {};
++        // FIXME(wxyu): cannot support serialize empty index by stream
++        // auto bs = empty_binaryset();
++        // for (const auto& key : bs.GetKeys()) {
++        //     auto b = bs.Get(key);
++        //     out_stream.write((char*)b.data.get(), b.size);
++        // }
++        // return {};
+     }
+ 
+     // no expected exception
+@@ -666,44 +667,25 @@ HNSW::serialize(std::ostream& out_stream) {
+     alg_hnsw_->saveIndex(writer);
+ 
+     if (use_conjugate_graph_) {
+-        metadata->Set("has_conjugate_graph", true);
+         conjugate_graph_->Serialize(out_stream);
+     }
+ 
+-    // serialize footer (introduced since v0.15)
+-    auto footer = std::make_shared<Footer>(metadata);
+-    footer->Write(writer);
+-
+     return {};
+ }
+ 
+ tl::expected<void, Error>
+ HNSW::deserialize(std::istream& in_stream) {
+     std::shared_lock status_lock(index_status_mutex_);
+-    HNSW_CHECK_SELF_VALID;
+-    HNSW_CHECK_SELF_EMPTY;
++    HNSW_CHECK_SELF_VALID
++    HNSW_CHECK_SELF_EMPTY
+ 
+     SlowTaskTimer t("hnsw deserialize");
+     try {
+         std::unique_lock lock(rw_mutex_);
+-
+         IOStreamReader reader(in_stream);
+-        auto footer = Footer::Parse(reader);
+-        if (footer != nullptr) {
+-            logger::debug("parse with new version format");
+-            if (footer->GetMetadata()->EmptyIndex()) {
+-                return {};
+-            }
+-        } else {
+-            logger::debug("parse with v0.11 version format");
+-        }
+-
+         alg_hnsw_->loadIndex(reader, this->space_.get());
+-
+-        if (use_conjugate_graph_ and footer->GetMetadata()->Get("has_conjugate_graph")) {
+-            if (not conjugate_graph_->Deserialize(reader).has_value()) {
+-                throw std::runtime_error("error in deserialize conjugate graph");
+-            }
++        if (use_conjugate_graph_ and not conjugate_graph_->Deserialize(reader).has_value()) {
++            throw std::runtime_error("error in deserialize conjugate graph");
+         }
+     } catch (const std::runtime_error& e) {
+         LOG_ERROR_AND_RETURNS(ErrorType::READ_ERROR, "failed to deserialize: ", e.what());
