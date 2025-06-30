@@ -24,29 +24,11 @@ ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 
 if [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
-    yum install obdevtools-gcc9-9.3.0 -y
 else
-    target_dir_3rd=${PROJECT_DIR}/deps/3rd
-    pkg_dir=$target_dir_3rd/pkg
-    mkdir -p $pkg_dir
-    RELEASE_ID=$(grep -Po '(?<=release )\d' /etc/redhat-release)
-    dep_pkgs=(obdevtools-gcc9-9.3.0-72024081318.el)
-    download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/el"
- 
-    for dep_pkg in ${dep_pkgs[@]}
-    do
-        TEMP=$(mktemp -p "/" -u ".XXXX")
-        deps_url=${download_base_url}/${RELEASE_ID}/${arch}
-        pkg=${dep_pkg}${RELEASE_ID}.${arch}.rpm
-        wget $deps_url/$pkg -O $pkg_dir/$TEMP
-        if [[ $? == 0 ]]; then
-            mv -f $pkg_dir/$TEMP $pkg_dir/$pkg
-        fi
-        (cd / && rpm2cpio $pkg_dir/$pkg | cpio -di -u --quiet)
-    done
-    # wget http://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
-    # yum install obdevtools-gcc9-9.3.0 -y
+    wget http://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
 fi
+
+yum install obdevtools-gcc9-9.3.0 -y
 
 export TOOLS_DIR=/usr/local/oceanbase/devtools
 export PATH=$TOOLS_DIR/bin:$PATH

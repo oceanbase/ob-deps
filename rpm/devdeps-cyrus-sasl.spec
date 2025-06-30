@@ -17,10 +17,6 @@ AutoReqProv:no
 %define _sasl_src cyrus-sasl-2.1.28
 %define _sasl_product_prefix cyrus-sasl
 
-# prepare env variables for compiling thrift 
-%define _compiled_prefix /tmp/install/krb5
-%define _sasl_compiled_prefix /tmp/install/sasl
-
 %description
 This is the repository for accessing hive metastore by krb5
 
@@ -28,16 +24,15 @@ This is the repository for accessing hive metastore by krb5
 # create cyrus sasl related dirs
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib/%{_sasl_product_prefix}
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/%{_sasl_product_prefix}
-
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 ROOT_DIR=$OLDPWD/..
+
+# prepare env variables for compiling thrift 
 _compiled_prefix=${ROOT_DIR}/tmp_krb5
 _sasl_compiled_prefix=${ROOT_DIR}/tmp_sasl
 
-cd $ROOT_DIR
-
 # compile and install `krb5`, note: use gcc and g++ as same as the compiler of observer
-
+cd $ROOT_DIR
 rm -rf %{_src}
 tar xf %{_src}.tar.gz
 cd %{_src}/src
