@@ -54,6 +54,7 @@ cp -r ${_compiled_prefix}/include/thrift/* $RPM_BUILD_ROOT/%{_prefix}/include/%{
 sed -i 's/^#define PACKAGE_VERSION "0.16.0"/\/\/ #define PACKAGE_VERSION "0.16.0"/' $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/config.h
 sed -i 's/^#define PACKAGE_STRING "thrift 0.16.0"/\/\/ #define PACKAGE_STRING "thrift 0.16.0"/' $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/config.h
 sed -i 's/^#define PACKAGE_NAME "thrift"/\/\/ #define PACKAGE_NAME "thrift"/' $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/config.h
+sed -i 's/^#define PACKAGE "thrift"/\/\/ #define PACKAGE "thrift"/' $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/config.h
 
 %files 
 
