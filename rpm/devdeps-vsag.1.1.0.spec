@@ -22,7 +22,7 @@ mkdir -p %{buildroot}/%{_prefix}
 cd $OLDPWD/../
 rm -rf %{_vsag_src}
 tar xf %{_vsag_src}.tar.gz
-mv vsag-0.15.0 %{_default_version_src}
+mv vsag-0.15.1 %{_default_version_src}
 cd %{_default_version_src}
 
 export CC=/usr/local/oceanbase/devtools/bin/gcc
@@ -32,9 +32,6 @@ export FC=/usr/local/oceanbase/devtools/bin/gfortran
 export CFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
 export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
 export LDFLAGS="-z noexecstack -z now -pie"
-
-git init
-git apply ../patch/vsag.1.1.0.patch
 
 cmake . -DENABLE_CXX11_ABI=OFF -DENABLE_INTEL_MKL=OFF -DROARING_DISABLE_AVX512=ON
  
