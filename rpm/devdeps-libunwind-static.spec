@@ -49,6 +49,8 @@ else
     rm -rf %{_src}
     tar -xf %{_src}.tar.gz
     cd %{_src}
+    # set HASH_MIN_BITS 8
+    find . -type f  -exec sed -i 's/#define HASH_MIN_BITS 14/#define HASH_MIN_BITS 8/g' {} +
     ./configure --prefix=%{_tmppath} --enable-minidebuginfo=no --with-pic=yes
     CPU_CORES=`grep -c ^processor /proc/cpuinfo`
     make -j${CPU_CORES};
