@@ -15,9 +15,23 @@ fi
 
 # prepare building environment
 # please prepare environment yourself if the following solution does not work for you.
-#wget https://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
-#yum install obdevtools-gcc-5.2.0 -y
-#export PATH=/usr/local/oceanbase/devtools/bin:$PATH
+ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
+
+if [[ "${ID}"x == "alinux"x ]]; then
+    wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
+else
+    wget http://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
+fi
+
+yum install obdevtools-gcc9-9.3.0 -y
+export TOOLS_DIR=/usr/local/oceanbase/devtools
+export PATH=$TOOLS_DIR/bin:$PATH
+export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
+export CC=$TOOLS_DIR/bin/gcc
+export CXX=$TOOLS_DIR/bin/g++
+
+ln -sf $TOOLS_DIR/bin/g++  /usr/bin/c++
+ln -sf $TOOLS_DIR/bin/gcc  /usr/bin/cc
 
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE
