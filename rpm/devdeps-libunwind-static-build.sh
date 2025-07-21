@@ -7,10 +7,13 @@ PROJECT_NAME=${2:-"devdeps-libunwind-static"}
 VERSION=${3:-"1.6.2"}
 RELEASE=${4:-"1"}
 
+# Configure custom source file directory
+[ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
+
 # check source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/libunwind-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download source code"
-    wget https://github.com/libunwind/libunwind/releases/download/v1.6.2/libunwind-1.6.2.tar.gz -P $ROOT_DIR
+    wget https://github.com/libunwind/libunwind/releases/download/v$VERSION/libunwind-$VERSION.tar.gz -P $ROOT_DIR
 fi
 
 # prepare building environment
