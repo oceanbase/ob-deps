@@ -41,6 +41,8 @@ mkdir -p %{_src}
 tar zxf %{_src}.tar.gz --strip-components=1 -C %{_src}
 cp icu-makefiles/ThirdpartyToolchain.cmake %{_src}/cmake_modules
 cd %{_src}
+git init
+git apply --whitespace=fix ../patch/devdeps-apache-orc.diff
 source_dir=$(pwd)
 tmp_install_dir=${source_dir}/tmp_install_dir
 build_dir=${source_dir}/build
