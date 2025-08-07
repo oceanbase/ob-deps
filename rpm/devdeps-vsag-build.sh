@@ -1,5 +1,4 @@
 #!/bin/bash
- 
 CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/../
 PROJECT_DIR=${1:-"$CUR_DIR"}
@@ -11,7 +10,7 @@ if [[ $VERSION == "1.0.0" ]]; then
   VSAG_VERSION="0.14.7"
 else
   # default use newest vsag
-  VSAG_VERSION="0.15.1"
+  VSAG_VERSION="0.15.4"
 fi
 
 echo "VERSION=${VERSION} VSAG_VERSION=${VSAG_VERSION}"

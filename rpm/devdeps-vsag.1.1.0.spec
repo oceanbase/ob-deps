@@ -22,7 +22,7 @@ mkdir -p %{buildroot}/%{_prefix}
 cd $OLDPWD/../
 rm -rf %{_vsag_src}
 tar xf %{_vsag_src}.tar.gz
-mv vsag-0.15.1 %{_default_version_src}
+mv vsag-0.15.4 %{_default_version_src}
 cd %{_default_version_src}
 
 export CC=/usr/local/oceanbase/devtools/bin/gcc
