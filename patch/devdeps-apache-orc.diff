@@ -1,11 +1,79 @@
+diff --git a/c++/build-support/README.md b/c++/build-support/README.md
+index 0ffad788..80966104 100644
+--- a/c++/build-support/README.md
++++ b/c++/build-support/README.md
+@@ -11,7 +11,7 @@ To use `run_clang_format.py` you could act like below:
+ ```shell
+ mkdir build
+ cd build
+-cmake .. -DBUILD_JAVA=OFF -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DCMAKE_EXPORT_COMPILE_COMMANDS=1
++cmake .. -DBUILD_JAVA=OFF -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DORC_ENABLE_CLANG_TOOLS=1
+ make check-format # Do checks only
+ make format # This would apply suggested changes, take care!
+ ```
+@@ -23,7 +23,7 @@ To use `run_clang_tidy.py` you could act like below:
+ ```shell
+ mkdir build
+ cd build
+-cmake .. -DBUILD_JAVA=OFF -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DCMAKE_EXPORT_COMPILE_COMMANDS=1
++cmake .. -DBUILD_JAVA=OFF -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DORC_ENABLE_CLANG_TOOLS=1
+ make -j`nproc` # Important
+ make check-clang-tidy # Do checks only
+ make fix-clang-tidy # This would apply suggested changes, take care!
 diff --git a/c++/include/orc/Reader.hh b/c++/include/orc/Reader.hh
-index b015b649..ab42a5ca 100644
+index b015b649..bfef74be 100644
 --- a/c++/include/orc/Reader.hh
 +++ b/c++/include/orc/Reader.hh
-@@ -666,6 +666,27 @@ namespace orc {
-     virtual void releaseBuffer(uint64_t boundary) = 0;
-   };
+@@ -392,6 +392,19 @@ namespace orc {
  
+   class RowReader;
+ 
++  /**
++   * Cached reader context for shared row reader.
++   */
++  struct CachedReaderContext {
++    // current stripe information which can be shared by multiple row readers
++    std::unique_ptr<StripeInformation> currentStripeInfo;
++
++    // cached row indexes, the value type is `std::unordered_map<uint64_t, proto::RowIndex>`.
++    // it will point to row reader's row indexes after the row reader is created, we can set it to
++    // nullptr to disable the sharing.
++    void* rowIndexes = nullptr;
++  };
++
+   /**
+    * The interface for reading ORC file meta-data and constructing RowReaders.
+    * This is an an abstract class that will be subclassed as necessary.
+@@ -498,9 +511,15 @@ namespace orc {
+     /**
+      * Get the statistics about a stripe.
+      * @param stripeIndex the index of the stripe (0 to N-1) to get statistics about
+-     * @return the statistics about that stripe
++     * @param includeRowIndex whether the row index of the stripe is included
++     * @param selectedColumns whether the columns are selected,
++     *        nullptr means all columns are selected
++     * @return the statistics about that stripe and row group index statistics
+      */
+-    virtual std::unique_ptr<StripeStatistics> getStripeStatistics(uint64_t stripeIndex) const = 0;
++    virtual std::unique_ptr<StripeStatistics> getStripeStatistics(
++        uint64_t stripeIndex,
++        bool includeRowIndex = true,
++        const bool* selectedColumns = nullptr) const = 0;
+ 
+     /**
+      * Get the length of the data stripes in the file.
+@@ -664,6 +683,33 @@ namespace orc {
+      * @param boundary the boundary value to release cache entries
+      */
+     virtual void releaseBuffer(uint64_t boundary) = 0;
++
++    /**
++     * Set the cached reader context. Note that this method must be called before createRowReader.
++     * @param context the cached reader context
++     */
++    virtual void setCachedReaderContext(CachedReaderContext* context) = 0;
++  };
++
 +  /**
 +   * A struct to hold the arguments for the nextWithSkip reader.
 +   */
@@ -25,12 +93,10 @@ index b015b649..ab42a5ca 100644
 +    const uint16_t* next;
 +    // Size of the skip and next array.
 +    size_t size;
-+  };
-+
+   };
+ 
    /**
-    * The interface for reading rows in ORC files.
-    * This is an an abstract class that will be subclassed as necessary.
-@@ -705,6 +726,16 @@ namespace orc {
+@@ -705,6 +751,16 @@ namespace orc {
       */
      virtual bool next(ColumnVectorBatch& data) = 0;
  
@@ -1835,10 +1901,225 @@ index 8ceb7f12..05e80780 100644
      template <typename T>
      uint64_t copyDataFromBuffer(T* data, uint64_t offset, uint64_t numValues, const char* notNull);
 diff --git a/c++/src/Reader.cc b/c++/src/Reader.cc
-index c93c62f6..8ef2cd40 100644
+index c93c62f6..4d7c27cd 100644
 --- a/c++/src/Reader.cc
 +++ b/c++/src/Reader.cc
-@@ -1168,6 +1168,39 @@ namespace orc {
+@@ -246,7 +246,8 @@ namespace orc {
+     buildTypeNameIdMap(contents_->schema.get());
+   }
+ 
+-  RowReaderImpl::RowReaderImpl(std::shared_ptr<FileContents> contents, const RowReaderOptions& opts)
++  RowReaderImpl::RowReaderImpl(std::shared_ptr<FileContents> contents, const RowReaderOptions& opts,
++                               CachedReaderContext* cachedReaderContext)
+       : localTimezone_(getLocalTimezone()),
+         contents_(contents),
+         throwOnHive11DecimalOverflow_(opts.getThrowOnHive11DecimalOverflow()),
+@@ -255,7 +256,8 @@ namespace orc {
+         firstRowOfStripe_(*contents_->pool, 0),
+         enableEncodedBlock_(opts.getEnableLazyDecoding()),
+         readerTimezone_(getTimezoneByName(opts.getTimezoneName())),
+-        schemaEvolution_(opts.getReadType(), contents_->schema.get()) {
++        schemaEvolution_(opts.getReadType(), contents_->schema.get()),
++        cachedReaderContext_(cachedReaderContext) {
+     uint64_t numberOfStripes;
+     numberOfStripes = static_cast<uint64_t>(footer_->stripes_size());
+     currentStripe_ = numberOfStripes;
+@@ -311,6 +313,11 @@ namespace orc {
+     }
+ 
+     skipBloomFilters_ = hasBadBloomFilters();
++
++    // set row indexes to shared stripe context for other row readers to reuse
++    if (cachedReaderContext_ != nullptr) {
++      cachedReaderContext_->rowIndexes = &rowIndexes_;
++    }
+   }
+ 
+   // Check if the file has inconsistent bloom filters.
+@@ -420,7 +427,7 @@ namespace orc {
+     uint64_t rowsToSkip = currentRowInStripe_;
+     // seek to the target row group if row indexes exists
+     if (rowIndexStride > 0 && currentStripeInfo_.index_length() > 0) {
+-      if (rowIndexes_.empty()) {
++      if (!hasCachedRowIndexes() && rowIndexes_.empty()) {
+         loadStripeIndex();
+       }
+       // TODO(ORC-1175): process the failures of loadStripeIndex() call
+@@ -484,9 +491,15 @@ namespace orc {
+     std::list<std::list<uint64_t>> positions;
+     // store position providers for selected colimns
+     std::unordered_map<uint64_t, PositionProvider> positionProviders;
++    const std::unordered_map<uint64_t, proto::RowIndex>* rowIndexes = hasCachedRowIndexes() ?
++        static_cast<std::unordered_map<uint64_t, proto::RowIndex>*>(cachedReaderContext_->rowIndexes)
++        : &rowIndexes_;
+ 
+-    for (auto rowIndex = rowIndexes_.cbegin(); rowIndex != rowIndexes_.cend(); ++rowIndex) {
++    for (auto rowIndex = rowIndexes->cbegin(); rowIndex != rowIndexes->cend(); ++rowIndex) {
+       uint64_t colId = rowIndex->first;
++      if (!selectedColumns_[colId]) {
++        continue;
++      }
+       const proto::RowIndexEntry& entry =
+           rowIndex->second.entry(static_cast<int32_t>(rowGroupEntryId));
+ 
+@@ -547,7 +560,8 @@ namespace orc {
+         options_(opts),
+         fileLength_(fileLength),
+         postscriptLength_(postscriptLength),
+-        footer_(contents_->footer.get()) {
++        footer_(contents_->footer.get()),
++        cachedReaderContext_(nullptr) {
+     isMetadataLoaded_ = false;
+     checkOrcVersion();
+     numberOfStripes_ = static_cast<uint64_t>(footer_->stripes_size());
+@@ -700,15 +714,25 @@ namespace orc {
+   void ReaderImpl::getRowIndexStatistics(
+       const proto::StripeInformation& stripeInfo, uint64_t stripeIndex,
+       const proto::StripeFooter& currentStripeFooter,
++      const bool* selectedColumns,
+       std::vector<std::vector<proto::ColumnStatistics>>* indexStats) const {
+     int num_streams = currentStripeFooter.streams_size();
+     uint64_t offset = stripeInfo.offset();
+     uint64_t indexEnd = stripeInfo.offset() + stripeInfo.index_length();
++    std::unordered_map<uint64_t, proto::RowIndex>* rowIndexes = nullptr;
++    if (cachedReaderContext_ != nullptr && cachedReaderContext_->rowIndexes != nullptr) {
++      // clear the last stripe's row indexes
++      rowIndexes = static_cast<std::unordered_map<uint64_t, proto::RowIndex>*>(
++          cachedReaderContext_->rowIndexes);
++      rowIndexes->clear();
++    }
+     for (int i = 0; i < num_streams; i++) {
+       const proto::Stream& stream = currentStripeFooter.streams(i);
+       StreamKind streamKind = static_cast<StreamKind>(stream.kind());
+       uint64_t length = static_cast<uint64_t>(stream.length());
+-      if (streamKind == StreamKind::StreamKind_ROW_INDEX) {
++      uint64_t colId = stream.column();
++      if (streamKind == StreamKind::StreamKind_ROW_INDEX &&
++          (selectedColumns == nullptr || selectedColumns[colId])) {
+         if (offset + length > indexEnd) {
+           std::stringstream msg;
+           msg << "Malformed RowIndex stream meta in stripe " << stripeIndex
+@@ -727,6 +751,10 @@ namespace orc {
+         if (!rowIndex.ParseFromZeroCopyStream(pbStream.get())) {
+           throw ParseError("Failed to parse RowIndex from stripe footer");
+         }
++        // store row indexes for selected columns
++        if (rowIndexes != nullptr) {
++          (*rowIndexes)[colId] = rowIndex;
++        }
+         int num_entries = rowIndex.entry_size();
+         size_t column = static_cast<size_t>(stream.column());
+         for (int j = 0; j < num_entries; j++) {
+@@ -751,27 +779,58 @@ namespace orc {
+     return *(contents_->schema.get());
+   }
+ 
+-  std::unique_ptr<StripeStatistics> ReaderImpl::getStripeStatistics(uint64_t stripeIndex) const {
++  std::unique_ptr<StripeStatistics> ReaderImpl::getStripeStatistics(
++      uint64_t stripeIndex,
++      bool includeRowIndex,
++      const bool* selectedColumns) const {
+     if (!isMetadataLoaded_) {
+       readMetadata();
+     }
+     if (contents_->metadata == nullptr) {
+       throw std::logic_error("No stripe statistics in file");
+     }
+-    size_t num_cols = static_cast<size_t>(
+-        contents_->metadata->stripe_stats(static_cast<int>(stripeIndex)).col_stats_size());
+-    std::vector<std::vector<proto::ColumnStatistics>> indexStats(num_cols);
+ 
+     proto::StripeInformation currentStripeInfo = footer_->stripes(static_cast<int>(stripeIndex));
+-    proto::StripeFooter currentStripeFooter = getStripeFooter(currentStripeInfo, *contents_.get());
+-
+-    getRowIndexStatistics(currentStripeInfo, stripeIndex, currentStripeFooter, &indexStats);
++    if (cachedReaderContext_ != nullptr) {
++      StripeInformationImpl* stripeInfo =
++          dynamic_cast<StripeInformationImpl*>(cachedReaderContext_->currentStripeInfo.get());
++      if (stripeInfo == nullptr) {
++        throw std::logic_error("stripe info is not a StripeInformationImpl");
++      }
++      const proto::StripeFooter* currentStripeFooter = stripeInfo->getStripeFooter();
++      return getStripeStatistics(stripeIndex, currentStripeInfo,
++                                 *currentStripeFooter, includeRowIndex, selectedColumns);
++    } else {
++      proto::StripeFooter currentStripeFooter = getStripeFooter(currentStripeInfo, *contents_.get());
++      return getStripeStatistics(stripeIndex, currentStripeInfo, currentStripeFooter, includeRowIndex,
++                                 selectedColumns);
++    }
++  }
+ 
++  std::unique_ptr<StripeStatistics> ReaderImpl::getStripeStatistics(
++      uint64_t stripeIndex,
++      const proto::StripeInformation& currentStripeInfo,
++      const proto::StripeFooter& currentStripeFooter,
++      bool includeRowIndex,
++      const bool* selectedColumns) const {
+     const Timezone& writerTZ = currentStripeFooter.has_writer_timezone()
+                                    ? getTimezoneByName(currentStripeFooter.writer_timezone())
+                                    : getLocalTimezone();
+     StatContext statContext(hasCorrectStatistics(), &writerTZ);
+-    return std::make_unique<StripeStatisticsImpl>(
++
++    if (!includeRowIndex) {
++      return std::make_unique<StripeStatisticsImpl>(
++          contents_->metadata->stripe_stats(static_cast<int>(stripeIndex)), statContext);
++    }
++
++    size_t num_cols = static_cast<size_t>(
++        contents_->metadata->stripe_stats(static_cast<int>(stripeIndex)).col_stats_size());
++    std::vector<std::vector<proto::ColumnStatistics>> indexStats(num_cols);
++
++    getRowIndexStatistics(currentStripeInfo, stripeIndex, currentStripeFooter, selectedColumns,
++                          &indexStats);
++
++    return std::make_unique<StripeStatisticsWithRowGroupIndexImpl>(
+         contents_->metadata->stripe_stats(static_cast<int>(stripeIndex)), indexStats, statContext);
+   }
+ 
+@@ -838,7 +897,7 @@ namespace orc {
+       // load stripe statistics for PPD
+       readMetadata();
+     }
+-    return std::make_unique<RowReaderImpl>(contents_, opts);
++    return std::make_unique<RowReaderImpl>(contents_, opts, cachedReaderContext_);
+   }
+ 
+   uint64_t maxStreamsForType(const proto::Type& type) {
+@@ -1024,7 +1083,9 @@ namespace orc {
+ 
+   void RowReaderImpl::startNextStripe() {
+     reader_.reset();  // ColumnReaders use lots of memory; free old memory first
+-    rowIndexes_.clear();
++    if (!hasCachedRowIndexes()) {
++      rowIndexes_.clear();
++    }
+     bloomFilterIndex_.clear();
+ 
+     // evaluate file statistics if it exists
+@@ -1066,8 +1127,20 @@ namespace orc {
+       }
+ 
+       if (isStripeNeeded) {
+-        currentStripeFooter_ = getStripeFooter(currentStripeInfo_, *contents_.get());
++        if (cachedReaderContext_ != nullptr) {
++          StripeInformationImpl* stripeInfo =
++              dynamic_cast<StripeInformationImpl*>(cachedReaderContext_->currentStripeInfo.get());
++          if (stripeInfo == nullptr) {
++            throw std::logic_error("stripe info is not a StripeInformationImpl");
++          }
++          currentStripeFooter_ = *stripeInfo->getStripeFooter();
++        } else {
++          currentStripeFooter_ = getStripeFooter(currentStripeInfo_, *contents_.get());
++        }
+         if (sargsApplier_) {
++          if (cachedReaderContext_ != nullptr) {
++            throw std::logic_error("cached reader context is not supported when PPD is enabled");
++          }
+           // read row group statistics and bloom filters of current stripe
+           loadStripeIndex();
+ 
+@@ -1168,6 +1241,39 @@ namespace orc {
      return rowsToRead != 0;
    }
  
@@ -1879,10 +2160,36 @@ index c93c62f6..8ef2cd40 100644
                                             uint64_t rowsInCurrentStripe, uint64_t rowIndexStride,
                                             const std::vector<uint64_t>& nextSkippedRows) {
 diff --git a/c++/src/Reader.hh b/c++/src/Reader.hh
-index 39ca7396..b7de9a15 100644
+index 39ca7396..c9bbae40 100644
 --- a/c++/src/Reader.hh
 +++ b/c++/src/Reader.hh
-@@ -236,6 +236,8 @@ namespace orc {
+@@ -183,6 +183,13 @@ namespace orc {
+     // match read and file types
+     SchemaEvolution schemaEvolution_;
+ 
++    // cached reader context
++    CachedReaderContext* cachedReaderContext_;
++
++    inline bool hasCachedRowIndexes() const {
++      return cachedReaderContext_ != nullptr && cachedReaderContext_->rowIndexes != nullptr;
++    }
++
+     // load stripe index if not done so
+     void loadStripeIndex();
+ 
+@@ -224,8 +231,10 @@ namespace orc {
+      * Constructor that lets the user specify additional options.
+      * @param contents of the file
+      * @param options options for reading
++     * @param cachedReaderContext the cached reader context
+      */
+-    RowReaderImpl(std::shared_ptr<FileContents> contents, const RowReaderOptions& options);
++    RowReaderImpl(std::shared_ptr<FileContents> contents, const RowReaderOptions& options,
++                  CachedReaderContext* cachedReaderContext);
+ 
+     // Select the columns from the options object
+     const std::vector<bool> getSelectedColumns() const override;
+@@ -236,6 +245,8 @@ namespace orc {
  
      bool next(ColumnVectorBatch& data) override;
  
@@ -1891,6 +2198,55 @@ index 39ca7396..b7de9a15 100644
      CompressionKind getCompression() const;
  
      uint64_t getCompressionSize() const;
+@@ -272,6 +283,9 @@ namespace orc {
+     proto::Footer* footer_;
+     uint64_t numberOfStripes_;
+ 
++    // cached reader context
++    CachedReaderContext* cachedReaderContext_;
++
+     uint64_t getMemoryUse(int stripeIx, std::vector<bool>& selectedColumns);
+ 
+     // internal methods
+@@ -279,8 +293,15 @@ namespace orc {
+     void checkOrcVersion();
+     void getRowIndexStatistics(const proto::StripeInformation& stripeInfo, uint64_t stripeIndex,
+                                const proto::StripeFooter& currentStripeFooter,
++                               const bool* selectedColumns,
+                                std::vector<std::vector<proto::ColumnStatistics>>* indexStats) const;
+     proto::StripeFooter loadCurrentStripeFooter(uint32_t stripeIndex, uint64_t& offset) const;
++    std::unique_ptr<StripeStatistics> getStripeStatistics(
++        uint64_t stripeIndex,
++        const proto::StripeInformation& currentStripeInfo,
++        const proto::StripeFooter& currentStripeFooter,
++        bool includeRowIndex,
++        const bool* selectedColumns) const;
+ 
+     // metadata
+     mutable bool isMetadataLoaded_;
+@@ -330,7 +351,10 @@ namespace orc {
+ 
+     const std::string& getStreamName() const override;
+ 
+-    std::unique_ptr<StripeStatistics> getStripeStatistics(uint64_t stripeIndex) const override;
++    std::unique_ptr<StripeStatistics> getStripeStatistics(
++        uint64_t stripeIndex,
++        bool includeRowIndex = true,
++        const bool* selectedColumns = nullptr) const override;
+ 
+     std::unique_ptr<RowReader> createRowReader() const override;
+ 
+@@ -393,6 +417,10 @@ namespace orc {
+ 
+     std::map<uint32_t, RowGroupIndex> getRowGroupIndex(
+         uint32_t stripeIndex, const std::set<uint32_t>& included) const override;
++
++    void setCachedReaderContext(CachedReaderContext* context) override {
++      cachedReaderContext_ = context;
++    }
+   };
+ }  // namespace orc
+ 
 diff --git a/c++/src/RleDecoderV2.cc b/c++/src/RleDecoderV2.cc
 index f35dd4fe..b7c7483c 100644
 --- a/c++/src/RleDecoderV2.cc
@@ -2061,3 +2417,167 @@ index f35dd4fe..b7c7483c 100644
    }
  
    template <typename T>
+diff --git a/c++/src/Statistics.cc b/c++/src/Statistics.cc
+index 76fd736b..c1a23cad 100644
+--- a/c++/src/Statistics.cc
++++ b/c++/src/Statistics.cc
+@@ -81,11 +81,20 @@ namespace orc {
+     // PASS
+   }
+ 
+-  StripeStatisticsImpl::StripeStatisticsImpl(
++  StripeStatisticsImpl::StripeStatisticsImpl(const proto::StripeStatistics& stripeStats,
++                                             const StatContext& statContext) {
++    columnStats_ = std::make_unique<StatisticsImpl>(stripeStats, statContext);
++  }
++
++  StripeStatisticsWithRowGroupIndexImpl::~StripeStatisticsWithRowGroupIndexImpl() {
++    // PASS
++  }
++
++  StripeStatisticsWithRowGroupIndexImpl::StripeStatisticsWithRowGroupIndexImpl(
+       const proto::StripeStatistics& stripeStats,
+       std::vector<std::vector<proto::ColumnStatistics> >& indexStats,
+-      const StatContext& statContext) {
+-    columnStats_ = std::make_unique<StatisticsImpl>(stripeStats, statContext);
++      const StatContext& statContext)
++      : StripeStatisticsImpl(stripeStats, statContext) {
+     rowIndexStats_.resize(indexStats.size());
+     for (size_t i = 0; i < rowIndexStats_.size(); i++) {
+       for (size_t j = 0; j < indexStats[i].size(); j++) {
+diff --git a/c++/src/Statistics.hh b/c++/src/Statistics.hh
+index 6f212c15..b7ed5d1e 100644
+--- a/c++/src/Statistics.hh
++++ b/c++/src/Statistics.hh
+@@ -1713,7 +1713,6 @@ namespace orc {
+   class StripeStatisticsImpl : public StripeStatistics {
+    private:
+     std::unique_ptr<StatisticsImpl> columnStats_;
+-    std::vector<std::vector<std::shared_ptr<const ColumnStatistics> > > rowIndexStats_;
+ 
+     // DELIBERATELY NOT IMPLEMENTED
+     StripeStatisticsImpl(const StripeStatisticsImpl&);
+@@ -1721,7 +1720,6 @@ namespace orc {
+ 
+    public:
+     StripeStatisticsImpl(const proto::StripeStatistics& stripeStats,
+-                         std::vector<std::vector<proto::ColumnStatistics> >& indexStats,
+                          const StatContext& statContext);
+ 
+     virtual const ColumnStatistics* getColumnStatistics(uint32_t columnId) const override {
+@@ -1732,13 +1730,38 @@ namespace orc {
+       return columnStats_->getNumberOfColumns();
+     }
+ 
++    virtual const ColumnStatistics* getRowIndexStatistics(uint32_t, uint32_t) const override {
++      throw NotImplementedYet("set includeRowIndex true to get row index stats");
++    }
++
++    virtual ~StripeStatisticsImpl() override;
++
++    virtual uint32_t getNumberOfRowIndexStats(uint32_t) const override {
++      throw NotImplementedYet("set includeRowIndex true to get row index stats");
++    }
++  };
++
++  class StripeStatisticsWithRowGroupIndexImpl : public StripeStatisticsImpl {
++   private:
++    std::vector<std::vector<std::shared_ptr<const ColumnStatistics> > > rowIndexStats_;
++
++    // DELIBERATELY NOT IMPLEMENTED
++    StripeStatisticsWithRowGroupIndexImpl(const StripeStatisticsWithRowGroupIndexImpl&);
++    StripeStatisticsWithRowGroupIndexImpl& operator=(const StripeStatisticsWithRowGroupIndexImpl&);
++
++   public:
++    StripeStatisticsWithRowGroupIndexImpl(
++        const proto::StripeStatistics& stripeStats,
++        std::vector<std::vector<proto::ColumnStatistics> >& indexStats,
++        const StatContext& statContext);
++
+     virtual const ColumnStatistics* getRowIndexStatistics(uint32_t columnId,
+                                                           uint32_t rowIndex) const override {
+       // check id indices are valid
+       return rowIndexStats_[columnId][rowIndex].get();
+     }
+ 
+-    virtual ~StripeStatisticsImpl() override;
++    virtual ~StripeStatisticsWithRowGroupIndexImpl() override;
+ 
+     uint32_t getNumberOfRowIndexStats(uint32_t columnId) const override {
+       return static_cast<uint32_t>(rowIndexStats_[columnId].size());
+diff --git a/c++/src/StripeStream.hh b/c++/src/StripeStream.hh
+index 2d26f857..d30f2e87 100644
+--- a/c++/src/StripeStream.hh
++++ b/c++/src/StripeStream.hh
+@@ -208,6 +208,11 @@ namespace orc {
+       ensureStripeFooterLoaded();
+       return stripeFooter_->writer_timezone();
+     }
++
++    const proto::StripeFooter* getStripeFooter() const {
++      ensureStripeFooterLoaded();
++      return stripeFooter_.get();
++    }
+   };
+ 
+ }  // namespace orc
+diff --git a/c++/test/TestStripeIndexStatistics.cc b/c++/test/TestStripeIndexStatistics.cc
+index 85fdb80e..a529792c 100644
+--- a/c++/test/TestStripeIndexStatistics.cc
++++ b/c++/test/TestStripeIndexStatistics.cc
+@@ -83,6 +83,31 @@ namespace orc {
+         "length: "
+         "8000\n",
+         stringColStats->toString());
++
++    std::unique_ptr<orc::Statistics> stripeLevelStats = reader->getStripeStatistics(0, false);
++    const orc::IntegerColumnStatistics* stripeLevelIntColStats;
++    stripeLevelIntColStats = reinterpret_cast<const orc::IntegerColumnStatistics*>(
++        stripeLevelStats->getColumnStatistics(1));
++    EXPECT_EQ(
++        "Data type: Integer\nValues: 6000\nHas null: yes\nMinimum: 1\nMaximum: 6000\nSum: "
++        "18003000\n",
++        stripeLevelIntColStats->toString());
++
++    const orc::StringColumnStatistics* stripeLevelStringColStats;
++    stripeLevelStringColStats = reinterpret_cast<const orc::StringColumnStatistics*>(
++        stripeLevelStats->getColumnStatistics(2));
++    EXPECT_EQ(
++        "Data type: String\nValues: 6000\nHas null: yes\nMinimum: 1000\nMaximum: 9a\nTotal length: "
++        "23892\n",
++        stripeLevelStringColStats->toString());
++
++    intColStats =
++        reinterpret_cast<const orc::IntegerColumnStatistics*>(stripeStats->getColumnStatistics(1));
++    stringColStats =
++        reinterpret_cast<const orc::StringColumnStatistics*>(stripeStats->getColumnStatistics(2));
++
++    EXPECT_EQ(intColStats->toString(), stripeLevelIntColStats->toString());
++    EXPECT_EQ(stringColStats->toString(), stripeLevelStringColStats->toString());
+   }
+ 
+ }  // namespace orc
+diff --git a/c++/test/TestTimestampStatistics.cc b/c++/test/TestTimestampStatistics.cc
+index d20a0495..e005fa6c 100644
+--- a/c++/test/TestTimestampStatistics.cc
++++ b/c++/test/TestTimestampStatistics.cc
+@@ -68,6 +68,19 @@ namespace orc {
+         "00:00:00.688\nLowerBound: 1995-01-01 00:00:00.688\nMaximum: 2037-01-01 "
+         "00:00:00.0\nUpperBound: 2037-01-01 00:00:00.1\n",
+         stripeColStats->toString());
++
++    std::unique_ptr<orc::StripeStatistics> stripeStatsWithOutRowIndex =
++        reader->getStripeStatistics(0, false);
++    const orc::TimestampColumnStatistics* stripeColStatsOnly =
++        reinterpret_cast<const orc::TimestampColumnStatistics*>(
++            stripeStatsWithOutRowIndex->getColumnStatistics(0));
++
++    EXPECT_TRUE(stripeColStatsOnly->hasMinimum());
++    EXPECT_TRUE(stripeColStatsOnly->hasMaximum());
++    EXPECT_EQ(stripeColStats->toString(), stripeColStatsOnly->toString());
++    EXPECT_EQ(stripeStats->getNumberOfColumns(), stripeStatsWithOutRowIndex->getNumberOfColumns());
++    EXPECT_THROW(stripeStatsWithOutRowIndex->getRowIndexStatistics(1, 1), NotImplementedYet);
++    EXPECT_THROW(stripeStatsWithOutRowIndex->getNumberOfRowIndexStats(1), NotImplementedYet);
+   }
+ 
+   TEST(TestTimestampStatistics, testTimezoneUTC) {
