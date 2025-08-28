@@ -4,7 +4,7 @@ CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
 PROJECT_NAME=${2:-"devdeps-apache-arrow"}
-VERSION=${3:-"18.1.0"}
+VERSION=${3:-"20.0.0"}
 RELEASE=${4:-"1"}
 
 # Configure custom source file directory
@@ -16,17 +16,22 @@ if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/apache-arrow-$VERSION.*[tar|gz|b
     wget https://archive.apache.org/dist/arrow/arrow-$VERSION/apache-arrow-$VERSION.tar.gz -O $ROOT_DIR/apache-arrow-$VERSION.tar.gz --no-check-certificate
 fi
 
+# build cmake source to fix ssl problem
+if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/cmake-3.30.3.tar.gz$"` ]]; then
+    echo "Download cmake source code"
+    wget https://cmake.org/files/v3.22/cmake-3.30.3.tar.gz -P $ROOT_DIR --no-check-certificate
+fi
+
 # prepare building environment
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 
 if [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install obdevtools-gcc9-9.3.0 -y
-    yum install obdevtools-cmake-3.22.1 -y
 else
     os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
     arch=`uname -p`
-    dep_pkgs=(obdevtools-gcc9-9.3.0-72024081318.el obdevtools-cmake-3.22.1-142025032516.el)
+    dep_pkgs=(obdevtools-gcc9-9.3.0-72024081318.el)
     target_dir_3rd=${PROJECT_DIR}/deps/3rd
     pkg_dir=$target_dir_3rd/pkg
     mkdir -p $pkg_dir
