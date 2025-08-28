@@ -1,5 +1,5 @@
 Name: devdeps-apache-arrow
-Version: %(echo $VERSION)
+Version: 20.0.0
 Release: %(echo $RELEASE)%{?dist}
 Summary: This is the repository for in-memory analytics
 License: https://github.com/apache/arrow/blob/main/LICENSE.txt
@@ -12,6 +12,7 @@ AutoReqProv: no
 %define _prefix /usr/local/oceanbase/deps/devel
 %define _product_prefix apache-arrow
 %define _src apache-arrow-%{version}
+%define _cmake_src cmake-3.30.3
  
 %description
 This is the repository for in-memory analytics
@@ -25,6 +26,17 @@ export CFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
 export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
 export LDFLAGS="-z noexecstack -z now -pie"
 ROOT_DIR=$OLDPWD/..
+
+# install cmake
+cd $ROOT_DIR
+rm -rf %{_cmake_src}
+mkdir -p %{_cmake_src}
+tar zxf %{_cmake_src}.tar.gz --strip-components=1 -C %{_cmake_src}
+cd %{_cmake_src}
+./bootstrap --prefix=$ROOT_DIR/%{_cmake_src} -- -DCMAKE_USE_OPENSSL=ON
+make -j${CPU_CORES}
+make install
+export PATH=$ROOT_DIR/%{_cmake_src}/bin:$PATH;
 
 # install apache-arrow
 cd $ROOT_DIR
@@ -42,7 +54,10 @@ mkdir -p ${build_dir}
  
 # compile and install
 cd ${build_dir}
-cmake .. -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/gcc -DCMAKE_CXX_COMPILER=$TOOLS_DIR/bin/g++ -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} -DCMAKE_BUILD_TYPE=Release -DARROW_PARQUET=ON -DPARQUET_BUILD_EXAMPLES=ON -DARROW_FILESYSTEM=ON -DARROW_WITH_BROTLI=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_LZ4=ON -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZLIB=ON -DARROW_WITH_ZSTD=ON
+cmake .. -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/gcc -DCMAKE_CXX_COMPILER=$TOOLS_DIR/bin/g++ \
+         -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} -DCMAKE_BUILD_TYPE=Release -DARROW_PARQUET=ON \
+         -DPARQUET_BUILD_EXAMPLES=ON -DARROW_FILESYSTEM=ON -DARROW_WITH_BROTLI=ON -DARROW_WITH_BZ2=ON \
+         -DARROW_WITH_LZ4=ON -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZLIB=ON -DARROW_WITH_ZSTD=ON -DARROW_JEMALLOC=OFF
 # Temporarily disable error exit
 set +e
 MAX_RETRIES=3
