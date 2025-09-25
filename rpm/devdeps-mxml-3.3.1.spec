@@ -3,7 +3,7 @@
 # http://www.rpm.org/max-rpm/ch-rpm-inside.html              #
 ##############################################################
 Name: devdeps-mxml
-Version: 2.12.0
+Version: %(echo $VERSION)
 Release: %(echo $RELEASE)%{?dist}
 # if you want use the parameter of rpm_create on build time,
 # uncomment below
@@ -11,8 +11,9 @@ Summary: mini xml library build for oceanbase
 Group: Development/Tools
 License: Commercial
 Url: https://github.com/yasm/yasm
+
 %define _prefix /usr/local/oceanbase/deps/devel
-%define _src mxml-2.12
+%define _src mxml-%{version}
 # disable check-buildroot
 %define __arch_install_post %{nil}
 %define __strip /bin/true
