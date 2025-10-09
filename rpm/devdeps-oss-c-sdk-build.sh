@@ -28,23 +28,26 @@ if [[ "${ID}"x == "alinux"x ]]; then
    wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
    yum install -y devdeps-libcurl-static-8.2.1
    yum install -y devdeps-apr-1.6.5
-   yum intsall -y devdeps-mxml-3.3.1
+
+   dep_pkgs=(devdeps-mxml-3.3.1-22025092517.al)
+   download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/al"
+   os_release=8
 else
    dep_pkgs=(devdeps-mxml-3.3.1-22025092517.el devdeps-apr-1.6.5-32022090616.el devdeps-libcurl-static-8.2.1-172023092015.el)
    download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/el"
-
-   for dep_pkg in ${dep_pkgs[@]}
-   do
-      TEMP=$(mktemp -p "/" -u ".XXXX")
-      deps_url=${download_base_url}/${os_release}/${arch}
-      pkg=${dep_pkg}${os_release}.${arch}.rpm
-      wget $deps_url/$pkg -O $pkg_dir/$TEMP
-      if [[ $? == 0 ]]; then
-         mv -f $pkg_dir/$TEMP $pkg_dir/$pkg
-      fi
-      (cd / && rpm2cpio $pkg_dir/$pkg | cpio -di -u --quiet)
-   done
 fi
+
+for dep_pkg in ${dep_pkgs[@]}
+do
+   TEMP=$(mktemp -p "/" -u ".XXXX")
+   deps_url=${download_base_url}/${os_release}/${arch}
+   pkg=${dep_pkg}${os_release}.${arch}.rpm
+   wget $deps_url/$pkg -O $pkg_dir/$TEMP
+   if [[ $? == 0 ]]; then
+      mv -f $pkg_dir/$TEMP $pkg_dir/$pkg
+   fi
+   (cd / && rpm2cpio $pkg_dir/$pkg | cpio -di -u --quiet)
+done
 
 export DEP_PATH=/usr/local/oceanbase/deps/devel
 
