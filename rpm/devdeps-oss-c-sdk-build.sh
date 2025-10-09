@@ -4,24 +4,49 @@ CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/../
 PROJECT_DIR=${1:-"$CUR_DIR"}
 PROJECT_NAME=${2:-"devdeps-oss-c-sdk"}
-VERSION=${3:-"3.9.2"}
+VERSION=${3:-"3.11.2"}
 RELEASE=${4:-"1"}
+
+# Configure custom source file directory
+[ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
 
 # check source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/aliyun-oss-c-sdk-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
    echo "Download source code"
-   wget https://github.com/aliyun/aliyun-oss-c-sdk/archive/refs/tags/3.9.2.tar.gz -O $ROOT_DIR/aliyun-oss-c-sdk-$VERSION.tar.gz --no-check-certificate
+   wget https://github.com/aliyun/aliyun-oss-c-sdk/archive/refs/tags/$VERSION.tar.gz -O $ROOT_DIR/aliyun-oss-c-sdk-$VERSION.tar.gz --no-check-certificate
 fi
 
-wget https://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
+# prepare building environment
+ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
+os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
+arch=`uname -p`
+target_dir_3rd=${PROJECT_DIR}/deps/3rd
+pkg_dir=$target_dir_3rd/pkg
+mkdir -p $pkg_dir
 
-yum install -y devdeps-mxml
-yum install -y devdeps-apr
+if [[ "${ID}"x == "alinux"x ]]; then
+   wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
+   yum install -y devdeps-libcurl-static-8.2.1
+   yum install -y devdeps-apr-1.6.5
+   yum intsall -y devdeps-mxml-3.3.1
+else
+   dep_pkgs=(devdeps-mxml-3.3.1-22025092517.el devdeps-apr-1.6.5-32022090616.el devdeps-libcurl-static-8.2.1-172023092015.el)
+   download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/el"
 
-export PATH=/usr/local/oceanbase/devtools/bin:$PATH
+   for dep_pkg in ${dep_pkgs[@]}
+   do
+      TEMP=$(mktemp -p "/" -u ".XXXX")
+      deps_url=${download_base_url}/${os_release}/${arch}
+      pkg=${dep_pkg}${os_release}.${arch}.rpm
+      wget $deps_url/$pkg -O $pkg_dir/$TEMP
+      if [[ $? == 0 ]]; then
+         mv -f $pkg_dir/$TEMP $pkg_dir/$pkg
+      fi
+      (cd / && rpm2cpio $pkg_dir/$pkg | cpio -di -u --quiet)
+   done
+fi
 
-ln -sf /usr/local/oceanbase/devtools/bin/g++  /usr/bin/c++
-ln -sf /usr/local/oceanbase/devtools/bin/gcc  /usr/bin/cc
+export DEP_PATH=/usr/local/oceanbase/deps/devel
 
 cd $CUR_DIR
-bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE
+bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME-$VERSION $VERSION $RELEASE
