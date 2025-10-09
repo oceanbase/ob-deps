@@ -22,7 +22,7 @@ mkdir -p %{buildroot}/%{_prefix}
 cd $OLDPWD/../
 rm -rf %{_vsag_src}
 tar xf %{_vsag_src}.tar.gz
-mv vsag-0.15.5 %{_default_version_src}
+mv vsag-0.16.7 %{_default_version_src}
 cd %{_default_version_src}
 
 export CC=/usr/local/oceanbase/devtools/bin/gcc
@@ -54,6 +54,7 @@ cp ./openblas/install/lib/libopenblas.a %{buildroot}/%{_prefix}/lib/vsag_lib
 #cp ./_deps/roaringbitmap-build/src/libroaring.a %{buildroot}/%{_prefix}/lib/vsag_lib
 cp ./antlr4/install/lib/libantlr4-runtime.a %{buildroot}/%{_prefix}/lib/vsag_lib/
 cp ./libantlr4-autogen.a %{buildroot}/%{_prefix}/lib/vsag_lib/
+cp ./_deps/fmt-build/libfmt.a %{buildroot}/%{_prefix}/lib/vsag_lib/
  
 arch=$(uname -p)
 if [ "$arch" = "x86_64" ]; then
