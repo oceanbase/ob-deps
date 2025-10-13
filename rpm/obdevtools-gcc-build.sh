@@ -25,5 +25,12 @@ if [[ x"$OS_RELEASE" == x"7" ]]; then
     source /opt/rh/devtoolset-8/enable
 fi
 
+# for ob-lite
+if [[ x"$ENABLE_DYNAMIC" == x"1" ]]; then
+    echo "enable global-dynamic"
+    export CFLAGS="-fPIC -ftls-model=global-dynamic"
+    export CXXFLAGS="-fPIC -ftls-model=global-dynamic"
+fi
+
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE
