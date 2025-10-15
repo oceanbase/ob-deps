@@ -55,7 +55,11 @@ cp ./openblas/install/lib/libopenblas.a %{buildroot}/%{_prefix}/lib/vsag_lib
 cp ./antlr4/install/lib/libantlr4-runtime.a %{buildroot}/%{_prefix}/lib/vsag_lib/
 cp ./libantlr4-autogen.a %{buildroot}/%{_prefix}/lib/vsag_lib/
 cp ./_deps/fmt-build/libfmt.a %{buildroot}/%{_prefix}/lib/vsag_lib/
- 
+
+if [[ x"$ENABLE_DYNAMIC" == x"1" ]]; then
+    cp $GCC_DEPS_DIR/usr/local/oceanbase/devtools/lib64/libgomp.a %{buildroot}/%{_prefix}/lib/vsag_lib/libgomp_embed_static.a
+fi
+
 arch=$(uname -p)
 if [ "$arch" = "x86_64" ]; then
     cp /usr/local/oceanbase/devtools/lib64/libquadmath.so %{buildroot}/%{_prefix}/lib/vsag_lib

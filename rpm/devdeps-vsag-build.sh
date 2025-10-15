@@ -30,33 +30,44 @@ fi
 
 # prepare building environment
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
+arch=`uname -p`
+os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
+target_dir_3rd=${PROJECT_DIR}/deps/3rd
+pkg_dir=$target_dir_3rd/pkg
+mkdir -p $pkg_dir
 
 if [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
-    sed -i '6s/enabled=1/enabled=0/' /etc/yum.repos.d/OceanBaseAlinux.repo
-    yum install obdevtools-gcc9-9.3.0 -y
     yum install obdevtools-cmake-3.22.1 -y
+    dep_pkgs=(obdevtools-gcc9-9.3.0-152024092711.al)
+    download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/al"
+    embed_gcc="obdevtools-gcc9-9.3.0-162025101315.al"
+    os_release=8
 else
-    os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
-    arch=`uname -p`
     dep_pkgs=(obdevtools-gcc9-9.3.0-72024081318.el obdevtools-cmake-3.22.1-142025032516.el)
-    target_dir_3rd=${PROJECT_DIR}/deps/3rd
-    pkg_dir=$target_dir_3rd/pkg
-    mkdir -p $pkg_dir
-    for dep_pkg in ${dep_pkgs[@]}
-    do
-        TEMP=$(mktemp -p "/" -u ".XXXX")
-        download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/el"
-        deps_url=${download_base_url}/${os_release}/${arch}
-        pkg=${dep_pkg}${os_release}.${arch}.rpm
-        echo "start to download pkg from "$deps_url
-        wget $deps_url/$pkg -O $pkg_dir/$TEMP
-        if [[ $? == 0 ]]; then
-            mv -f $pkg_dir/$TEMP $pkg_dir/$pkg
-        fi
-        # rpm -ivh --force $pkg_dir/$pkg
-        (cd / && rpm2cpio $pkg_dir/$pkg | cpio -di -u --quiet)
-    done
+    download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/el"
+    embed_gcc="obdevtools-gcc9-9.3.0-162025101315.el"
+fi
+
+for dep_pkg in ${dep_pkgs[@]}
+do
+    TEMP=$(mktemp -p "/" -u ".XXXX")
+    deps_url=${download_base_url}/${os_release}/${arch}
+    pkg=${dep_pkg}${os_release}.${arch}.rpm
+    echo "start to download pkg from "$deps_url
+    wget $deps_url/$pkg -O $pkg_dir/$TEMP
+    if [[ $? == 0 ]]; then
+        mv -f $pkg_dir/$TEMP $pkg_dir/$pkg
+    fi
+    (cd / && rpm2cpio $pkg_dir/$pkg | cpio -di -u --quiet)
+done
+
+if [[ x"$ENABLE_DYNAMIC" == x"1" ]]; then
+    echo "enable use global dynamic"
+    export GCC_DEPS_DIR=$ROOT_DIR/tmp
+    mkdir -p $GCC_DEPS_DIR
+    wget $deps_url/${embed_gcc}${os_release}.${arch}.rpm -P $GCC_DEPS_DIR
+    (cd $GCC_DEPS_DIR && rpm2cpio ${embed_gcc}${os_release}.${arch}.rpm | cpio -di -u --quiet)
 fi
  
 export PATH=/usr/local/oceanbase/devtools/bin:$PATH
