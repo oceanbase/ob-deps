@@ -1,0 +1,4 @@
+*.tar.gz
+rpm/.pkg_build
+rpm/devdeps-openssl
+ossutil64
