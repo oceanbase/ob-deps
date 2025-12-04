@@ -3,8 +3,8 @@
 CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
-PROJECT_NAME=${2:-"devdeps-openssl"}
-VERSION=${3:-"1.1.1u"}
+PROJECT_NAME=${2:-"devdeps-libcurl"}
+VERSION=${3:-"8.12.1"}
 RELEASE=${4:-"1"}
 
 export CC=/usr/bin/clang

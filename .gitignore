@@ -1,4 +1,5 @@
 *.tar.gz
 rpm/.pkg_build
 rpm/devdeps-openssl
+rpm/devdeps-libcurl
 ossutil64
