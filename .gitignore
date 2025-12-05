@@ -6,4 +6,5 @@ rpm/devdeps-libcurl
 rpm/devdeps-mxml
 rpm/devdeps-s3-cpp-sdk
 rpm/devdeps-relaxed-rapidjson
+rpm/devdeps-mariadb-connector-c
 ossutil64
