@@ -4,4 +4,6 @@ rpm/.pkg_build
 rpm/devdeps-openssl
 rpm/devdeps-libcurl
 rpm/devdeps-mxml
+rpm/devdeps-s3-cpp-sdk
+rpm/devdeps-relaxed-rapidjson
 ossutil64
