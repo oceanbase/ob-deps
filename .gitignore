@@ -1,6 +1,7 @@
 *.tar.gz
 *.zip
 *.tar.bz2
+*.tar.xz
 rpm/a
 rpm/b
 rpm/.pkg_build
@@ -16,4 +17,6 @@ rpm/devdeps-s2geometry
 rpm/devdeps-boost
 rpm/devdeps-protobuf-c
 rpm/devdeps-roaringbitmap-croaring
+rpm/devdeps-icu
+rpm/devdeps-libxml2
 ossutil64
