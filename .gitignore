@@ -15,4 +15,5 @@ rpm/devdeps-fast-float
 rpm/devdeps-s2geometry
 rpm/devdeps-boost
 rpm/devdeps-protobuf-c
+rpm/devdeps-roaringbitmap-croaring
 ossutil64
