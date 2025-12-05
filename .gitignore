@@ -1,5 +1,8 @@
 *.tar.gz
 *.zip
+*.tar.bz2
+rpm/a
+rpm/b
 rpm/.pkg_build
 rpm/devdeps-openssl
 rpm/devdeps-libcurl
@@ -10,4 +13,5 @@ rpm/devdeps-mariadb-connector-c
 rpm/devdeps-abseil-cpp
 rpm/devdeps-fast-float
 rpm/devdeps-s2geometry
+rpm/devdeps-boost
 ossutil64

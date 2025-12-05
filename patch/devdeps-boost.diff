@@ -1,0 +1,25 @@
+diff -urN a/boost/container_hash/hash.hpp b/boost/container_hash/hash.hpp
+--- a/boost/container_hash/hash.hpp	2025-12-05 16:38:21
++++ b/boost/container_hash/hash.hpp	2025-12-05 16:39:43
+@@ -119,7 +119,7 @@
+ {
+     namespace hash_detail
+     {
+-#if defined(BOOST_NO_CXX98_FUNCTION_BASE)
++#if defined(BOOST_NO_CXX98_FUNCTION_BASE) || (defined(__cplusplus) && __cplusplus >= 201103L)
+         template <typename T>
+         struct hash_base
+         {
+diff -urN a/boost/mpl/aux_/integral_wrapper.hpp b/boost/mpl/aux_/integral_wrapper.hpp
+--- a/boost/mpl/aux_/integral_wrapper.hpp	2025-12-05 16:37:21
++++ b/boost/mpl/aux_/integral_wrapper.hpp	2025-12-05 16:39:08
+@@ -68,6 +68,9 @@
+     || (BOOST_WORKAROUND(__HP_aCC, <= 53800) && (BOOST_WORKAROUND(__hpxstd98, != 1)))
+     typedef AUX_WRAPPER_INST( BOOST_MPL_AUX_STATIC_CAST(AUX_WRAPPER_VALUE_TYPE, (N + 1)) ) next;
+     typedef AUX_WRAPPER_INST( BOOST_MPL_AUX_STATIC_CAST(AUX_WRAPPER_VALUE_TYPE, (N - 1)) ) prior;
++#elif defined(__clang__) && __clang_major__ >= 15
++    typedef AUX_WRAPPER_INST( BOOST_MPL_AUX_STATIC_CAST(AUX_WRAPPER_VALUE_TYPE, (N + 1)) ) next;
++    typedef AUX_WRAPPER_INST( BOOST_MPL_AUX_STATIC_CAST(AUX_WRAPPER_VALUE_TYPE, (N >= 1 ? N - 1 : 0)) ) prior;
+ #else
+     typedef AUX_WRAPPER_INST( BOOST_MPL_AUX_STATIC_CAST(AUX_WRAPPER_VALUE_TYPE, (value + 1)) ) next;
+     typedef AUX_WRAPPER_INST( BOOST_MPL_AUX_STATIC_CAST(AUX_WRAPPER_VALUE_TYPE, (value - 1)) ) prior;

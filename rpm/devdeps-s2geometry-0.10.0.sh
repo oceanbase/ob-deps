@@ -32,7 +32,6 @@ tar -xf $ROOT_DIR/s2geometry-$VERSION.tar.gz
 cd s2geometry-$VERSION
 mkdir -p build && cd build
 
-         # -DCMAKE_PREFIX_PATH=$PREFIX \
 cmake .. -DCMAKE_INSTALL_PREFIX=${TMP_INSTALL} \
          -DCMAKE_CXX_STANDARD=14 \
          -DCMAKE_CXX_STANDARD_REQUIRED=ON \
@@ -45,8 +44,9 @@ make install
 
 # copy install file
 mkdir -p $TOP_DIR/include/
+mkdir -p $TOP_DIR/lib64
 cp -r ${TMP_INSTALL}/include/s2 $TOP_DIR/include/
-cp -r ${TMP_INSTALL}/lib $TOP_DIR/
+cp -r ${TMP_INSTALL}/lib/* $TOP_DIR/lib64
 
 # build package
 echo "[BUILD] build tarball......"

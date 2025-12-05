@@ -27,8 +27,8 @@ rm -rf $TMP_INSTALL && mkdir -p $TMP_INSTALL
 cd $TMP_DIR
 tar -xf $ROOT_DIR/mariadb-connector-c-$VERSION.tar.gz
 cd mariadb-connector-c-$VERSION
-#cp $ROOT_DIR/patch/devdeps-mariadb-connector-c.diff .
-#patch -p1 < devdeps-mariadb-connector-c.diff
+cp $ROOT_DIR/patch/devdeps-mariadb-connector-c.diff .
+patch -p1 < devdeps-mariadb-connector-c.diff
 
 sed -i '' 's/END()/ENDIF()/g' cmake/ConnectorName.cmake
 mkdir -p build && cd build
