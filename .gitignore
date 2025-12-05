@@ -7,4 +7,7 @@ rpm/devdeps-mxml
 rpm/devdeps-s3-cpp-sdk
 rpm/devdeps-relaxed-rapidjson
 rpm/devdeps-mariadb-connector-c
+rpm/devdeps-abseil-cpp
+rpm/devdeps-fast-float
+rpm/devdeps-s2geometry
 ossutil64
