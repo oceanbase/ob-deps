@@ -20,4 +20,7 @@ rpm/devdeps-roaringbitmap-croaring
 rpm/devdeps-icu
 rpm/devdeps-libxml2
 rpm/devdeps-apache-arrow
+rpm/devdeps-apache-orc
+rpm/devdeps-lua
+rpm/devdeps-zlib
 ossutil64

@@ -52,7 +52,7 @@ cmake .. -DCMAKE_INSTALL_PREFIX=${TMP_INSTALL} \
          -DARROW_WITH_ZSTD=ON \
          -DARROW_JEMALLOC=OFF \
          -DARROW_SIMD_LEVEL=NONE
-max_retries=${1:-3}
+max_retries=3
 retry_count=0
 while true; do
     make -j${CPU_CORES}
