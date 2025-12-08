@@ -19,4 +19,5 @@ rpm/devdeps-protobuf-c
 rpm/devdeps-roaringbitmap-croaring
 rpm/devdeps-icu
 rpm/devdeps-libxml2
+rpm/devdeps-apache-arrow
 ossutil64
