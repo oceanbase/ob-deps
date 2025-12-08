@@ -27,6 +27,8 @@ rm -rf $TMP_INSTALL && mkdir -p $TMP_INSTALL
 cd $TMP_DIR
 tar -zxf $ROOT_DIR/CRoaring-$VERSION.tar.gz
 cd CRoaring-$VERSION
+cp $ROOT_DIR/patch/devdeps-roaringbitmap-croaring.diff .
+patch -p1 < devdeps-roaringbitmap-croaring.diff
 mkdir build && cd build
 
 cmake .. -DCMAKE_INSTALL_PREFIX=$TMP_INSTALL \
