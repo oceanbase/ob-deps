@@ -23,4 +23,5 @@ rpm/devdeps-apache-arrow
 rpm/devdeps-apache-orc
 rpm/devdeps-lua
 rpm/devdeps-zlib
+rpm/devdeps-xz
 ossutil64
