@@ -22,10 +22,14 @@ This is the repository for in-memory analytics
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib64
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
-export CFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
-export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
-export LDFLAGS="-z noexecstack -z now -pie"
+export CFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong -flto=thin"
+export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong -flto=thin"
+export LDFLAGS="-Wl,-z,noexecstack -Wl,-z,now -flto=thin -flto-jobs=${CPU_CORES} -fuse-ld=lld"
 ROOT_DIR=$OLDPWD/..
+
+export AR=$(which llvm-ar)
+export RANLIB=$(which llvm-ranlib)
+export NM=$(which llvm-nm)
 
 # install cmake
 cd $ROOT_DIR
@@ -43,7 +47,17 @@ cd $ROOT_DIR
 rm -rf %{_src}
 tar xf %{_src}.tar.gz
 cp icu-makefiles/CMakeLists.txt %{_src}
-cd %{_src}/cpp
+
+# apply patch files if they exist
+cd %{_src}
+git init
+if [ -f "$ROOT_DIR/patch/apache-arrow-%{version}.patch" ]; then
+    echo "Applying patch: apache-arrow-%{version}.patch"
+    git apply --whitespace=fix ../patch/apache-arrow-%{version}.patch
+fi
+
+cd cpp
+
 source_dir=$(pwd)
 tmp_install_dir=${source_dir}/tmp_install_dir
 build_dir=${source_dir}/build
@@ -54,10 +68,14 @@ mkdir -p ${build_dir}
  
 # compile and install
 cd ${build_dir}
-cmake .. -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/gcc -DCMAKE_CXX_COMPILER=$TOOLS_DIR/bin/g++ \
-         -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} -DCMAKE_BUILD_TYPE=Release -DARROW_PARQUET=ON \
-         -DPARQUET_BUILD_EXAMPLES=ON -DARROW_FILESYSTEM=ON -DARROW_WITH_BROTLI=ON -DARROW_WITH_BZ2=ON \
-         -DARROW_WITH_LZ4=ON -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZLIB=ON -DARROW_WITH_ZSTD=ON -DARROW_JEMALLOC=OFF
+cmake .. -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/clang -DCMAKE_CXX_COMPILER=$TOOLS_DIR/bin/clang++ \
+         -DCMAKE_AR=$AR -DCMAKE_RANLIB=$RANLIB -DCMAKE_NM=$NM \
+         -DCMAKE_C_FLAGS="${CFLAGS}" -DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
+         -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} -DCMAKE_BUILD_TYPE=Release \
+         -DBUILD_SHARED_LIBS=OFF -DARROW_BUILD_SHARED=OFF -DARROW_BUILD_STATIC=ON \
+         -DARROW_PARQUET=ON -DPARQUET_BUILD_EXAMPLES=ON -DARROW_FILESYSTEM=ON \
+         -DARROW_WITH_BROTLI=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_LZ4=ON \
+         -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZLIB=ON -DARROW_WITH_ZSTD=ON -DARROW_JEMALLOC=OFF
 # Temporarily disable error exit
 set +e
 MAX_RETRIES=3

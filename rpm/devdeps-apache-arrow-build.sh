@@ -19,7 +19,7 @@ fi
 # build cmake source to fix ssl problem
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/cmake-3.30.3.tar.gz$"` ]]; then
     echo "Download cmake source code"
-    wget https://cmake.org/files/v3.22/cmake-3.30.3.tar.gz -P $ROOT_DIR --no-check-certificate
+    wget https://cmake.org/files/v3.30/cmake-3.30.3.tar.gz -P $ROOT_DIR --no-check-certificate
 fi
 
 # prepare building environment
