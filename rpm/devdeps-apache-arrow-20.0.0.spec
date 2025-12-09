@@ -43,7 +43,17 @@ cd $ROOT_DIR
 rm -rf %{_src}
 tar xf %{_src}.tar.gz
 cp icu-makefiles/CMakeLists.txt %{_src}
-cd %{_src}/cpp
+
+# apply patch files if they exist
+cd %{_src}
+git init
+if [ -f "$ROOT_DIR/patch/apache-arrow-%{version}.patch" ]; then
+    echo "Applying patch: apache-arrow-%{version}.patch"
+    git apply --whitespace=fix ../patch/apache-arrow-%{version}.patch
+fi
+
+cd cpp
+
 source_dir=$(pwd)
 tmp_install_dir=${source_dir}/tmp_install_dir
 build_dir=${source_dir}/build
