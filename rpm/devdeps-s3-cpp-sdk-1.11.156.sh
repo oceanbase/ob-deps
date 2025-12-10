@@ -48,7 +48,9 @@ make -j$CPU_CORES
 make install
 
 # copy install file
-cp -r ${TMP_INSTALL}/lib64 ${TMP_INSTALL}/include ${TOP_DIR}
+mkdir -p ${TOP_DIR}/lib64
+cp -r ${TMP_INSTALL}/lib/* ${TOP_DIR}/lib64
+cp -r ${TMP_INSTALL}/include ${TOP_DIR}
 
 # build package
 echo "[BUILD] build tarball......"
