@@ -36,7 +36,7 @@ cd curl-$VERSION
             --without-libssh2 --without-nss --disable-ftp \
             --disable-ldap --disable-ldaps --without-cyassl \
             --without-polarssl --without-winssl --without-gnutls \
-            --with-ssl="/opt/homebrew/opt/openssl@3" \
+	    --with-ssl=${DEPS_PREFIX} \
             --disable-cookies --disable-rtsp --without-zlib \
             --disable-pop3 --without-libpsl --disable-smtp \
             --disable-imap --disable-telnet \

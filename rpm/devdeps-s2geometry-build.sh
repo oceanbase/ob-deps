@@ -15,7 +15,7 @@ export DEPS_PREFIX=$ROOT_DIR/usr/local/oceanbase/deps/devel
 cd $ROOT_DIR
 tar -xf $CUR_DIR/devdeps-abseil-cpp-20211102.0-20251205.tar.gz
 cd $CUR_DIR
-export ABSL_DIR=$DEP_DIR/lib/cmake/absl/
+export ABSL_DIR=$DEPS_PREFIX/lib/cmake/absl/
 
 # Configure custom source file directory
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR

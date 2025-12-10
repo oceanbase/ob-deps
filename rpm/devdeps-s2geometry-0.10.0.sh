@@ -33,7 +33,7 @@ cd s2geometry-$VERSION
 mkdir -p build && cd build
 
 cmake .. -DCMAKE_INSTALL_PREFIX=${TMP_INSTALL} \
-	 -DCMAKE_PREFIX_PATH=$DEP_DIR \
+	 -DCMAKE_PREFIX_PATH=${DEPS_PREFIX} \
          -DCMAKE_CXX_STANDARD=14 \
          -DCMAKE_CXX_STANDARD_REQUIRED=ON \
          -DBUILD_SHARED_LIBS=OFF \
