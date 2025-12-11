@@ -35,7 +35,7 @@ cd %{_src}
 # # This means you will need to have external copies of these libraries available on your system.
 # # ref: https://github.com/grpc/grpc/blob/v1.21.0/test/distrib/cpp/run_distrib_test_cmake.sh
 
-export CFLAGS="-fPIC -D_GLIBCXX_USE_CXX11_ABI=0 -z noexecstack -z now -pie -fstack-protector-strong"
+export CFLAGS="-fPIC -z noexecstack -z now -pie -fstack-protector-strong"
 export CXXFLAGS="-fPIC  -D_GLIBCXX_USE_CXX11_ABI=0 -z noexecstack -z now -pie -fstack-protector-strong"
 
 # Install c-ares
@@ -73,6 +73,17 @@ cmake ../.. -DgRPC_INSTALL=ON                \
             -DBUILD_SHARED_LIBS=OFF
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES} install
+
+if [ "$SEEKDB_USE" = "1" ]; then
+    mv ${RPM_BUILD_ROOT}/%{_prefix}/lib ${RPM_BUILD_ROOT}/%{_prefix}/grpc_lib
+    mv ${RPM_BUILD_ROOT}/%{_prefix}/lib64 ${RPM_BUILD_ROOT}/%{_prefix}/grpc_lib64
+    mkdir -p ${RPM_BUILD_ROOT}/%{_prefix}/lib/grpc
+    mkdir -p ${RPM_BUILD_ROOT}/%{_prefix}/lib64/grpc
+    cp -r ${RPM_BUILD_ROOT}/%{_prefix}/grpc_lib/* ${RPM_BUILD_ROOT}/%{_prefix}/lib/grpc
+    cp -r ${RPM_BUILD_ROOT}/%{_prefix}/grpc_lib64/* ${RPM_BUILD_ROOT}/%{_prefix}/lib64/grpc
+    rm -rf ${RPM_BUILD_ROOT}/%{_prefix}/grpc_lib
+    rm -rf ${RPM_BUILD_ROOT}/%{_prefix}/grpc_lib64
+fi
 
 %files
 
