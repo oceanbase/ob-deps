@@ -11,7 +11,7 @@ echo "=============================="
 
 # 所有要构建的项目脚本名（不带 .sh）
 projects=(
-  "devdeps-openssl-build.sh"
+  "obdevtools-llvm-17.0.6.sh"
   "devdeps-abseil-cpp-build.sh"
   "devdeps-apache-arrow-build.sh"
   "devdeps-apache-orc-build.sh"
@@ -23,6 +23,7 @@ projects=(
   "devdeps-lua-build.sh"
   "devdeps-mariadb-connector-c-build.sh"
   "devdeps-mxml-build.sh"
+  "devdeps-openssl-build.sh"
   "devdeps-protobuf-c-build.sh"
   "devdeps-relaxed-rapidjson-build.sh"
   "devdeps-roaringbitmap-croaring-build.sh"
