@@ -23,11 +23,16 @@ SQLite is a C-language library that implements a small, fast, self-contained, hi
 %install
 mkdir -p %{buildroot}/%{_prefix}/lib/sqlite
 mkdir -p %{buildroot}/%{_prefix}/include/sqlite
+
+export CFLAGS="-fPIC -fPIE -fstack-protector-strong"
+export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
+export LDFLAGS="-z noexecstack -z now -pie"
+
 cd $OLDPWD/../
 rm -rf %{_sqlite_src}
 tar xf %{_sqlite_src}.tar.gz
 cd %{_sqlite_src}
-./configure --prefix=%{_tmppath} --enable-shared=no
+./configure --prefix=%{_tmppath} --enable-shared=no --with-pic
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES}
 make install
