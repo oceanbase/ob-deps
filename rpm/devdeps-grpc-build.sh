@@ -7,13 +7,16 @@ PROJECT_NAME=${2:-"devdeps-grpc"}
 VERSION=${3:-"1.46.7"}
 RELEASE=${4:-"1"}
 
+# Configure custom source file directory
+[ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
+
 # check source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/grpc-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download source code"
     cd $ROOT_DIR
     git clone https://github.com/grpc/grpc.git -b v1.46.7 --depth 1 grpc-$VERSION
     cd grpc-$VERSION
-    git submodule update --init --recursive
+    git submodule update --init --recursive --depth=1
     cd $ROOT_DIR
     tar -zcvf grpc-$VERSION.tar.gz grpc-$VERSION
 fi
