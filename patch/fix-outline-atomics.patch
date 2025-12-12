@@ -1,0 +1,21 @@
+--- a/compiler-rt/lib/builtins/CMakeLists.txt
++++ b/compiler-rt/lib/builtins/CMakeLists.txt
+@@ -555,6 +555,10 @@ set(aarch64_SOURCES
+ )
+ 
+ # Generate outline atomics helpers from lse.S base
++# Skip on Apple as the generated assembly uses CFI directives in a way
++# that is incompatible with the macOS assembler (non-private labels
++# cannot appear between .cfi_startproc / .cfi_endproc pairs)
++if(NOT APPLE)
+ set(OA_HELPERS_DIR "${CMAKE_CURRENT_BINARY_DIR}/outline_atomic_helpers.dir")
+ file(MAKE_DIRECTORY "${OA_HELPERS_DIR}")
+ 
+@@ -580,6 +584,7 @@ foreach(pat cas swp ldadd ldclr ldeor ldset)
+     endforeach(model)
+   endforeach(size)
+ endforeach(pat)
++endif()
+ 
+ if (MINGW)
+   set(aarch64_SOURCES
