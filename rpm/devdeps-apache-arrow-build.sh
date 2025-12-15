@@ -56,8 +56,12 @@ yum -y install jemalloc jemalloc-devel
 export TOOLS_DIR=/usr/local/oceanbase/devtools
 export PATH=$TOOLS_DIR/bin:$PATH
 export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
-export CC=$TOOLS_DIR/bin/gcc
-export CXX=$TOOLS_DIR/bin/g++
+export CC=$TOOLS_DIR/bin/clang
+export CXX=$TOOLS_DIR/bin/clang++
+export AR=$TOOLS_DIR/bin/llvm-ar
+export RANLIB=$TOOLS_DIR/bin/llvm-ranlib
+export NM=$TOOLS_DIR/bin/llvm-nm
+
  
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME-$VERSION $VERSION $RELEASE
