@@ -30,6 +30,8 @@ ROOT_DIR=$OLDPWD/..
 export AR=$(which llvm-ar)
 export RANLIB=$(which llvm-ranlib)
 export NM=$(which llvm-nm)
+export CC=$TOOLS_DIR/bin/clang
+export CXX=$TOOLS_DIR/bin/clang++
 
 # install cmake
 cd $ROOT_DIR
@@ -68,7 +70,7 @@ mkdir -p ${build_dir}
  
 # compile and install
 cd ${build_dir}
-cmake .. -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/clang -DCMAKE_CXX_COMPILER=$TOOLS_DIR/bin/clang++ \
+cmake .. -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX \
          -DCMAKE_AR=$AR -DCMAKE_RANLIB=$RANLIB -DCMAKE_NM=$NM \
          -DCMAKE_C_FLAGS="${CFLAGS}" -DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
          -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} -DCMAKE_BUILD_TYPE=Release \
