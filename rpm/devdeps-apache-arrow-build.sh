@@ -27,11 +27,18 @@ ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 
 if [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
-    yum install obdevtools-gcc9-9.3.0 -y
+    if [[ $VERSION == "20.0.0" ]]; then
+        yum install obdevtools-llvm-17.0.6 -y
+    else
+        yum install obdevtools-gcc9-9.3.0 -y
+    fi
 else
     os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
     arch=`uname -p`
     dep_pkgs=(obdevtools-gcc9-9.3.0-72024081318.el)
+    if [[ $VERSION == "20.0.0" ]]; then
+        dep_pkgs=(obdevtools-llvm-17.0.6-72025060300.el)
+    fi
     target_dir_3rd=${PROJECT_DIR}/deps/3rd
     pkg_dir=$target_dir_3rd/pkg
     mkdir -p $pkg_dir
@@ -56,12 +63,16 @@ yum -y install jemalloc jemalloc-devel
 export TOOLS_DIR=/usr/local/oceanbase/devtools
 export PATH=$TOOLS_DIR/bin:$PATH
 export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
-export CC=$TOOLS_DIR/bin/clang
-export CXX=$TOOLS_DIR/bin/clang++
-export AR=$TOOLS_DIR/bin/llvm-ar
-export RANLIB=$TOOLS_DIR/bin/llvm-ranlib
-export NM=$TOOLS_DIR/bin/llvm-nm
+if [[ $VERSION == "20.0.0" ]]; then
+    export CC=$TOOLS_DIR/bin/clang
+    export CXX=$TOOLS_DIR/bin/clang++
+    export AR=$TOOLS_DIR/bin/llvm-ar
+    export RANLIB=$TOOLS_DIR/bin/llvm-ranlib
+    export NM=$TOOLS_DIR/bin/llvm-nm
+else
+    export CC=$TOOLS_DIR/bin/gcc
+    export CXX=$TOOLS_DIR/bin/g++
+fi
 
- 
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME-$VERSION $VERSION $RELEASE
