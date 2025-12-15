@@ -24,7 +24,7 @@ mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 export CFLAGS="-fPIC -fPIE -fstack-protector-strong -flto=thin"
 export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong -flto=thin"
-export LDFLAGS="-Wl,-z,noexecstack -Wl,-z,now -flto=thin -flto-jobs=${CPU_CORES} -fuse-ld=lld"
+export LDFLAGS="-Wl,-z,noexecstack -Wl,-z,now -flto=thin -flto-jobs=${CPU_CORES} -fuse-ld=${TOOLS_DIR}/bin/ld.lld"
 ROOT_DIR=$OLDPWD/..
 
 # install cmake
@@ -67,6 +67,9 @@ cd ${build_dir}
 cmake .. -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/clang -DCMAKE_CXX_COMPILER=$TOOLS_DIR/bin/clang++ \
          -DCMAKE_AR=$AR -DCMAKE_RANLIB=$RANLIB -DCMAKE_NM=$NM \
          -DCMAKE_C_FLAGS="${CFLAGS}" -DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
+         -DCMAKE_EXE_LINKER_FLAGS="${LDFLAGS}" \
+         -DCMAKE_SHARED_LINKER_FLAGS="${LDFLAGS}" \
+         -DCMAKE_MODULE_LINKER_FLAGS="${LDFLAGS}" \
          -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} -DCMAKE_BUILD_TYPE=Release \
          -DBUILD_SHARED_LIBS=OFF -DARROW_BUILD_SHARED=OFF -DARROW_BUILD_STATIC=ON \
          -DARROW_PARQUET=ON -DPARQUET_BUILD_EXAMPLES=ON -DARROW_FILESYSTEM=ON \
