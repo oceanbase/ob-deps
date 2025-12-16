@@ -60,7 +60,7 @@ fi
 yum -y remove bzip2-devel
 yum -y install jemalloc jemalloc-devel
 
-export TOOLS_DIR=/usr/local/oceanbase/devtools
+export TOOLS_DIR=/
 export PATH=$TOOLS_DIR/bin:$PATH
 export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
 if [[ $VERSION == "20.0.0" ]]; then
@@ -69,6 +69,7 @@ if [[ $VERSION == "20.0.0" ]]; then
     export AR=$TOOLS_DIR/bin/llvm-ar
     export RANLIB=$TOOLS_DIR/bin/llvm-ranlib
     export NM=$TOOLS_DIR/bin/llvm-nm
+    export LD="${TOOLS_DIR}/bin/ld.lld"
 else
     export CC=$TOOLS_DIR/bin/gcc
     export CXX=$TOOLS_DIR/bin/g++

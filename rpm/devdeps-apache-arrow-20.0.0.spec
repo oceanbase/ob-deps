@@ -24,7 +24,7 @@ mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 export CFLAGS="-fPIC -fPIE -fstack-protector-strong -flto=thin"
 export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong -flto=thin"
-export LDFLAGS="-Wl,-z,noexecstack -Wl,-z,now -flto=thin -flto-jobs=${CPU_CORES} -fuse-ld=${TOOLS_DIR}/bin/ld.lld"
+export LDFLAGS="-Wl,-z,noexecstack -Wl,-z,now -flto=thin -flto-jobs=${CPU_CORES} -fuse-ld=lld"
 ROOT_DIR=$OLDPWD/..
 
 # install cmake
