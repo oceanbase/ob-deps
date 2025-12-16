@@ -24,19 +24,8 @@ mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 export CFLAGS="-fPIC -fPIE -fstack-protector-strong -flto=thin"
 export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong -flto=thin"
-export LDFLAGS="-Wl,-z,noexecstack -Wl,-z,now -flto=thin -flto-jobs=${CPU_CORES} -fuse-ld=lld"
+export LDFLAGS="-Wl,-z,noexecstack -Wl,-z,now -flto=thin -flto-jobs=${CPU_CORES} -fuse-ld=${TOOLS_DIR}/bin/ld.lld"
 ROOT_DIR=$OLDPWD/..
-
-# install cmake
-cd $ROOT_DIR
-rm -rf %{_cmake_src}
-mkdir -p %{_cmake_src}
-tar zxf %{_cmake_src}.tar.gz --strip-components=1 -C %{_cmake_src}
-cd %{_cmake_src}
-./bootstrap --prefix=$ROOT_DIR/%{_cmake_src} -- -DCMAKE_USE_OPENSSL=ON
-make -j${CPU_CORES}
-make install
-export PATH=$ROOT_DIR/%{_cmake_src}/bin:$PATH;
 
 # install apache-arrow
 cd $ROOT_DIR
