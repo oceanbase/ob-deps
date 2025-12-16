@@ -69,7 +69,6 @@ if [[ $VERSION == "20.0.0" ]]; then
     export AR=$TOOLS_DIR/bin/llvm-ar
     export RANLIB=$TOOLS_DIR/bin/llvm-ranlib
     export NM=$TOOLS_DIR/bin/llvm-nm
-    export LD=${TOOLS_DIR}/bin/ld.lld
 else
     export CC=$TOOLS_DIR/bin/gcc
     export CXX=$TOOLS_DIR/bin/g++
