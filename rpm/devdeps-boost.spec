@@ -48,7 +48,7 @@ cp -r ${source_dir}/tmp_install/lib/*.a ${RPM_BUILD_ROOT}/%{_prefix}/lib
 mkdir -p ${RPM_BUILD_ROOT}/%{_prefix}/include
 ./dist/bin/bcp boost/geometry.hpp boost/geometry.hpp boost/geometry \
 boost/spirit/include/qi.hpp boost/spirit/include/phoenix.hpp boost/bind/bind.hpp boost/fusion/include/adapt_struct.hpp \
-boost/lambda/lambda.hpp ${RPM_BUILD_ROOT}/%{_prefix}/include
+boost/lambda/lambda.hpp boost/sort ${RPM_BUILD_ROOT}/%{_prefix}/include
 cd ${RPM_BUILD_ROOT}/%{_prefix}/include
 # delete unnecessary files
 rm -rf Jamroot

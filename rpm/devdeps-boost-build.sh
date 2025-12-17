@@ -10,8 +10,9 @@ TOP_DIR=$CUR_DIR/.rpm_build
 # download source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/boost_1_74_0.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download source code"
-    wget https://boostorg.jfrog.io/artifactory/main/release/1.74.0/source/boost_1_74_0.tar.bz2 -O $ROOT_DIR/boost_1_74_0.tar.bz2 --no-check-certificate
+    wget https://sourceforge.net/projects/boost/files/boost/1.74.0/boost_1_74_0.tar.bz2/download -O $ROOT_DIR/boost_1_74_0.tar.bz2 --no-check-certificate
 fi
+
 
 # set env variables
 export PROJECT_NAME
