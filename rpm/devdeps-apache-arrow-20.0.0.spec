@@ -9,6 +9,7 @@ AutoReqProv: no
 # support debuginfo package, to reduce runtime package size
 %define debug_package %{nil}
 # disable .a strip
+%define __brp_strip %{nil}
 %define __brp_strip_static_archive %{nil}
 %define _build_id_links compat
 %define _prefix /usr/local/oceanbase/deps/devel
