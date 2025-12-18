@@ -16,12 +16,6 @@ if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/apache-arrow-$VERSION.*[tar|gz|b
     wget https://archive.apache.org/dist/arrow/arrow-$VERSION/apache-arrow-$VERSION.tar.gz -O $ROOT_DIR/apache-arrow-$VERSION.tar.gz --no-check-certificate
 fi
 
-# build cmake source to fix ssl problem
-# if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/cmake-3.30.3.tar.gz$"` ]]; then
-#     echo "Download cmake source code"
-#     wget https://cmake.org/files/v3.30/cmake-3.30.3.tar.gz -P $ROOT_DIR --no-check-certificate
-# fi
-
 # prepare building environment
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 arch=`uname -p`
@@ -35,15 +29,25 @@ if [[ "${ID}"x == "alinux"x ]]; then
     yum install obdevtools-cmake-3.30.3 -y
     dep_pkgs=(obdevtools-gcc9-9.3.0-152024092711.al)
     if [[ $VERSION == "20.0.0" ]]; then
-        dep_pkgs=(obdevtools-llvm-17.0.6-72025060300.al)
+        dep_pkgs=(obdevtools-gcc9-9.3.0-152024092711.al obdevtools-llvm-17.0.6-72025060300.al)
     fi
     download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/al"
     os_release=8
 else
+    OS_RELEASE=$(grep -Po '(?<=PRETTY_NAME=")[^"]+' /etc/os-release | sed 's/^ *//;s/ *$//')
+    echo $OS_RELEASE
+    if [[ "$OS_RELEASE" == *'CentOS Linux 7 (Core)'* ]]; then
+        wget -O /etc/yum.repos.d/CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-7.repo
+    elif [[ "$OS_RELEASE" == *'CentOS Linux 7 (AltArch)'* ]]; then
+        wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-altarch-7.repo
+    else
+        echo $OS_RELEASE
+        echo 'not 7'
+    fi
     dep_pkgs=(obdevtools-gcc9-9.3.0-72024081318.el obdevtools-cmake-3.30.3-62025060510.el)
     download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/el"
     if [[ $VERSION == "20.0.0" ]]; then
-        dep_pkgs=(obdevtools-llvm-17.0.6-72025060300.el obdevtools-cmake-3.30.3-62025060510.el)
+       dep_pkgs=(obdevtools-gcc9-9.3.0-72024081318.el obdevtools-llvm-17.0.6-72025060300.el obdevtools-cmake-3.30.3-62025060510.el)
     fi
 fi
 
@@ -72,7 +76,6 @@ if [[ $VERSION == "20.0.0" ]]; then
     export AR=$TOOLS_DIR/bin/llvm-ar
     export RANLIB=$TOOLS_DIR/bin/llvm-ranlib
     export NM=$TOOLS_DIR/bin/llvm-nm
-    export LD="${TOOLS_DIR}/bin/ld.lld"
 else
     export CC=$TOOLS_DIR/bin/gcc
     export CXX=$TOOLS_DIR/bin/g++
