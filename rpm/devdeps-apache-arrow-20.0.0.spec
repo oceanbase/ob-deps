@@ -8,6 +8,8 @@ AutoReqProv: no
 %undefine _missing_build_ids_terminate_build
 # support debuginfo package, to reduce runtime package size
 %define debug_package %{nil}
+# disable .a strip
+%define __brp_strip_static_archive %{nil}
 %define _build_id_links compat
 %define _prefix /usr/local/oceanbase/deps/devel
 %define _product_prefix apache-arrow
