@@ -12,6 +12,9 @@ AutoReqProv: no
 %define _prefix /usr/local/oceanbase/deps/devel
 %define _product_prefix apache-arrow
 %define _src apache-arrow-%{version}
+
+# 设置 RPM 构建工具为 LLVM 版本，避免 strip 无法识别 clang 编译的文件
+%global __strip ${TOOLS_DIR}/bin/llvm-strip
  
 %description
 This is the repository for in-memory analytics
