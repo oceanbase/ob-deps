@@ -14,8 +14,6 @@ AutoReqProv: no
 %define _prefix /usr/local/oceanbase/deps/devel
 %define _product_prefix apache-arrow
 %define _src apache-arrow-%{version}
-
-OS_RELEASE=$(grep -Po '(?<=PRETTY_NAME=")[^"]+' /etc/os-release | sed 's/^ *//;s/ *$//')
 if [[ "$OS_RELEASE" == *'CentOS Linux 7 (Core)'* ]]; then
 # disable install post for el7
 %global __os_install_post %{nil}
