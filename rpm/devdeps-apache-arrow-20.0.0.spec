@@ -8,11 +8,20 @@ AutoReqProv: no
 %undefine _missing_build_ids_terminate_build
 # support debuginfo package, to reduce runtime package size
 %define debug_package %{nil}
+# disable .a strip
+%define __brp_strip_static_archive %{nil}
 %define _build_id_links compat
 %define _prefix /usr/local/oceanbase/deps/devel
 %define _product_prefix apache-arrow
 %define _src apache-arrow-%{version}
-%define _cmake_src cmake-3.30.3
+%define is_centos7 %(if [ -n "$OS_RELEASE" ] && echo "$OS_RELEASE" | grep -q "CentOS Linux 7"; then echo 1; else echo 0; fi)
+%if %{is_centos7}
+# disable install post for el7
+%global __os_install_post %{nil}
+%endif
+
+# 设置 RPM 构建工具为 LLVM 版本，避免 strip 无法识别 clang 编译的文件
+%global __strip ${TOOLS_DIR}/bin/llvm-strip
  
 %description
 This is the repository for in-memory analytics
@@ -22,21 +31,16 @@ This is the repository for in-memory analytics
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib64
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
-export CFLAGS="-fPIC -fPIE -fstack-protector-strong -flto=thin -fuse-ld=lld"
-export CXXFLAGS="-std=c++17 -fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong -flto=thin -fuse-ld=lld"
-export LDFLAGS="-Wl,-z,noexecstack -Wl,-z,now -flto=thin -flto-jobs=${CPU_CORES} -fuse-ld=lld"
+DISABLE_ATOMIC=""
+arch=`uname -p`
+if [[ x"$arch" == x"aarch64" ]]; then
+    DISABLE_ATOMIC="-mno-outline-atomics"
+fi
+export LD=${TOOLS_DIR}/bin/ld.lld
+export CFLAGS="-fPIC -D_GNU_SOURCE -fstack-protector-strong $DISABLE_ATOMIC -gdwarf-4 -flto=thin --gcc-toolchain=${TOOLS_DIR} -fuse-ld=lld -isystem -I/usr/include"
+export CXXFLAGS="-std=c++17 -fPIC -D_GNU_SOURCE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong $DISABLE_ATOMIC -gdwarf-4 -flto=thin --gcc-toolchain=${TOOLS_DIR} -fuse-ld=lld -isystem -I/usr/include"
+export LDFLAGS="-Wl,-z,noexecstack -Wl,-z,now -pie -flto-jobs=8 -fuse-ld=${TOOLS_DIR}/bin/ld.lld --gcc-toolchain=${TOOLS_DIR} -fuse-ld=lld"
 ROOT_DIR=$OLDPWD/..
-
-# install cmake
-cd $ROOT_DIR
-rm -rf %{_cmake_src}
-mkdir -p %{_cmake_src}
-tar zxf %{_cmake_src}.tar.gz --strip-components=1 -C %{_cmake_src}
-cd %{_cmake_src}
-./bootstrap --prefix=$ROOT_DIR/%{_cmake_src} -- -DCMAKE_USE_OPENSSL=ON
-make -j${CPU_CORES}
-make install
-export PATH=$ROOT_DIR/%{_cmake_src}/bin:$PATH;
 
 # install apache-arrow
 cd $ROOT_DIR
@@ -53,7 +57,6 @@ if [ -f "$ROOT_DIR/patch/apache-arrow-%{version}.patch" ]; then
 fi
 
 cd cpp
-
 source_dir=$(pwd)
 tmp_install_dir=${source_dir}/tmp_install_dir
 build_dir=${source_dir}/build
@@ -64,13 +67,18 @@ mkdir -p ${build_dir}
  
 # compile and install
 cd ${build_dir}
-cmake .. -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/clang -DCMAKE_CXX_COMPILER=$TOOLS_DIR/bin/clang++ \
+cmake .. -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/clang \
+         -DCMAKE_CXX_COMPILER=$TOOLS_DIR/bin/clang++ \
          -DCMAKE_AR=$AR -DCMAKE_RANLIB=$RANLIB -DCMAKE_NM=$NM \
-         -DCMAKE_C_FLAGS="${CFLAGS}" -DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
+         -DCMAKE_LINKER=${TOOLS_DIR}/bin/ld.lld \
+         -DCMAKE_C_FLAGS="${CFLAGS}" \
+         -DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
+         -DCMAKE_CXX_LINK_FLAGS="${LDFLAGS}" \
          -DCMAKE_EXE_LINKER_FLAGS="${LDFLAGS}" \
          -DCMAKE_SHARED_LINKER_FLAGS="${LDFLAGS}" \
          -DCMAKE_MODULE_LINKER_FLAGS="${LDFLAGS}" \
-         -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} -DCMAKE_BUILD_TYPE=Release \
+         -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} \
+         -DCMAKE_BUILD_TYPE=Release \
          -DBUILD_SHARED_LIBS=OFF -DARROW_BUILD_SHARED=OFF -DARROW_BUILD_STATIC=ON \
          -DARROW_PARQUET=ON -DPARQUET_BUILD_EXAMPLES=ON -DARROW_FILESYSTEM=ON \
          -DARROW_WITH_BROTLI=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_LZ4=ON \
