@@ -34,7 +34,7 @@ if [[ "${ID}"x == "alinux"x ]]; then
     download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/al"
     os_release=8
 else
-    OS_RELEASE=$(grep -Po '(?<=PRETTY_NAME=")[^"]+' /etc/os-release | sed 's/^ *//;s/ *$//')
+    export OS_RELEASE=$(grep -Po '(?<=PRETTY_NAME=")[^"]+' /etc/os-release | sed 's/^ *//;s/ *$//')
     echo $OS_RELEASE
     if [[ "$OS_RELEASE" == *'CentOS Linux 7 (Core)'* ]]; then
         wget -O /etc/yum.repos.d/CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-7.repo

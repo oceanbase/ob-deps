@@ -14,10 +14,11 @@ AutoReqProv: no
 %define _prefix /usr/local/oceanbase/deps/devel
 %define _product_prefix apache-arrow
 %define _src apache-arrow-%{version}
-if [[ "$OS_RELEASE" == *'CentOS Linux 7 (Core)'* ]]; then
+%define is_centos7 %(if [ -n "$OS_RELEASE" ] && echo "$OS_RELEASE" | grep -q "CentOS Linux 7 (Core)"; then echo 1; else echo 0; fi)
+%if %{is_centos7}
 # disable install post for el7
 %global __os_install_post %{nil}
-fi
+%endif
 
 # 设置 RPM 构建工具为 LLVM 版本，避免 strip 无法识别 clang 编译的文件
 %global __strip ${TOOLS_DIR}/bin/llvm-strip
