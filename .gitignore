@@ -25,4 +25,6 @@ rpm/devdeps-lua
 rpm/devdeps-zlib
 rpm/devdeps-xz
 rpm/obdevtools-llvm
+rpm/obdevtools-bison
+rpm/obdevtools-flex
 ossutil64
