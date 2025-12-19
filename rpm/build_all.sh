@@ -12,6 +12,8 @@ echo "=============================="
 # 所有要构建的项目脚本名（不带 .sh）
 projects=(
   "obdevtools-llvm-17.0.6.sh"
+  "obdevtools-bison-2.4.1.sh"
+  "obdevtools-flex-2.5.35.sh"
   "devdeps-abseil-cpp-build.sh"
   "devdeps-apache-arrow-build.sh"
   "devdeps-apache-orc-build.sh"
