@@ -40,7 +40,7 @@ fi
 export LD=${TOOLS_DIR}/bin/ld.lld
 export CFLAGS="-fPIC -D_GNU_SOURCE -fstack-protector-strong $DISABLE_ATOMIC -gdwarf-4 -flto=thin --gcc-toolchain=${TOOLS_DIR} -fuse-ld=lld -isystem -I/usr/include"
 export CXXFLAGS="-std=c++17 -fPIC -D_GNU_SOURCE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong $DISABLE_ATOMIC -gdwarf-4 -flto=thin --gcc-toolchain=${TOOLS_DIR} -fuse-ld=lld -isystem -I/usr/include"
-export LDFLAGS="-Wl,-z,noexecstack -Wl,-z,now -pie -flto-jobs=4 -fuse-ld=${TOOLS_DIR}/bin/ld.lld --gcc-toolchain=${TOOLS_DIR} -fuse-ld=lld"
+export LDFLAGS="-Wl,-z,noexecstack -Wl,-z,now -pie -flto-jobs=8 -fuse-ld=${TOOLS_DIR}/bin/ld.lld --gcc-toolchain=${TOOLS_DIR} -fuse-ld=lld"
 ROOT_DIR=$OLDPWD/..
 
 # install apache-arrow
