@@ -9,12 +9,17 @@ AutoReqProv: no
 # support debuginfo package, to reduce runtime package size
 %define debug_package %{nil}
 # disable .a strip
-%define __brp_strip %{nil}
 %define __brp_strip_static_archive %{nil}
 %define _build_id_links compat
 %define _prefix /usr/local/oceanbase/deps/devel
 %define _product_prefix apache-arrow
 %define _src apache-arrow-%{version}
+
+OS_RELEASE=$(grep -Po '(?<=PRETTY_NAME=")[^"]+' /etc/os-release | sed 's/^ *//;s/ *$//')
+if [[ "$OS_RELEASE" == *'CentOS Linux 7 (Core)'* ]]; then
+# disable install post for el7
+%global __os_install_post %{nil}
+fi
 
 # 设置 RPM 构建工具为 LLVM 版本，避免 strip 无法识别 clang 编译的文件
 %global __strip ${TOOLS_DIR}/bin/llvm-strip
