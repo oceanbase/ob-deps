@@ -35,13 +35,17 @@ rm -rf ${build_dir}
 mkdir -p ${tmp_install_dir}
 mkdir -p ${build_dir}
 
+# Replace STATIC_O = ao with STATIC_O = o in all files under source_dir
+find ${source_dir}/icu4c/source/config -type f -exec sed -i 's/STATIC_O = ao/STATIC_O = o/g' {} \;
+
 # compile and install
 export PATH=$TOOLS_DIR/bin/:$PATH
 export CC=$TOOLS_DIR/bin/gcc
 export CXX=$TOOLS_DIR/bin/g++
 
-export CFLAGS="-fPIC -D_GLIBCXX_USE_CXX11_ABI=0 -z noexecstack -z now -pie -fstack-protector-strong"
-export CXXFLAGS="-fPIC  -D_GLIBCXX_USE_CXX11_ABI=0 -z noexecstack -z now -pie -fstack-protector-strong"
+export CFLAGS="-fPIC -fstack-protector-strong"
+export CXXFLAGS="-fPIC -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
+export LDFLAGS="-z noexecstack -z now -pie"
 
 cd ${build_dir}
 cmake .. -DICU_VERSION_DIR=icu4c -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
@@ -49,8 +53,17 @@ CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES} icu_all
 make install
 
+cd ${source_dir}/icu4c/source
+_install_dir=$(pwd)/_install_dir
+mkdir -p ${_install_dir}
+mkdir build && cd build
+../configure --enable-static --disable-shared --with-data-packaging=static --prefix=${_install_dir} --with-pic
+make -j${CPU_CORES}
+make install
+
 # install files
 cp -r ${tmp_install_dir}/lib/*.a $RPM_BUILD_ROOT/%{_prefix}/lib
+cp -r ${_install_dir}/lib/libicudata.a $RPM_BUILD_ROOT/%{_prefix}/lib
 cp -r ${tmp_install_dir}/include/* $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}
 
 # package infomation

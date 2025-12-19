@@ -44,6 +44,7 @@ fi
 
 export TOOLS_DIR=/usr/local/oceanbase/devtools
 export DEP_DIR=/usr/local/oceanbase/deps/devel
+export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
 
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE
