@@ -112,6 +112,12 @@ cp -r ${tmp_install_dir}/lib64/*.a $RPM_BUILD_ROOT/%{_prefix}/lib64
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}
 cp -r ${tmp_install_dir}/include/* $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/
 
+# install snappy headers under apache-arrow directory
+if [ -d "${build_dir}/snappy_ep/src/snappy_ep-install/include" ]; then
+    mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/snappy
+    cp -r ${build_dir}/snappy_ep/src/snappy_ep-install/include/* $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/snappy/
+fi
+
 # package infomation
 %files 
 # set file attribute here
