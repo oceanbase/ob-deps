@@ -27,4 +27,5 @@ rpm/devdeps-xz
 rpm/obdevtools-llvm
 rpm/obdevtools-bison
 rpm/obdevtools-flex
+rpm/devdeps-vsag
 ossutil64

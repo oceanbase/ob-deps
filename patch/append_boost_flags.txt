@@ -1,0 +1,14 @@
+
+# Set extra C++ flags for boost compilation
+# Fix for std::unary_function removed in C++17 and enum constexpr conversion warnings
+set(extra_cpp_flags "")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # Disable enum constexpr conversion warnings that are treated as errors
+    set(extra_cpp_flags "${extra_cpp_flags} -Wno-enum-constexpr-conversion")
+    # Suppress deprecated warnings for boost compatibility
+    set(extra_cpp_flags "${extra_cpp_flags} -Wno-deprecated-declarations")
+    # Include compatibility header for std::unary_function (removed in C++17)
+    set(compat_header "${CMAKE_CURRENT_SOURCE_DIR}/extern/boost/boost_unary_function_compat.h")
+    set(extra_cpp_flags "${extra_cpp_flags} -include ${compat_header}")
+endif()
+
