@@ -14,8 +14,9 @@ export CXX=/usr/bin/clang++
 export DEV_TOOLS=$ROOT_DIR/usr/local/oceanbase/devtools
 export PATH=${DEV_TOOLS}/bin:$PATH
 export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
-# cp rpm/obdevtools-llvm-17.0.6-20251212.tar.gz
+# cd $ROOT_DIR && cp ${ROOT_DIR}/rpm/obdevtools-llvm-17.0.6-20251212.tar.gz
 # tar -xf obdevtools-llvm-17.0.6-20251212.tar.gz
+# cd ${CUR_DIR}
 
 # Configure custom source file directory
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR

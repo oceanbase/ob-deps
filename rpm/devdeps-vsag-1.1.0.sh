@@ -77,11 +77,15 @@ cp ./libdiskann.a ${TOP_DIR}/lib/vsag_lib
 cp ./openblas/install/lib/libopenblas.a ${TOP_DIR}/lib/vsag_lib
 cp ./antlr4/install/lib/libantlr4-runtime.a ${TOP_DIR}/lib/vsag_lib/
 cp ./libantlr4-autogen.a ${TOP_DIR}/lib/vsag_lib/
+cp ./_deps/fmt-build/libfmt.a ${TOP_DIR}/lib/vsag_lib/
 # brew list gcc | grep libgfortran 
-# brew list gcc | grep libgomp 
+# brew list gcc | grep libgomp
+cp /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libgfortran.a ${TOP_DIR}/lib/vsag_lib/libgfortran_static.a
 cp /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libgfortran.5.dylib ${TOP_DIR}/lib/vsag_lib/
 cp /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libgomp.1.dylib ${TOP_DIR}/lib/vsag_lib/
 cp /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libgomp.a ${TOP_DIR}/lib/vsag_lib/libgomp_static.a
+cp /opt/homebrew/opt/libomp/lib/libomp.a ${TOP_DIR}/lib/vsag_lib/libomp_static.a
+cp /opt/homebrew/opt/libomp/lib/libomp.dylib ${TOP_DIR}/lib/vsag_lib/libomp.dylib
 
 # build package
 echo "[BUILD] build tarball......"
