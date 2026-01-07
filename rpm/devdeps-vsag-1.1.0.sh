@@ -30,6 +30,11 @@ rm -rf $TMP_INSTALL && mkdir -p $TMP_INSTALL
 cd $TMP_DIR
 cp -r $ROOT_DIR/vsag ./
 cd vsag && mkdir build && cd build
+# 修改 build_make_args 行：在 USE_THREAD=0 前添加 BUILD_LAPACK=1
+sed -i '' 's/set(build_make_args USE_THREAD=0/set(build_make_args BUILD_LAPACK=1 netlib USE_THREAD=0/' $TMP_DIR/vsag/extern/openblas/openblas.cmake
+# 修改 install_make_args 行：在 DYNAMIC_ARCH=1 前添加 BUILD_LAPACK=1
+sed -i '' 's/set(install_make_args DYNAMIC_ARCH=1/set(install_make_args BUILD_LAPACK=1 DYNAMIC_ARCH=1/' $TMP_DIR/vsag/extern/openblas/openblas.cmake
+echo "[TEST] modified openblas.cmake, BUILD_LAPACK=1"
 cmake .. \
   -DENABLE_LIBCXX=ON \
   -DENABLE_TESTS=OFF \
@@ -78,12 +83,16 @@ cp ./openblas/install/lib/libopenblas.a ${TOP_DIR}/lib/vsag_lib
 cp ./antlr4/install/lib/libantlr4-runtime.a ${TOP_DIR}/lib/vsag_lib/
 cp ./libantlr4-autogen.a ${TOP_DIR}/lib/vsag_lib/
 cp ./_deps/fmt-build/libfmt.a ${TOP_DIR}/lib/vsag_lib/
+cp ./src/io/libio.a ${TOP_DIR}/lib/vsag_lib/
 # brew list gcc | grep libgfortran 
 # brew list gcc | grep libgomp
 cp /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libgfortran.a ${TOP_DIR}/lib/vsag_lib/libgfortran_static.a
 cp /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libgfortran.5.dylib ${TOP_DIR}/lib/vsag_lib/
 cp /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libgomp.1.dylib ${TOP_DIR}/lib/vsag_lib/
 cp /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libgomp.a ${TOP_DIR}/lib/vsag_lib/libgomp_static.a
+cp /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libquadmath.0.dylib ${TOP_DIR}/lib/vsag_lib/
+cp /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libquadmath.a ${TOP_DIR}/lib/vsag_lib/libquadmath_static.a
+cp /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/gcc/aarch64-apple-darwin24/15/libgcc.a ${TOP_DIR}/lib/vsag_lib/
 cp /opt/homebrew/opt/libomp/lib/libomp.a ${TOP_DIR}/lib/vsag_lib/libomp_static.a
 cp /opt/homebrew/opt/libomp/lib/libomp.dylib ${TOP_DIR}/lib/vsag_lib/libomp.dylib
 
