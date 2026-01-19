@@ -11,6 +11,7 @@ RELEASE=${4:-"1"}
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/llvm-${VERSION}.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download ${PROJECT_NAME} source code"
     wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/llvm-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
+    wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/bolt-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
     wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/lld-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
     wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/lldb-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
     wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/clang-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
@@ -37,6 +38,7 @@ cd $TMP_DIR
 # prep
 mkdir -p llvm_src_dir && cd llvm_src_dir
 tar -xf $ROOT_DIR/clang-${VERSION}.src.tar.xz
+tar -xf $ROOT_DIR/bolt-${VERSION}.src.tar.xz
 tar -xf $ROOT_DIR/cmake-${VERSION}.src.tar.xz
 tar -xf $ROOT_DIR/compiler-rt-${VERSION}.src.tar.xz
 tar -xf $ROOT_DIR/libunwind-${VERSION}.src.tar.xz
@@ -46,6 +48,7 @@ tar -xf $ROOT_DIR/llvm-${VERSION}.src.tar.xz
 tar -xf $ROOT_DIR/third-party-${VERSION}.src.tar.xz
 
 mv clang-${VERSION}.src clang
+mv bolt-${VERSION}.src bolt
 mv cmake-${VERSION}.src cmake
 mv compiler-rt-${VERSION}.src compiler-rt
 mv libunwind-${VERSION}.src libunwind
@@ -68,7 +71,7 @@ cmake ../llvm  \
     -DLLVM_ENABLE_EH=ON \
     -DLLVM_ENABLE_DUMP=ON \
     -DCMAKE_BUILD_TYPE=Release \
-    -DLLVM_ENABLE_PROJECTS='clang;compiler-rt;lld' \
+    -DLLVM_ENABLE_PROJECTS='clang;compiler-rt;lld;bolt' \
     -DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=ON \
     -DDARWIN_osx_SKIP_CC_KEXT=ON \
     -DCOMPILER_RT_ENABLE_IOS=OFF \
