@@ -17,7 +17,7 @@ fi
 echo "[BUILD] args: CURDIR=${CUR_DIR} PROJECT_NAME=${PROJECT_NAME} VERSION=${VERSION} RELEASE=${RELEASE}"
 CPU_CORES=$(sysctl -n hw.ncpu 2>/dev/null || grep -c ^processor /proc/cpuinfo)
 TOP_DIR=$CUR_DIR/.pkg_build/usr/local/oceanbase/deps/devel
-rm -rf $TOP_DIR && mkdir -p $TOP_DIR
+rm -rf $CUR_DIR/.pkg_build && mkdir -p $TOP_DIR
 
 TO_INC=$(gunzip -c lua-$VERSION.tar.gz | grep -ao '^TO_INC= .*' | cut -d' ' -f2-)
 TO_LIB=$(gunzip -c lua-$VERSION.tar.gz | grep -ao '^TO_LIB= .*' | cut -d' ' -f2-)
