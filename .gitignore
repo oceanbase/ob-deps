@@ -29,3 +29,5 @@ rpm/obdevtools-bison
 rpm/obdevtools-flex
 rpm/devdeps-vsag
 ossutil64
+ossutilmac64
+usr/

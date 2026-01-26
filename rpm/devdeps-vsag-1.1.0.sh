@@ -20,8 +20,6 @@ CPU_CORES=$(sysctl -n hw.ncpu 2>/dev/null || grep -c ^processor /proc/cpuinfo)
 TOP_DIR=$CUR_DIR/.pkg_build/usr/local/oceanbase/deps/devel
 rm -rf $TOP_DIR && mkdir -p $TOP_DIR
 
-# brew install libomp lapack gcc #llvm@17
-
 # compile and install
 TMP_DIR=$CUR_DIR/$PROJECT_NAME
 rm -rf $TMP_DIR && mkdir -p $TMP_DIR
@@ -34,17 +32,42 @@ cd vsag && mkdir build && cd build
 sed -i '' 's/set(build_make_args USE_THREAD=0/set(build_make_args BUILD_LAPACK=1 netlib USE_THREAD=0/' $TMP_DIR/vsag/extern/openblas/openblas.cmake
 # 修改 install_make_args 行：在 DYNAMIC_ARCH=1 前添加 BUILD_LAPACK=1
 sed -i '' 's/set(install_make_args DYNAMIC_ARCH=1/set(install_make_args BUILD_LAPACK=1 DYNAMIC_ARCH=1/' $TMP_DIR/vsag/extern/openblas/openblas.cmake
-echo "[TEST] modified openblas.cmake, BUILD_LAPACK=1"
-cmake .. \
-  -DENABLE_LIBCXX=ON \
-  -DENABLE_TESTS=OFF \
-  -DCMAKE_C_COMPILER=${DEV_TOOLS}/bin/clang \
-  -DCMAKE_CXX_COMPILER=${DEV_TOOLS}/bin/clang++
-  # -DCMAKE_CXX_FLAGS="-fPIC -isysroot ${SDKROOT}" \
-  # -DCMAKE_C_FLAGS="-fPIC -isysroot ${SDKROOT}" \
-  # -DCMAKE_EXE_LINKER_FLAGS="-isysroot ${SDKROOT}"
 
-max_retries=3
+if [ "${MACOS_VERSION}" -lt 15 ]; then
+  # Fix deprecated implicit 'this' capture for newer Clang
+  sed -i '' 's/\[=\]() -> std::shared_ptr<T>/[=, this]() -> std::shared_ptr<T>/' \
+    $TMP_DIR/vsag/src/utils/resource_object_pool.h
+  
+  sed -i '' 's/add_library (io OBJECT/add_library (io STATIC/' $TMP_DIR/vsag/src/io/CMakeLists.txt
+  
+  mkdir -p ./_deps/roaringbitmap-subbuild/roaringbitmap-populate-prefix/src/
+  cp $ROOT_DIR/v3.0.1.tar.gz $TMP_DIR/vsag/build/_deps/roaringbitmap-subbuild/roaringbitmap-populate-prefix/src/v3.0.1.tar.gz
+
+  cmake .. \
+    -DENABLE_LIBCXX=ON \
+    -DENABLE_TESTS=OFF \
+    -DCMAKE_C_COMPILER=${DEV_TOOLS}/bin/clang \
+    -DCMAKE_CXX_COMPILER=${DEV_TOOLS}/bin/clang++ \
+    -DCMAKE_C_FLAGS="-I${OMP_PATH}/include" \
+    -DCMAKE_CXX_FLAGS="-I${OMP_PATH}/include" \
+    -DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}" \
+    -DCMAKE_EXE_LINKER_FLAGS="-L${OMP_PATH}/lib" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-L${OMP_PATH}/lib" \
+    -DCMAKE_MODULE_LINKER_FLAGS="-L${OMP_PATH}/lib" \
+    -DOpenMP_C_FLAGS="${OpenMP_C_FLAGS}" \
+    -DOpenMP_C_LIB_NAMES="${OpenMP_C_LIB_NAMES}" \
+    -DOpenMP_CXX_FLAGS="${OpenMP_C_FLAGS}" \
+    -DOpenMP_CXX_LIB_NAMES="${OpenMP_C_LIB_NAMES}" \
+    -DOpenMP_omp_LIBRARY="${OpenMP_omp_LIBRARY}"
+else
+  cmake .. \
+    -DENABLE_LIBCXX=ON \
+    -DENABLE_TESTS=OFF \
+    -DCMAKE_C_COMPILER=${DEV_TOOLS}/bin/clang \
+    -DCMAKE_CXX_COMPILER=${DEV_TOOLS}/bin/clang++
+fi
+
+max_retries=6
 retry_count=0
 while true; do
     make -j${CPU_CORES}
@@ -92,9 +115,13 @@ cp /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libgomp.1.dylib ${TOP_DIR}/li
 cp /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libgomp.a ${TOP_DIR}/lib/vsag_lib/libgomp_static.a
 cp /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libquadmath.0.dylib ${TOP_DIR}/lib/vsag_lib/
 cp /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libquadmath.a ${TOP_DIR}/lib/vsag_lib/libquadmath_static.a
-cp /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/gcc/aarch64-apple-darwin24/15/libgcc.a ${TOP_DIR}/lib/vsag_lib/
 cp /opt/homebrew/opt/libomp/lib/libomp.a ${TOP_DIR}/lib/vsag_lib/libomp_static.a
 cp /opt/homebrew/opt/libomp/lib/libomp.dylib ${TOP_DIR}/lib/vsag_lib/libomp.dylib
+if [ "${MACOS_VERSION}" -lt 15 ]; then
+  cp /opt/homebrew/Cellar/gcc//15.2.0/lib/gcc/current/gcc/aarch64-apple-darwin22/15/libgcc.a ${TOP_DIR}/lib/vsag_lib/
+else
+  cp /opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/gcc/aarch64-apple-darwin24/15/libgcc.a ${TOP_DIR}/lib/vsag_lib/
+fi
 
 # build package
 echo "[BUILD] build tarball......"

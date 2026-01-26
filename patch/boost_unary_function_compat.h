@@ -7,9 +7,9 @@
 #include <functional>
 
 #if __cplusplus >= 201703L
-// C++17 and later: std::unary_function was removed
-// Provide compatibility by redefining it in std namespace
-// Note: This is a workaround for boost 1.67.0 compatibility
+// C++17 and later: std::unary_function may be removed by some libstdc++ variants.
+// Avoid redefining it on libc++/libstdc++ where it already exists (even if deprecated).
+#if !defined(_LIBCPP_VERSION) && !defined(__GLIBCXX__)
 namespace std {
     template<class _Arg, class _Result>
     struct unary_function {
@@ -17,6 +17,7 @@ namespace std {
         typedef _Result result_type;
     };
 }
+#endif
 #endif
 
 #endif // BOOST_UNARY_FUNCTION_COMPAT_H
