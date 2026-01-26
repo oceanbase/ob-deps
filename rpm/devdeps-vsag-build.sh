@@ -31,11 +31,10 @@ if [ $MACOS_VERSION -lt 15 ]; then
     export CPPFLAGS="-I${OMP_PATH}/include ${CPPFLAGS}"
     export LIBRARY_PATH="${OMP_PATH}/lib:${LIBRARY_PATH}"
     # export MACOSX_DEPLOYMENT_TARGET=13.0
+    # Use local roaringbitmap source to avoid download in restricted networks
+    export FETCHCONTENT_FULLY_DISCONNECTED=ON
+    export FETCHCONTENT_SOURCE_DIR_roaringbitmap="${ROOT_DIR}/roaringbitmap-src"
 fi
-
-# Use local roaringbitmap source to avoid download in restricted networks
-export FETCHCONTENT_FULLY_DISCONNECTED=ON
-export FETCHCONTENT_SOURCE_DIR_roaringbitmap="${ROOT_DIR}/roaringbitmap-src"
 
 # Configure custom source file directory
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
