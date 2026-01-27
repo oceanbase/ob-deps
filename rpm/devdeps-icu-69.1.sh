@@ -33,10 +33,21 @@ cd icu-release-69-1
 cp $ROOT_DIR/cmake/devdeps-icu-cmakelists.txt ./CMakeLists.txt
 mkdir build && cd build
 
-cmake .. -DICU_VERSION_DIR=icu4c \
-         -DCMAKE_INSTALL_PREFIX=${TMP_INSTALL} \
-         -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-         -DCMAKE_BUILD_TYPE=RelWithDebInfo
+MACOS_VERSION=${MACOS_VERSION:-$(sw_vers -productVersion | awk -F. '{print $1}')}
+if [ $MACOS_VERSION -lt 15 ]; then
+    cmake .. -DICU_VERSION_DIR=icu4c \
+            -DCMAKE_INSTALL_PREFIX=${TMP_INSTALL} \
+            -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+            -DCMAKE_CXX_STANDARD=11 \
+            -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+            -DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo
+else
+    cmake .. -DICU_VERSION_DIR=icu4c \
+            -DCMAKE_INSTALL_PREFIX=${TMP_INSTALL} \
+            -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo
+fi
 make -j${CPU_CORES} icu_all
 make install
 

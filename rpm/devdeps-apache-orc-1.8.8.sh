@@ -72,14 +72,28 @@ cd orc-rel-release-${VERSION}
 cp $ROOT_DIR/cmake/devdeps-orc-ThirdpartyToolchain.cmake ./cmake_modules/ThirdpartyToolchain.cmake
 mkdir -p build && cd build
 
-cmake .. -DCMAKE_INSTALL_PREFIX=${TMP_INSTALL} \
-         -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-         -DBUILD_JAVA=OFF \
-         -DBUILD_CPP_TESTS=OFF \
-         -DBUILD_TOOLS=OFF \
-         -DSTOP_BUILD_ON_WARNING=OFF \
-         -DBUILD_POSITION_INDEPENDENT_LIB=ON \
-         -DBUILD_LIBHDFSPP=OFF
+MACOS_VERSION=${MACOS_VERSION:-$(sw_vers -productVersion | awk -F. '{print $1}')}
+if [ $MACOS_VERSION -lt 15 ]; then
+  cmake .. -DCMAKE_INSTALL_PREFIX=${TMP_INSTALL} \
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+          -DCMAKE_CXX_STANDARD=11 \
+          -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+          -DBUILD_JAVA=OFF \
+          -DBUILD_CPP_TESTS=OFF \
+          -DBUILD_TOOLS=OFF \
+          -DSTOP_BUILD_ON_WARNING=OFF \
+          -DBUILD_POSITION_INDEPENDENT_LIB=ON \
+          -DBUILD_LIBHDFSPP=OFF
+else
+  cmake .. -DCMAKE_INSTALL_PREFIX=${TMP_INSTALL} \
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+          -DBUILD_JAVA=OFF \
+          -DBUILD_CPP_TESTS=OFF \
+          -DBUILD_TOOLS=OFF \
+          -DSTOP_BUILD_ON_WARNING=OFF \
+          -DBUILD_POSITION_INDEPENDENT_LIB=ON \
+          -DBUILD_LIBHDFSPP=OFF
+fi
 
 max_retries=3
 retry_count=0

@@ -12,6 +12,7 @@ export CXX=/usr/bin/clang++
 
 # download deps
 export DEPS_PREFIX=$ROOT_DIR/usr/local/oceanbase/deps/devel
+export MACOS_VERSION=$(sw_vers -productVersion | awk -F. '{print $1}')
 
 # Configure custom source file directory
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
