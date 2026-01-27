@@ -37,7 +37,7 @@ cmake .. -DCMAKE_INSTALL_PREFIX=$TMP_INSTALL \
          -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
          -DWITH_SSL=system \
-	 -DWITH_EXTERNAL_ZLIB=ON \
+         -DWITH_EXTERNAL_ZLIB=ON \
          -DENABLED_LOCAL_INFILE=1 \
          -DDEFAULT_CHARSET=utf8
 make -j${CPU_CORES}

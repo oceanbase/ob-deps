@@ -13,7 +13,7 @@ export CXX=/usr/bin/clang++
 # download deps
 export DEPS_PREFIX=$ROOT_DIR/usr/local/oceanbase/deps/devel
 cd $ROOT_DIR
-tar -xf $CUR_DIR/devdeps-openssl-1.1.1u-20251204.tar.gz
+tar -xf $CUR_DIR/devdeps-openssl-1.1.1u-20260126.tar.gz
 cd $CUR_DIR
 
 # Configure custom source file directory

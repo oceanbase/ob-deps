@@ -8,7 +8,7 @@ VERSION=${3:-"1.74.0"}
 RELEASE=${4:-"1"}
 
 # check source code
-if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/boost-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
+if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/boost_1_74_0.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download ${PROJECT_NAME} source code"
     wget --no-check-certificate https://archives.boost.io/release/$VERSION/source/boost_1_74_0.tar.bz2 -O $ROOT_DIR/boost-$VERSION.tar.bz2
 fi
@@ -25,7 +25,7 @@ rm -rf $TMP_DIR && mkdir -p $TMP_DIR
 TMP_INSTALL=$TMP_DIR/tmp_install
 rm -rf $TMP_INSTALL && mkdir -p $TMP_INSTALL
 cd $TMP_DIR
-tar -xf $ROOT_DIR/boost-$VERSION.tar.bz2
+tar -xf $ROOT_DIR/boost_1_74_0.tar.bz2
 cd boost_1_74_0
 cp $ROOT_DIR/patch/devdeps-boost.diff .
 patch -p1 < devdeps-boost.diff

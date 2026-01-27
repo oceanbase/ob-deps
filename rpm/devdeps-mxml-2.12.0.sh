@@ -8,9 +8,10 @@ VERSION=${3:-"2.12.0"}
 RELEASE=${4:-"1"}
 
 # check source code
-if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/mxml-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
+tarball_version="2.12"
+if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/mxml-$tarball_version.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download ${PROJECT_NAME} source code"
-    wget --no-check-certificate https://github.com/michaelrsweet/mxml/archive/refs/tags/v$VERSION.zip -O $ROOT_DIR/mxml-$VERSION.zip
+    wget --no-check-certificate https://github.com/michaelrsweet/mxml/archive/refs/tags/v$tarball_version.zip -O $ROOT_DIR/mxml-$tarball_version.zip
 fi
 
 # init build package env
@@ -25,7 +26,7 @@ rm -rf $TMP_DIR && mkdir -p $TMP_DIR
 TMP_INSTALL=$TMP_DIR/tmp_install
 rm -rf $TMP_INSTALL && mkdir -p $TMP_INSTALL
 cd $TMP_DIR
-unzip $ROOT_DIR/mxml-$VERSION.zip
+unzip $ROOT_DIR/mxml-$tarball_version.zip
 cd mxml-2.12
 
 ./configure --prefix=$TMP_INSTALL

@@ -13,7 +13,7 @@ export CXX=/usr/bin/clang++
 # download deps
 export DEPS_PREFIX=$ROOT_DIR/usr/local/oceanbase/deps/devel
 cd $ROOT_DIR
-tar -xf $CUR_DIR/devdeps-abseil-cpp-20211102.0-20251205.tar.gz
+tar -xf $CUR_DIR/devdeps-abseil-cpp-20211102.0-20260126.tar.gz
 cd $CUR_DIR
 export ABSL_DIR=$DEPS_PREFIX/lib/cmake/absl/
 

@@ -52,6 +52,13 @@ cmake .. -DCMAKE_INSTALL_PREFIX=${TMP_INSTALL} \
          -DARROW_WITH_ZSTD=ON \
          -DARROW_JEMALLOC=OFF \
          -DARROW_SIMD_LEVEL=NONE
+
+MACOS_VERSION=${MACOS_VERSION:-$(sw_vers -productVersion | awk -F. '{print $1}')}
+if [ $MACOS_VERSION -lt 15 ]; then
+    sed -i '' 's|set(command "/opt/homebrew/bin/cmake;|set(command "/opt/homebrew/bin/cmake;-DCMAKE_POLICY_VERSION_MINIMUM=3.10;|' ./src/xsimd_ep-stamp/xsimd_ep-configure-RELEASE.cmake
+    sed -i '' 's|set(command "/opt/homebrew/bin/cmake;|set(command "/opt/homebrew/bin/cmake;-DCMAKE_POLICY_VERSION_MINIMUM=3.5;|' ./snappy_ep-prefix/src/snappy_ep-stamp/snappy_ep-configure-RELEASE.cmake
+fi
+
 max_retries=3
 retry_count=0
 while true; do
@@ -73,6 +80,7 @@ while true; do
 
     echo "[Build] Build failed (attempt $retry_count/$max_retries). Retrying..."
 done
+
 make install
 
 # copy install file
