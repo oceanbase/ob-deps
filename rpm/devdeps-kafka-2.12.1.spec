@@ -40,9 +40,9 @@ tar -xf %{_src}.tar.gz
 cd %{_src}
 mkdir -p tmp_install
 if [[ "$USE_LIBCURL" == "1" ]]; then
-    ./configure --prefix=${ROOT_DIR}/%{_src}/tmp_install
+    CFLAGS="-fvisibility=hidden" ./configure --prefix=${ROOT_DIR}/%{_src}/tmp_install
 else
-    ./configure --prefix=${ROOT_DIR}/%{_src}/tmp_install --disable-curl
+    CFLAGS="-fvisibility=hidden" ./configure --prefix=${ROOT_DIR}/%{_src}/tmp_install --disable-curl
 fi
 # Only build libraries, skip examples
 make -j${CPU_CORES} libs
