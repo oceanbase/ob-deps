@@ -40,9 +40,9 @@ tar -xf %{_src}.tar.gz
 cd %{_src}
 mkdir -p tmp_install
 if [[ "$USE_LIBCURL" == "1" ]]; then
-    CFLAGS="-fvisibility=hidden" ./configure --prefix=${ROOT_DIR}/%{_src}/tmp_install
+    ./configure --prefix=${ROOT_DIR}/%{_src}/tmp_install
 else
-    CFLAGS="-fvisibility=hidden" ./configure --prefix=${ROOT_DIR}/%{_src}/tmp_install --disable-curl
+    ./configure --prefix=${ROOT_DIR}/%{_src}/tmp_install --disable-curl
 fi
 # Only build libraries, skip examples
 make -j${CPU_CORES} libs
@@ -50,6 +50,7 @@ make -j${CPU_CORES} libs
 make install-subdirs
 
 mkdir -p ${RPM_BUILD_ROOT}/%{_prefix}/lib64
+objcopy --redefine-syms $ROOT_DIR/patch/devdeps_kafka_rename.txt ${ROOT_DIR}/%{_src}/tmp_install/lib/librdkafka.a
 cp -r ${ROOT_DIR}/%{_src}/tmp_install/lib/librdkafka.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64
 cp -r ${ROOT_DIR}/%{_src}/tmp_install/include ${RPM_BUILD_ROOT}/%{_prefix}/
 
