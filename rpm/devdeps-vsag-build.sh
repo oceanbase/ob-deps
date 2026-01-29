@@ -8,9 +8,11 @@ RELEASE=${4:-"1"}
  
 if [[ $VERSION == "1.0.0" ]]; then
   VSAG_VERSION="0.14.7"
+elif [[ $VERSION == "1.1.0" ]]; then
+  VSAG_VERSION="0.15.6"
 else
   # default use newest vsag
-  VSAG_VERSION="0.16.16"
+  VSAG_VERSION="0.18.0"
 fi
 
 echo "VERSION=${VERSION} VSAG_VERSION=${VSAG_VERSION}"
