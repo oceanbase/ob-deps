@@ -24,9 +24,9 @@ set -x
 
 # brew install brotli utf8proc re2 lz4 zstd thrift snappy
 export LD=/usr/bin/ld
-export AR=/opt/homebrew/opt/llvm/bin/llvm-ar
-export RANLIB=/opt/homebrew/opt/llvm/bin/llvm-ranlib
-export NM=/opt/homebrew/opt/llvm/bin/llvm-nm
+export AR=${DEV_TOOLS}/bin/llvm-ar
+export RANLIB=${DEV_TOOLS}/bin/llvm-ranlib
+export NM=${DEV_TOOLS}/bin/llvm-nm
 export CFLAGS="-fPIC -D_GNU_SOURCE -fstack-protector-strong -flto=thin -fuse-ld=${LD}"
 export CXXFLAGS="-std=c++17 -fPIC -D_GNU_SOURCE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong -flto=thin -fuse-ld=${LD}"
 export LDFLAGS="-pie -flto-jobs=8 -fuse-ld=${LD}"
@@ -61,7 +61,8 @@ cmake .. -DCMAKE_C_COMPILER=$CC \
          -DBUILD_SHARED_LIBS=OFF -DARROW_BUILD_SHARED=OFF -DARROW_BUILD_STATIC=ON \
          -DARROW_PARQUET=ON -DPARQUET_BUILD_EXAMPLES=ON -DARROW_FILESYSTEM=ON \
          -DARROW_WITH_BROTLI=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_LZ4=ON \
-         -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZLIB=ON -DARROW_WITH_ZSTD=ON -DARROW_JEMALLOC=OFF
+         -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZLIB=ON -DARROW_WITH_ZSTD=ON \
+         -DARROW_JEMALLOC=OFF -DARROW_MIMALLOC=OFF
 
 MACOS_VERSION=${MACOS_VERSION:-$(sw_vers -productVersion | awk -F. '{print $1}')}
 if [ $MACOS_VERSION -lt 15 ]; then
