@@ -22,6 +22,11 @@ if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/rocksdb-$VERSION.*[tar|gz|bz2|xz
     done
 fi
 
+if [[ "${VERSION}" == "10.9.1" ]]; then
+    yum install -y lz4 lz4-devel lz4-libs
+    yum install -y zstd libzstd*
+fi
+
 # prepare building environment
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
  
@@ -49,11 +54,6 @@ else
         fi
         (cd / && rpm2cpio $pkg_dir/$pkg | cpio -di -u --quiet)
     done
-fi
-
-if [[ "${VERSION}" == "10.9.1" ]]; then
-    yum install -y lz4-devel
-    yum install -y zstd-devel
 fi
 
 export PATH=/usr/local/oceanbase/devtools/bin:$PATH
