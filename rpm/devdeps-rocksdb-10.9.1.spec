@@ -29,8 +29,15 @@ tar xf %{_rocksdb_src}.tar.gz
 cd %{_default_version_src}
 mkdir build
 cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} -DCMAKE_BUILD_TYPE=Release -DWITH_GFLAGS=0 -DPORTABLE=ON \
-         -DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -lrt' -DWITH_ZSTD=ON -DWITH_LZ4=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} \
+         -DCMAKE_BUILD_TYPE=Release \
+         -DWITH_GFLAGS=0 \
+         -DPORTABLE=ON \
+         -DCMAKE_CXX_STANDARD=20 \
+         -DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC'\
+         -DCMAKE_EXE_LINKER_FLAGS='-lrt' \
+         -DWITH_ZSTD=ON \
+         -DWITH_LZ4=ON
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES}
 make install
