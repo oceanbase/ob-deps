@@ -38,8 +38,7 @@ cmake .. -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} \
          -DCMAKE_EXE_LINKER_FLAGS='-lrt' \
          -DWITH_ZSTD=ON \
          -DWITH_LZ4=ON
-CPU_CORES=`grep -c ^processor /proc/cpuinfo`
-make -j${CPU_CORES}
+make -j8
 make install
 
 # install files
