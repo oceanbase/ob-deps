@@ -10,7 +10,7 @@ RELEASE=${4:-"1"}
 if [ "$VERSION" = "20.0.0" ]; then
     echo "VERSION is 20.0.0"
     cd $ROOT_DIR
-    tar -xf $CUR_DIR/obdevtools-llvm-17.0.6-20251212.tar.gz
+    tar -xf $CUR_DIR/obdevtools-llvm-17.0.6-20260122.tar.gz
     export DEV_TOOLS=$ROOT_DIR/usr/local/oceanbase/devtools
     export CC=${DEV_TOOLS}/bin/clang
     export CXX=${DEV_TOOLS}/bin/clang++

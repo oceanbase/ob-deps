@@ -45,6 +45,7 @@ cd apache-arrow-$VERSION
 cd cpp
 mkdir build && cd build
 
+# use system package snappy, avoid use libtool error
 cmake .. -DCMAKE_C_COMPILER=$CC \
          -DCMAKE_CXX_COMPILER=$CXX \
          -DCMAKE_AR=$AR \
@@ -62,6 +63,7 @@ cmake .. -DCMAKE_C_COMPILER=$CC \
          -DARROW_PARQUET=ON -DPARQUET_BUILD_EXAMPLES=ON -DARROW_FILESYSTEM=ON \
          -DARROW_WITH_BROTLI=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_LZ4=ON \
          -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZLIB=ON -DARROW_WITH_ZSTD=ON \
+         -DBUILD_SNAPPY=SYSTEM_PACKAGE \
          -DARROW_JEMALLOC=OFF -DARROW_MIMALLOC=OFF
 
 MACOS_VERSION=${MACOS_VERSION:-$(sw_vers -productVersion | awk -F. '{print $1}')}
