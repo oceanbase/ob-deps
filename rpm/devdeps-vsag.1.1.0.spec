@@ -36,7 +36,28 @@ export LDFLAGS="-z noexecstack -z now -pie"
 cmake . -DENABLE_CXX11_ABI=OFF -DENABLE_INTEL_MKL=OFF -DROARING_DISABLE_AVX512=ON
  
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
-make  -j${CPU_CORES}
+
+# Temporarily disable error exit
+set +e
+MAX_RETRIES=6
+retry_count=1
+while [ $retry_count -le $MAX_RETRIES ]; do
+    make -j${CPU_CORES}
+    if [ $? -eq 0 ]; then
+        echo "Build succeeded!"
+        break
+    else
+        echo "Compile failed (attempt $retry_count/$MAX_RETRIES), retrying..."
+        retry_count=$((retry_count+1))
+    fi
+done
+# Re-enable error exit
+set -e
+# All retries failed, exiting with an error
+if [ $retry_count -gt $MAX_RETRIES ]; then
+    echo "FATAL: All retries failed!"
+    exit 1
+fi
  
 mkdir -p %{buildroot}/%{_prefix}/lib/vsag_lib
 mkdir -p %{buildroot}/%{_prefix}/include/vsag
