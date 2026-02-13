@@ -17,6 +17,9 @@ fi
 
 echo "VERSION=${VERSION} VSAG_VERSION=${VSAG_VERSION}"
 
+# Configure custom source file directory
+[ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
+
 # check source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/vsag-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download vsag source code"
