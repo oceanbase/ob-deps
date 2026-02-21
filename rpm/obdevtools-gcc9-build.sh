@@ -3,7 +3,7 @@
 CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/../
 PROJECT_DIR=${1:-"$CUR_DIR"}
-PROJECT_NAME=${2:-"obdevtools-gcc"}
+PROJECT_NAME=${2:-"obdevtools-gcc9"}
 VERSION=${3:-"9.3.0"}
 RELEASE=${4:-"1"}
 

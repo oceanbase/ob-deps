@@ -44,7 +44,7 @@ cd curl-8.1.2
 make
 
 #step 2: install expat
-cd ../expat-2.5.0
+cd ../expat-2.6.2
 ./configure --prefix=%{_tmp_third}
 make
 
