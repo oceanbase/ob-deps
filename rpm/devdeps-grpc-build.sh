@@ -30,6 +30,7 @@ if [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install obdevtools-cmake-3.22.1 -y
     yum install obdevtools-gcc9-9.3.0 -y
+    yum install -y devdeps-openssl-static-1.1.1u
 else
     RELEASE_ID=$(grep -Po '(?<=release )\d' /etc/redhat-release)
     arch=`uname -p`
@@ -37,7 +38,7 @@ else
     pkg_dir=$target_dir_3rd/pkg
     mkdir -p $pkg_dir
 
-    dep_pkgs=(obdevtools-gcc9-9.3.0-72024081318.el obdevtools-cmake-3.22.1-22022100417.el)
+    dep_pkgs=(obdevtools-gcc9-9.3.0-72024081318.el obdevtools-cmake-3.22.1-22022100417.el devdeps-openssl-static-1.1.1u-22023100710.el)
     download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/el"
 
     for dep_pkg in ${dep_pkgs[@]}
@@ -55,6 +56,7 @@ fi
 
 export PATH=/usr/local/oceanbase/devtools/bin:$PATH
 export LD_LIBRARY_PATH=/usr/local/oceanbase/devtools/lib:/usr/local/oceanbase/devtools/lib64:$LD_LIBRARY_PATH
+export OPENSSL_DIR=/usr/local/oceanbase/deps/devel
 
 ln -sf /usr/local/oceanbase/devtools/bin/g++  /usr/bin/c++
 ln -sf /usr/local/oceanbase/devtools/bin/gcc  /usr/bin/cc
