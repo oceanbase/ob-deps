@@ -44,8 +44,8 @@ cd third_party/cares/cares
 # git checkout cares-1_15_0
 mkdir -p cmake/build
 cd cmake/build
-cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} -DCARES_STATIC=ON -DCARES_SHARED=OFF -DCARES_STATIC_PIC=ON -DOPENSSL_ROOT_DIR=${OPENSSL_DIR} ../..
-CPU_CORES=`grep -c ^processor /proc/cpuinfo`
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} -DCARES_STATIC=ON -DCARES_SHARED=OFF -DCARES_STATIC_PIC=ON ../..
+CPU_CORES=8
 make -j${CPU_CORES} install
 cd ../../../../..
 rm -rf third_party/cares/cares  # wipe out to prevent influencing the grpc build
@@ -55,7 +55,6 @@ cd third_party/protobuf
 mkdir -p cmake/build
 cd cmake/build
 cmake -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} ..
-CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES} install
 cd ../../../..
 rm -rf third_party/protobuf  # wipe out to prevent influencing the grpc build
@@ -69,9 +68,11 @@ cmake ../.. -DgRPC_INSTALL=ON                \
             -DgRPC_ZLIB_PROVIDER=package      \
             -DgRPC_CARES_PROVIDER=package     \
             -DgRPC_SSL_PROVIDER=package       \
+            -DOPENSSL_ROOT_DIR=${OPENSSL_DIR} \
+            -DOPENSSL_INCLUDE_DIR=${OPENSSL_DIR}/include \
+            -DCMAKE_PREFIX_PATH=${OPENSSL_DIR} \
             -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} \
             -DBUILD_SHARED_LIBS=OFF
-CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES} install
 
 if [ "$SEEKDB_USE" = "1" ]; then
