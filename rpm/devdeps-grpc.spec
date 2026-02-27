@@ -44,7 +44,7 @@ cd third_party/cares/cares
 # git checkout cares-1_15_0
 mkdir -p cmake/build
 cd cmake/build
-cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} -DCARES_STATIC=ON -DCARES_SHARED=OFF -DCARES_STATIC_PIC=ON ../..
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} -DCARES_STATIC=ON -DCARES_SHARED=OFF -DCARES_STATIC_PIC=ON -DOPENSSL_ROOT_DIR=${OPENSSL_DIR} ../..
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES} install
 cd ../../../../..
