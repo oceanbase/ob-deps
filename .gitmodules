@@ -58,3 +58,6 @@
 [submodule "sources/vsag"]
 	path = sources/vsag
 	url = https://github.com/antgroup/vsag.git
+[submodule "sources/llvm-project"]
+	path = sources/llvm-project
+	url = https://github.com/llvm/llvm-project.git

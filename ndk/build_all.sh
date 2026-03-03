@@ -44,6 +44,7 @@ run_build devdeps-mxml-build.sh
 run_build devdeps-lua-build.sh
 run_build devdeps-libxml2-build.sh
 run_build devdeps-boost-build.sh
+run_build devdeps-llvm-build.sh
 
 # ============================================================
 # Phase 2: Depends on Phase 1
