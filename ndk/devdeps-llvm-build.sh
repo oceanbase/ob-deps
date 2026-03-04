@@ -36,24 +36,29 @@ rm -rf "$STAGING" && mkdir -p "$STAGING"
 # to generate .inc files during the cross build.
 
 HOST_BUILD="$BUILD_DIR/${NAME}_host"
-rm -rf "$HOST_BUILD" && mkdir -p "$HOST_BUILD"
-cd "$HOST_BUILD"
-
-echo "--- Stage 1: Building host llvm-tblgen ---"
-
-# Unset cross-compiler vars so cmake uses the host compiler
-env -u CC -u CXX -u AR -u RANLIB -u STRIP -u CFLAGS -u CXXFLAGS \
-cmake "$LLVM_SRC" \
-    -DLLVM_TARGETS_TO_BUILD=AArch64 \
-    -DCMAKE_BUILD_TYPE=Release
-
-env -u CC -u CXX -u AR -u RANLIB -u STRIP -u CFLAGS -u CXXFLAGS \
-make llvm-tblgen -j${CPU_CORES}
-
 HOST_TBLGEN="$HOST_BUILD/bin/llvm-tblgen"
-if [[ ! -x "$HOST_TBLGEN" ]]; then
-    echo "ERROR: Host llvm-tblgen not found at $HOST_TBLGEN"
-    exit 1
+
+if [[ -x "$HOST_TBLGEN" ]]; then
+    echo "--- Stage 1: Reusing existing host llvm-tblgen ---"
+else
+    rm -rf "$HOST_BUILD" && mkdir -p "$HOST_BUILD"
+    cd "$HOST_BUILD"
+
+    echo "--- Stage 1: Building host llvm-tblgen ---"
+
+    # Unset cross-compiler vars so cmake uses the host compiler
+    env -u CC -u CXX -u AR -u RANLIB -u STRIP -u CFLAGS -u CXXFLAGS \
+    cmake "$LLVM_SRC" \
+        -DLLVM_TARGETS_TO_BUILD=AArch64 \
+        -DCMAKE_BUILD_TYPE=Release
+
+    env -u CC -u CXX -u AR -u RANLIB -u STRIP -u CFLAGS -u CXXFLAGS \
+    make llvm-tblgen -j${CPU_CORES}
+
+    if [[ ! -x "$HOST_TBLGEN" ]]; then
+        echo "ERROR: Host llvm-tblgen not found at $HOST_TBLGEN"
+        exit 1
+    fi
 fi
 
 echo "Host tblgen: $HOST_TBLGEN"
@@ -82,7 +87,7 @@ cmake "$LLVM_SRC" \
     -DLLVM_ENABLE_PROJECTS="" \
     -DBUILD_SHARED_LIBS=OFF \
     -DLLVM_BUILD_TOOLS=OFF \
-    -DLLVM_INCLUDE_TOOLS=ON \
+    -DLLVM_INCLUDE_TOOLS=OFF \
     -DLLVM_INCLUDE_UTILS=OFF \
     -DLLVM_INCLUDE_TESTS=OFF \
     -DLLVM_INCLUDE_EXAMPLES=OFF \
@@ -92,11 +97,25 @@ cmake "$LLVM_SRC" \
     -DLLVM_ENABLE_ZSTD=OFF \
     -DLLVM_ENABLE_LIBXML2=OFF \
     -DLLVM_ENABLE_LIBEDIT=OFF \
+    -DLLVM_ENABLE_PLUGINS=OFF \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="$STAGING"
 
 make -j${CPU_CORES}
 make install
+
+# Patch: remove llvm-tblgen imported target from cmake exports.
+# We don't ship the tblgen binary (it's a host tool, not an Android binary),
+# but cmake's LLVMExports.cmake verifies all imported targets exist on disk.
+EXPORTS_DIR="$STAGING/lib/cmake/llvm"
+# Remove "llvm-tblgen" from the expected targets list
+sed -i '' 's/ llvm-tblgen / /g' "$EXPORTS_DIR/LLVMExports.cmake"
+# Remove the imported target block
+sed -i '' '/^# Create imported target llvm-tblgen$/,/^$/d' "$EXPORTS_DIR/LLVMExports.cmake"
+# Remove the release-config import for llvm-tblgen
+sed -i '' '/^# Import target "llvm-tblgen"/,/^$/d' "$EXPORTS_DIR/LLVMExports-release.cmake"
+# Remove the file check entries
+sed -i '' '/llvm-tblgen/d' "$EXPORTS_DIR/LLVMExports-release.cmake"
 
 # Verify key artifacts
 for lib in libLLVMCore.a libLLVMAArch64CodeGen.a libLLVMSupport.a; do

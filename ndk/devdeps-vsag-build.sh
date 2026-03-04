@@ -225,11 +225,18 @@ find . -name 'libvsag.a' -exec cp {} "$STAGING/lib/" \;
 # Sub-libraries
 for lib in libdiskann.a libsimd.a libcpuinfo.a libfmt.a libopenblas.a \
            libspdlog.a libantlr4-runtime.a libantlr4-autogen.a; do
-    found=$(find . -name "$lib" -type f | head -1)
+    found=$(find . -name "$lib" \( -type f -o -type l \) | head -1)
     if [[ -n "$found" ]]; then
         cp "$found" "$STAGING/lib/"
     fi
 done
+# OpenBLAS may install as versioned name (e.g. libopenblas_armv8-r0.3.23.a)
+if [[ ! -f "$STAGING/lib/libopenblas.a" ]]; then
+    found=$(find . -name 'libopenblas*.a' -type f | head -1)
+    if [[ -n "$found" ]]; then
+        cp "$found" "$STAGING/lib/libopenblas.a"
+    fi
+fi
 
 # Headers
 cp -r ../include/vsag "$STAGING/include/" 2>/dev/null || true
