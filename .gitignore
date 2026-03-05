@@ -1,1 +1,6 @@
 ossutil64
+
+# NDK build artifacts
+ndk/_build/
+ndk/_prefix/
+ndk/output/

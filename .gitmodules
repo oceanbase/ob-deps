@@ -1,0 +1,63 @@
+[submodule "sources/zlib"]
+	path = sources/zlib
+	url = https://github.com/madler/zlib.git
+[submodule "sources/openssl"]
+	path = sources/openssl
+	url = https://github.com/openssl/openssl.git
+[submodule "sources/xz"]
+	path = sources/xz
+	url = https://github.com/tukaani-project/xz.git
+[submodule "sources/icu"]
+	path = sources/icu
+	url = https://github.com/unicode-org/icu.git
+[submodule "sources/libxml2"]
+	path = sources/libxml2
+	url = https://github.com/GNOME/libxml2.git
+[submodule "sources/mxml"]
+	path = sources/mxml
+	url = https://github.com/michaelrsweet/mxml.git
+[submodule "sources/lua"]
+	path = sources/lua
+	url = https://github.com/lua/lua.git
+[submodule "sources/libcurl"]
+	path = sources/libcurl
+	url = https://github.com/curl/curl.git
+[submodule "sources/protobuf-c"]
+	path = sources/protobuf-c
+	url = https://github.com/protobuf-c/protobuf-c.git
+[submodule "sources/roaringbitmap"]
+	path = sources/roaringbitmap
+	url = https://github.com/RoaringBitmap/CRoaring.git
+[submodule "sources/abseil-cpp"]
+	path = sources/abseil-cpp
+	url = https://github.com/abseil/abseil-cpp.git
+[submodule "sources/mariadb-connector-c"]
+	path = sources/mariadb-connector-c
+	url = https://github.com/mariadb-corporation/mariadb-connector-c.git
+[submodule "sources/s2geometry"]
+	path = sources/s2geometry
+	url = https://github.com/google/s2geometry.git
+[submodule "sources/boost"]
+	path = sources/boost
+	url = https://github.com/boostorg/boost.git
+[submodule "sources/apache-arrow"]
+	path = sources/apache-arrow
+	url = https://github.com/apache/arrow.git
+[submodule "sources/apache-orc"]
+	path = sources/apache-orc
+	url = https://github.com/apache/orc.git
+[submodule "sources/aws-sdk-cpp"]
+	path = sources/aws-sdk-cpp
+	url = https://github.com/aws/aws-sdk-cpp.git
+[submodule "sources/fast-float"]
+	path = sources/fast-float
+	url = https://github.com/fastfloat/fast_float.git
+[submodule "sources/rapidjson"]
+	path = sources/rapidjson
+	url = https://github.com/Tencent/rapidjson.git
+[submodule "sources/vsag"]
+	path = sources/vsag
+	url = https://github.com/antgroup/vsag.git
+[submodule "sources/llvm-project"]
+	path = sources/llvm-project
+	url = https://github.com/llvm/llvm-project.git
