@@ -1,0 +1,559 @@
+diff --git a/cpp/src/parquet/column_reader.cc b/cpp/src/parquet/column_reader.cc
+index aa486b1f46..ea481aef35 100644
+--- a/cpp/src/parquet/column_reader.cc
++++ b/cpp/src/parquet/column_reader.cc
+@@ -75,6 +75,8 @@ constexpr int64_t kMinLevelBatchSize = 1024;
+ // Both RecordReader and the ColumnReader use this for skipping.
+ constexpr int64_t kSkipScratchBatchSize = 1024;
+ 
++constexpr int64_t OB_SUCCESS = 0;
++
+ // Throws exception if number_decoded does not match expected.
+ inline void CheckNumberDecoded(int64_t number_decoded, int64_t expected) {
+   if (ARROW_PREDICT_FALSE(number_decoded != expected)) {
+@@ -244,9 +246,14 @@ void CheckNumValuesInHeader(int num_values) {
+ class SerializedPageReader : public PageReader {
+  public:
+   SerializedPageReader(std::shared_ptr<ArrowInputStream> stream, int64_t total_num_values,
++                       int64_t column_start_offset, int64_t column_length,
+                        Compression::type codec, const ReaderProperties& properties,
+                        const CryptoContext* crypto_ctx, bool always_compressed)
+       : properties_(properties),
++        current_read_offset_(column_start_offset),
++        column_end_offset_(column_start_offset + column_length),
++        tmp_page_header_cache_buffer_(AllocateBuffer(properties_.memory_pool(), 0)),
++        tmp_page_buffer_(AllocateBuffer(properties_.memory_pool(), 0)),
+         stream_(std::move(stream)),
+         decompression_buffer_(AllocateBuffer(properties_.memory_pool(), 0)),
+         page_ordinal_(0),
+@@ -260,6 +267,17 @@ class SerializedPageReader : public PageReader {
+     max_page_header_size_ = kDefaultMaxPageHeaderSize;
+     decompressor_ = GetCodec(codec);
+     always_compressed_ = always_compressed;
++
++    // ParquetPageMgr not supported for encryption
++    if (crypto_ctx == nullptr) {
++      enable_page_mgr_ = properties_.is_enable_page_mgr();
++    } else {
++      enable_page_mgr_ = false;
++    }
++
++    if (enable_page_mgr_) {
++      is_eager_access_ = properties_.is_eager_access();
++    }
+   }
+ 
+   // Implement the PageReader interface
+@@ -269,10 +287,16 @@ class SerializedPageReader : public PageReader {
+   // decryption and decompression buffers internally, so if NextPage() is
+   // called then the content of previous page might be invalidated.
+   std::shared_ptr<Page> NextPage() override;
++  std::shared_ptr<Page> NextPageFromPageMgr();
+ 
+   void set_max_page_header_size(uint32_t size) override { max_page_header_size_ = size; }
+ 
+  private:
++  void FillPageIntoMemCache(int64_t page_offset, int64_t compressed_len,
++                            int64_t uncompressed_len,
++                            const std::shared_ptr<Buffer> &compressed_page_data,
++                            const std::shared_ptr<Buffer> &decompressed_page_data) const;
++
+   void UpdateDecryption(Decryptor* decryptor, int8_t module_type, std::string* page_aad);
+ 
+   void InitDecryption();
+@@ -287,6 +311,14 @@ class SerializedPageReader : public PageReader {
+   bool ShouldSkipPage(EncodedStatistics* data_page_statistics);
+ 
+   const ReaderProperties properties_;
++  int64_t current_read_offset_;
++  const int64_t column_end_offset_;
++  bool enable_page_mgr_;
++  bool is_eager_access_;
++  // avoid repeatedly alloc memory
++  std::shared_ptr<ResizableBuffer> tmp_page_header_cache_buffer_; // used to hold temp page header memory
++  std::shared_ptr<ResizableBuffer> tmp_page_buffer_; // used to hold temp memory
++  std::optional<int64_t> last_read_page_offset_ = std::nullopt; // last page read from ParquetPageMgr
+   std::shared_ptr<ArrowInputStream> stream_;
+ 
+   format::PageHeader current_page_header_;
+@@ -416,7 +448,44 @@ bool SerializedPageReader::ShouldSkipPage(EncodedStatistics* data_page_statistic
+   return false;
+ }
+ 
++void SerializedPageReader::FillPageIntoMemCache(const int64_t page_offset, const int64_t compressed_len,
++                                                const int64_t uncompressed_len,
++                                                const std::shared_ptr<Buffer> &compressed_page_data,
++                                                const std::shared_ptr<Buffer> &decompressed_page_data)
++const {
++  bool is_cache_decompressed = false;
++  if (decompressor_ != nullptr) {
++    // page data decompression happened
++    if (uncompressed_len >= (compressed_len + compressed_len / 2)) {
++      // if uncompressed_len >= compressed_len * 1.5, we cache compressed page data to save memory
++      is_cache_decompressed = false;
++    } else {
++      // if uncompressed_len is not large, we cache uncompressed page data to skip compress
++      is_cache_decompressed = true;
++    }
++  } else {
++    // page data decompression not happened
++    is_cache_decompressed = false;
++  }
++
++  const int64_t page_header_size = tmp_page_header_cache_buffer_->size();
++  const uint8_t *page_header_data = tmp_page_header_cache_buffer_->data();
++  const int64_t page_data_size = is_cache_decompressed ? decompressed_page_data->size() : compressed_page_data->size();
++  const uint8_t *page_data_data = is_cache_decompressed ? decompressed_page_data->data() : compressed_page_data->data();
++
++  PARQUET_THROW_NOT_OK(tmp_page_buffer_->Resize(page_header_size + page_data_size, false));
++  uint8_t *tmp_page_data_buffer = tmp_page_buffer_->mutable_data();
++  memcpy(tmp_page_data_buffer, page_header_data, page_header_size); // copy page header
++  memcpy(tmp_page_data_buffer + page_header_size, page_data_data, page_data_size); // copy page data
++  if (OB_SUCCESS != properties_.get_page_mgr_cache_page_func()(page_offset, is_cache_decompressed, tmp_page_buffer_)) {
++    throw ParquetException("PageMgr cache page error");
++  }
++}
++
+ std::shared_ptr<Page> SerializedPageReader::NextPage() {
++  if (enable_page_mgr_) {
++    return NextPageFromPageMgr();
++  }
+   ThriftDeserializer deserializer(properties_);
+ 
+   // Loop here because there may be unhandled page types that we skip until
+@@ -570,6 +639,232 @@ std::shared_ptr<Page> SerializedPageReader::NextPage() {
+   return std::shared_ptr<Page>(nullptr);
+ }
+ 
++std::shared_ptr<Page> SerializedPageReader::NextPageFromPageMgr() {
++  if (data_decryptor_ != nullptr) {
++    throw ParquetException("encryption not supported");
++  }
++
++  ThriftDeserializer deserializer(properties_);
++
++  while (current_read_offset_ < column_end_offset_) {
++    uint32_t header_size = 0;
++
++    int64_t current_page_offset = current_read_offset_;
++
++    if (last_read_page_offset_.has_value()) {
++      // release previous read page buffer first
++      if (OB_SUCCESS != properties_.
++          get_page_mgr_release_page_func()(last_read_page_offset_.value(), is_eager_access_)) {
++        throw ParquetException("PageMgr failed to release page");
++      }
++      last_read_page_offset_ = std::nullopt;
++    }
++
++    bool is_page_selected = false;
++    std::optional<int64_t> next_page_start_offset = std::nullopt;
++    if (OB_SUCCESS != properties_.get_page_mgr_check_page_selected_func()(current_page_offset, is_page_selected,
++                                                                          next_page_start_offset)) {
++      throw ParquetException("PageMgr failed to check page");
++    }
++    if (!is_page_selected) {
++      // skip current page
++      skip_page_callback_(current_page_offset);
++      if (next_page_start_offset.has_value()) {
++        current_read_offset_ = next_page_start_offset.value();
++      } else {
++        // already in the column end
++        current_read_offset_ = column_end_offset_;
++      }
++      continue;
++    }
++
++    std::shared_ptr<Buffer> retrieved_page_buffer; // retrieved page buffer from ParquetPageMgr
++    bool has_mem_cached = false;
++    bool has_decompressed = false;
++    if (OB_SUCCESS != properties_.get_page_mgr_read_page_func()(current_page_offset, retrieved_page_buffer,
++                                                                has_mem_cached,
++                                                                has_decompressed)) {
++      std::stringstream ss;
++      ss << "PageMgr failed to read page at offset " << current_page_offset;
++      throw ParquetException(ss.str());
++    }
++    if (has_decompressed && !has_mem_cached) {
++      throw ParquetException("unexpected error, if is_decompressed=true, must is_mem_cached=true");
++    }
++    last_read_page_offset_ = current_page_offset;
++
++    // This gets used, then set by DeserializeThriftMsg
++    header_size = static_cast<uint32_t>(retrieved_page_buffer->size());
++    try {
++      if (meta_decryptor_ != nullptr) {
++        UpdateDecryption(meta_decryptor_.get(), encryption::kDictionaryPageHeader,
++                         &data_page_header_aad_);
++      }
++      // Reset current page header to avoid unclearing the __isset flag.
++      current_page_header_ = format::PageHeader();
++      deserializer.DeserializeMessage(reinterpret_cast<const uint8_t*>(retrieved_page_buffer->data()),
++                                      &header_size, &current_page_header_,
++                                      meta_decryptor_.get());
++      if (!has_mem_cached) {
++        // fill page header if cache missed(because we need to cache page)
++        PARQUET_THROW_NOT_OK(tmp_page_header_cache_buffer_->Resize(header_size, false));
++        uint8_t *tmp_buffer = tmp_page_header_cache_buffer_->mutable_data();
++        memcpy(tmp_buffer, retrieved_page_buffer->data(), header_size);
++      }
++    } catch (std::exception &e) {
++      // Failed to deserialize.
++      std::stringstream ss;
++      ss << e.what() << "Deserializing page header failed.\n";
++      throw ParquetException(ss.str());
++    }
++
++    current_read_offset_ += header_size;
++
++    int32_t compressed_len = current_page_header_.compressed_page_size;
++    int32_t uncompressed_len = current_page_header_.uncompressed_page_size;
++    if (compressed_len < 0 || uncompressed_len < 0) {
++      throw ParquetException("Invalid page header");
++    }
++
++    EncodedStatistics data_page_statistics;
++    if (ShouldSkipPage(&data_page_statistics)) {
++      current_read_offset_ += compressed_len;
++      continue;
++    }
++
++    if (data_decryptor_ != nullptr) {
++      UpdateDecryption(data_decryptor_.get(), encryption::kDictionaryPage,
++                       &data_page_aad_);
++    }
++
++    // Read the compressed data page.
++    auto retrieved_page_data_buffer = std::make_shared<Buffer>(retrieved_page_buffer->data() + header_size,
++                                                               retrieved_page_buffer->size() - header_size);
++    current_read_offset_ += compressed_len;
++    if (has_decompressed) {
++      // if page data is already decompressed, we check it with uncompressed_len
++      if (retrieved_page_data_buffer->size() != uncompressed_len) {
++        std::stringstream ss;
++        ss << "Page was smaller (" << retrieved_page_data_buffer->size() << ") than expected ("
++           << uncompressed_len << ")";
++        ParquetException::EofException(ss.str());
++      }
++    } else {
++      // if page data is compressed, we check it with compressed_len
++      if (retrieved_page_data_buffer->size() != compressed_len) {
++        std::stringstream ss;
++        ss << "Page was smaller (" << retrieved_page_data_buffer->size() << ") than expected ("
++           << compressed_len << ")";
++        ParquetException::EofException(ss.str());
++      }
++    }
++
++
++    const PageType::type page_type = LoadEnumSafe(&current_page_header_.type);
++
++    // skip checksum validate
++    // if (properties_.page_checksum_verification() && current_page_header_.__isset.crc &&
++    //     PageCanUseChecksum(page_type)) {
++    //   // verify crc
++    //   uint32_t checksum =
++    //       ::arrow::internal::crc32(/* prev */ 0, page_buffer->data(), compressed_len);
++    //   if (static_cast<int32_t>(checksum) != current_page_header_.crc) {
++    //     throw ParquetException(
++    //         "could not verify page integrity, CRC checksum verification failed for "
++    //         "page_ordinal " +
++    //         std::to_string(page_ordinal_));
++    //   }
++    // }
++
++    // todo decrypt not supported
++    // Decrypt it if we need to
++    // if (data_decryptor_ != nullptr) {
++    //   PARQUET_THROW_NOT_OK(
++    //       decryption_buffer_->Resize(data_decryptor_->PlaintextLength(compressed_len),
++    //                                  /*shrink_to_fit=*/false));
++    //   compressed_len =
++    //       data_decryptor_->Decrypt(page_buffer->span_as<uint8_t>(),
++    //                                decryption_buffer_->mutable_span_as<uint8_t>());
++    //
++    //   page_buffer = decryption_buffer_;
++    // }
++
++    std::shared_ptr<Buffer> page_buffer = retrieved_page_data_buffer;
++    if (page_type == PageType::DICTIONARY_PAGE) {
++      crypto_ctx_.start_decrypt_with_dictionary_page = false;
++      const format::DictionaryPageHeader &dict_header =
++          current_page_header_.dictionary_page_header;
++      bool is_sorted = dict_header.__isset.is_sorted ? dict_header.is_sorted : false;
++
++      if (!has_decompressed) {
++        page_buffer = DecompressIfNeeded(retrieved_page_data_buffer, compressed_len, uncompressed_len);
++      }
++      if (!has_mem_cached) {
++        FillPageIntoMemCache(current_page_offset, compressed_len, uncompressed_len, retrieved_page_data_buffer,
++                             page_buffer);
++      }
++      return std::make_shared<DictionaryPage>(page_buffer, dict_header.num_values,
++                                              LoadEnumSafe(&dict_header.encoding),
++                                              is_sorted);
++    } else if (page_type == PageType::DATA_PAGE) {
++      ++page_ordinal_;
++      const format::DataPageHeader& header = current_page_header_.data_page_header;
++
++      if (!has_decompressed) {
++        page_buffer =
++            DecompressIfNeeded(retrieved_page_data_buffer, compressed_len, uncompressed_len);
++      }
++
++      if (!has_mem_cached) {
++        FillPageIntoMemCache(current_page_offset, compressed_len, uncompressed_len, retrieved_page_data_buffer,
++                             page_buffer);
++      }
++
++      return std::make_shared<DataPageV1>(
++          page_buffer, header.num_values, LoadEnumSafe(&header.encoding),
++          LoadEnumSafe(&header.definition_level_encoding),
++          LoadEnumSafe(&header.repetition_level_encoding), uncompressed_len,
++          std::move(data_page_statistics));
++    } else if (page_type == PageType::DATA_PAGE_V2) {
++      ++page_ordinal_;
++      const format::DataPageHeaderV2& header = current_page_header_.data_page_header_v2;
++
++      // Arrow prior to 3.0.0 set is_compressed to false but still compressed.
++      bool is_compressed_page =
++          (header.__isset.is_compressed ? header.is_compressed : false) ||
++          always_compressed_;
++
++      // Uncompress if needed
++      int levels_byte_len;
++      if (AddWithOverflow(header.definition_levels_byte_length,
++                          header.repetition_levels_byte_length, &levels_byte_len)) {
++        throw ParquetException("Levels size too large (corrupt file?)");
++      }
++      // DecompressIfNeeded doesn't take `is_compressed` into account as
++      // it's page type-agnostic.
++      if (!has_decompressed && is_compressed_page) {
++        page_buffer = DecompressIfNeeded(retrieved_page_data_buffer, compressed_len,
++                                         uncompressed_len, levels_byte_len);
++      }
++
++      if (!has_mem_cached) {
++        FillPageIntoMemCache(current_page_offset, compressed_len, uncompressed_len, retrieved_page_data_buffer,
++                             page_buffer);
++      }
++
++      return std::make_shared<DataPageV2>(
++          page_buffer, header.num_values, header.num_nulls, header.num_rows,
++          LoadEnumSafe(&header.encoding), header.definition_levels_byte_length,
++          header.repetition_levels_byte_length, uncompressed_len, is_compressed_page,
++          std::move(data_page_statistics));
++    } else {
++      throw ParquetException(
++          "Internal error, we have already skipped non-data pages in ShouldSkipPage()");
++    }
++  }
++  return std::shared_ptr<Page>(nullptr);
++}
++
+ std::shared_ptr<Buffer> SerializedPageReader::DecompressIfNeeded(
+     std::shared_ptr<Buffer> page_buffer, int compressed_len, int uncompressed_len,
+     int levels_byte_len) {
+@@ -619,22 +914,26 @@ std::shared_ptr<Buffer> SerializedPageReader::DecompressIfNeeded(
+ std::unique_ptr<PageReader> PageReader::Open(std::shared_ptr<ArrowInputStream> stream,
+                                              int64_t total_num_values,
+                                              Compression::type codec,
+-                                             const ReaderProperties& properties,
++                                             const ReaderProperties &properties,
+                                              bool always_compressed,
+-                                             const CryptoContext* ctx) {
++                                             const CryptoContext *ctx,
++                                             int64_t column_start_offset,
++                                             int64_t column_length) {
+   return std::unique_ptr<PageReader>(new SerializedPageReader(
+-      std::move(stream), total_num_values, codec, properties, ctx, always_compressed));
++    std::move(stream), total_num_values, column_start_offset, column_length, codec, properties, ctx,
++    always_compressed));
+ }
+ 
+ std::unique_ptr<PageReader> PageReader::Open(std::shared_ptr<ArrowInputStream> stream,
+                                              int64_t total_num_values,
+                                              Compression::type codec,
+                                              bool always_compressed,
+-                                             ::arrow::MemoryPool* pool,
+-                                             const CryptoContext* ctx) {
++                                             ::arrow::MemoryPool *pool,
++                                             const CryptoContext *ctx,
++                                             int64_t column_start_offset, int64_t column_length) {
+   return std::unique_ptr<PageReader>(
+-      new SerializedPageReader(std::move(stream), total_num_values, codec,
+-                               ReaderProperties(pool), ctx, always_compressed));
++    new SerializedPageReader(std::move(stream), total_num_values, column_start_offset, column_length, codec,
++                             ReaderProperties(pool), ctx, always_compressed));
+ }
+ 
+ namespace {
+diff --git a/cpp/src/parquet/column_reader.h b/cpp/src/parquet/column_reader.h
+index 80c82acd5e..3613185411 100644
+--- a/cpp/src/parquet/column_reader.h
++++ b/cpp/src/parquet/column_reader.h
+@@ -113,6 +113,7 @@ struct CryptoContext {
+ // ColumnReader through whatever mechanism we choose
+ class PARQUET_EXPORT PageReader {
+   using DataPageFilter = std::function<bool(const DataPageStats&)>;
++  using SkipPageCallback = std::function<void(int64_t page_offset)>;
+ 
+  public:
+   virtual ~PageReader() = default;
+@@ -121,13 +122,17 @@ class PARQUET_EXPORT PageReader {
+       std::shared_ptr<ArrowInputStream> stream, int64_t total_num_values,
+       Compression::type codec, bool always_compressed = false,
+       ::arrow::MemoryPool* pool = ::arrow::default_memory_pool(),
+-      const CryptoContext* ctx = NULLPTR);
++      const CryptoContext* ctx = NULLPTR,
++      int64_t column_start_offset = 0,
++      int64_t column_length = 0);
+   static std::unique_ptr<PageReader> Open(std::shared_ptr<ArrowInputStream> stream,
+                                           int64_t total_num_values,
+                                           Compression::type codec,
+                                           const ReaderProperties& properties,
+                                           bool always_compressed = false,
+-                                          const CryptoContext* ctx = NULLPTR);
++                                          const CryptoContext* ctx = NULLPTR,
++                                          int64_t column_start_offset = 0,
++                                          int64_t column_length = 0);
+ 
+   // If data_page_filter is present (not null), NextPage() will call the
+   // callback function exactly once per page in the order the pages appear in
+@@ -141,6 +146,10 @@ class PARQUET_EXPORT PageReader {
+     data_page_filter_ = std::move(data_page_filter);
+   }
+ 
++  void set_skip_page_callback(SkipPageCallback callback) {
++    skip_page_callback_ = std::move(callback);
++  }
++
+   // @returns: shared_ptr<Page>(nullptr) on EOS, std::shared_ptr<Page>
+   // containing new Page otherwise
+   //
+@@ -153,6 +162,7 @@ class PARQUET_EXPORT PageReader {
+  protected:
+   // Callback that decides if we should skip a page or not.
+   DataPageFilter data_page_filter_;
++  SkipPageCallback skip_page_callback_;
+ };
+ 
+ class PARQUET_EXPORT ColumnReader {
+diff --git a/cpp/src/parquet/file_reader.cc b/cpp/src/parquet/file_reader.cc
+index 54df6922a1..73893a1a1c 100644
+--- a/cpp/src/parquet/file_reader.cc
++++ b/cpp/src/parquet/file_reader.cc
+@@ -255,7 +255,7 @@ class SerializedRowGroup : public RowGroupReader::Contents {
+     // Column is encrypted only if crypto_metadata exists.
+     if (!crypto_metadata) {
+       return PageReader::Open(stream, col->num_values(), col->compression(), properties_,
+-                              always_compressed);
++                              always_compressed, nullptr, col_range.offset, col_range.length);
+     }
+ 
+     // The column is encrypted
+@@ -278,7 +278,7 @@ class SerializedRowGroup : public RowGroupReader::Contents {
+                       std::move(meta_decryptor_factory),
+                       std::move(data_decryptor_factory)};
+     return PageReader::Open(stream, col->num_values(), col->compression(), properties_,
+-                            always_compressed, &ctx);
++                            always_compressed, &ctx, col_range.offset, col_range.length);
+   }
+ 
+  private:
+diff --git a/cpp/src/parquet/properties.h b/cpp/src/parquet/properties.h
+index 19436b84a3..1fe5c1c64d 100644
+--- a/cpp/src/parquet/properties.h
++++ b/cpp/src/parquet/properties.h
+@@ -139,6 +139,78 @@ class PARQUET_EXPORT ReaderProperties {
+   void set_footer_read_size(size_t size) { footer_read_size_ = size; }
+   size_t footer_read_size() const { return footer_read_size_; }
+ 
++  // is_enable_page_mgr
++  using IsEnablePageMgrFunc = std::function<bool()>;
++
++  void set_is_enable_page_mgr_func(const IsEnablePageMgrFunc &func) {
++    is_enable_page_mgr_func_ = func;
++  }
++
++  bool is_enable_page_mgr() const {
++    if (is_enable_page_mgr_func_) {
++      return is_enable_page_mgr_func_();
++    }
++    return false;
++  }
++
++  // load page func
++  using PageMgrReadPageFunc = std::function<int(int64_t page_offset, std::shared_ptr<Buffer> &buffer,
++                                                bool &is_mem_cached,
++                                                bool &is_decompressed)>;
++
++  void set_page_mgr_read_page_func(const PageMgrReadPageFunc &func) {
++    page_mgr_read_page_func_ = func;
++  }
++
++  PageMgrReadPageFunc get_page_mgr_read_page_func() const {
++    return page_mgr_read_page_func_;
++  }
++
++  // release page func
++  using PageMgrReleasePageFunc = std::function<int(int64_t page_offset, std::optional<bool> is_eager_access)>;
++
++  void set_page_mgr_release_page_func(const PageMgrReleasePageFunc &func) {
++    page_mgr_release_page_func_ = func;
++  }
++
++  PageMgrReleasePageFunc get_page_mgr_release_page_func() const {
++    return page_mgr_release_page_func_;
++  }
++
++  // cache page func
++  using PageMgrCachePageFunc = std::function<int(int64_t page_offset, bool is_decompressed,
++                                                 const std::shared_ptr<Buffer> &buffer)>;
++
++  void set_page_mgr_cache_page_func(const PageMgrCachePageFunc &func) {
++    page_mgr_cache_page_func_ = func;
++  }
++
++  PageMgrCachePageFunc get_page_mgr_cache_page_func() const {
++    return page_mgr_cache_page_func_;
++  }
++
++  // check page selected func
++  using PageMgrCheckPageSelectedFunc = std::function<int(int64_t page_offset, bool &is_selected,
++                                                         std::optional<int64_t> &next_page_offset)>;
++
++  void set_page_mgr_check_page_selected_func(const PageMgrCheckPageSelectedFunc &func) {
++    page_mgr_check_page_selected_func_ = func;
++  }
++
++  PageMgrCheckPageSelectedFunc get_page_mgr_check_page_selected_func() const {
++    return page_mgr_check_page_selected_func_;
++  }
++
++  void set_is_eager_access(bool is_eager_access) {
++    is_eager_access_ = is_eager_access;
++  }
++
++  bool is_eager_access() const {
++    if (is_eager_access_.has_value()) {
++      return is_eager_access_.value();
++    }
++    throw ParquetException("is_eager_access_ should be set");
++  }
+  private:
+   MemoryPool* pool_;
+   int64_t buffer_size_ = kDefaultBufferSize;
+@@ -150,6 +222,12 @@ class PARQUET_EXPORT ReaderProperties {
+   bool read_dense_for_nullable_ = false;
+   size_t footer_read_size_ = kDefaultFooterReadSize;
+   std::shared_ptr<FileDecryptionProperties> file_decryption_properties_;
++  IsEnablePageMgrFunc is_enable_page_mgr_func_ = nullptr;
++  PageMgrReadPageFunc page_mgr_read_page_func_ = nullptr;
++  PageMgrReleasePageFunc page_mgr_release_page_func_ = nullptr;
++  PageMgrCachePageFunc page_mgr_cache_page_func_ = nullptr;
++  PageMgrCheckPageSelectedFunc page_mgr_check_page_selected_func_ = nullptr;
++  std::optional<bool> is_eager_access_ = std::nullopt;
+ };
+ 
+ ReaderProperties PARQUET_EXPORT default_reader_properties();
