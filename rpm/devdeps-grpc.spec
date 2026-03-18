@@ -1,4 +1,4 @@
-Name: devdeps-grpc
+Name: devdeps-grpc$ABI_FLAG
 Version: 1.46.7
 Release: %(echo $RELEASE)%{?dist}
 Url: https://github.com/grpc/grpc
@@ -36,7 +36,7 @@ cd %{_src}
 # # ref: https://github.com/grpc/grpc/blob/v1.21.0/test/distrib/cpp/run_distrib_test_cmake.sh
 
 export CFLAGS="-fPIC -z noexecstack -z now -pie -fstack-protector-strong"
-export CXXFLAGS="-fPIC  -D_GLIBCXX_USE_CXX11_ABI=0 -z noexecstack -z now -pie -fstack-protector-strong"
+export CXXFLAGS="-fPIC ${ABI_CXXFLAGS} -z noexecstack -z now -pie -fstack-protector-strong"
 
 # Install c-ares
 cd third_party/cares/cares
