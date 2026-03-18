@@ -25,6 +25,8 @@ protobuf-c is a C implementation of the Google Protocol Buffers data serializati
 %install
 mkdir -p %{buildroot}/%{_prefix}/lib/protobuf-c
 mkdir -p %{buildroot}/%{_prefix}/include/protobuf-c
+# Avoid libtool looking for libs in BUILDROOT
+unset LIBRARY_PATH
 export CPPFLAGS="${ABI_CXXFLAGS}"
 cd $OLDPWD/../
 rm -rf %{_proto_dir}
