@@ -25,15 +25,15 @@ protobuf-c is a C implementation of the Google Protocol Buffers data serializati
 %install
 mkdir -p %{buildroot}/%{_prefix}/lib/protobuf-c
 mkdir -p %{buildroot}/%{_prefix}/include/protobuf-c
-# Avoid libtool looking for libs in BUILDROOT
-unset LIBRARY_PATH
+CPU_CORES=8
+# Fix libstdc++.la: obdevtools has BUILDROOT paths baked in, libtool follows them
+sed -i "s|^\(libdir=\).*$|\1'${TOOLS_DIR}/lib64/'|" ${TOOLS_DIR}/lib64/libstdc++.la
 export CPPFLAGS="${ABI_CXXFLAGS}"
 cd $OLDPWD/../
 rm -rf %{_proto_dir}
 tar xf %{_proto}.tar.gz
 cd %{_proto_dir}
 ./configure --prefix=%{_tmppath}/proto
-CPU_CORES=8
 make -j${CPU_CORES}
 make install
 
