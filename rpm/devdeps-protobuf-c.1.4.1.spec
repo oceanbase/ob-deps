@@ -31,7 +31,7 @@ rm -rf %{_proto_dir}
 tar xf %{_proto}.tar.gz
 cd %{_proto_dir}
 ./configure --prefix=%{_tmppath}/proto
-CPU_CORES=`grep -c ^processor /proc/cpuinfo`
+CPU_CORES=8
 make -j${CPU_CORES}
 make install
 

@@ -25,7 +25,7 @@ protobuf-c is a C implementation of the Google Protocol Buffers data serializati
 %install
 mkdir -p %{buildroot}/%{_prefix}/lib/protobuf-c
 mkdir -p %{buildroot}/%{_prefix}/include/protobuf-c
-CPU_CORES=`grep -c ^processor /proc/cpuinfo`
+CPU_CORES=8
 sed -i "s|^\(libdir=\).*$|\1'${TOOLS_DIR}/lib64/'|" ${TOOLS_DIR}/lib64/libstdc++.la
 export CPPFLAGS="${ABI_CXXFLAGS}"
 
