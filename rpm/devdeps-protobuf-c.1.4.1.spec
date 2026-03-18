@@ -40,7 +40,7 @@ rm -rf %{_protobufc}
 tar xf %{_protobufc}.tar.gz
 cd %{_protobufc}
 export PKG_CONFIG_PATH=%{_tmppath}/proto/lib/pkgconfig
-./configure --prefix=%{_tmppath} --enable-shared=yes CFLAGS="-g -O2 -fPIC" CXXFLAGS="-g -O2 -fPIC"
+./autogen.sh && ./configure --prefix=%{_tmppath} --enable-shared=yes CFLAGS="-g -O2 -fPIC" CXXFLAGS="-g -O2 -fPIC"
 make -j${CPU_CORES}
 make install
 cp %{_tmppath}/include/protobuf-c/*.h %{buildroot}/%{_prefix}/include/protobuf-c
