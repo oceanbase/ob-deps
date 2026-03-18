@@ -1,4 +1,4 @@
-Name: devdeps-grpc$ABI_FLAG
+Name: %(echo devdeps-grpc$ABI_FLAG)
 Version: 1.46.7
 Release: %(echo $RELEASE)%{?dist}
 Url: https://github.com/grpc/grpc
