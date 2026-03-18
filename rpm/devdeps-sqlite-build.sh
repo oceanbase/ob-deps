@@ -13,5 +13,8 @@ if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/sqlite-version-$VERSION.*[tar|gz
     wget https://github.com/sqlite/sqlite/archive/refs/tags/version-3.38.1.tar.gz -O $ROOT_DIR/sqlite-version-$VERSION.tar.gz
 fi
 
+export ABI_FLAG=$([[ "${CXX_ABI}" == "1" ]] && echo "-abiv1" || echo "")
+export ABI_CXXFLAGS=$([[ "${CXX_ABI}" == "1" ]] && echo "-D_GLIBCXX_USE_CXX11_ABI=1" || echo "-D_GLIBCXX_USE_CXX11_ABI=0")
+
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE

@@ -1,4 +1,4 @@
-Name: devdeps-sqlite
+Name: %(echo devdeps-sqlite$ABI_FLAG)
 Version: 3.38.1
 Release: %(echo $RELEASE)%{?dist}
 
@@ -25,7 +25,7 @@ mkdir -p %{buildroot}/%{_prefix}/lib/sqlite
 mkdir -p %{buildroot}/%{_prefix}/include/sqlite
 
 export CFLAGS="-fPIC -fPIE -fstack-protector-strong"
-export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
+export CXXFLAGS="-fPIC -fPIE ${ABI_CXXFLAGS} -fstack-protector-strong"
 export LDFLAGS="-z noexecstack -z now -pie"
 
 cd $OLDPWD/../

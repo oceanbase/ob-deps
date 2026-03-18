@@ -1,4 +1,4 @@
-Name: devdeps-protobuf-c
+Name: %(echo devdeps-protobuf-c$ABI_FLAG)
 Version: 1.5.1
 Release: %(echo $RELEASE)%{?dist}
 
@@ -27,7 +27,7 @@ mkdir -p %{buildroot}/%{_prefix}/lib/protobuf-c
 mkdir -p %{buildroot}/%{_prefix}/include/protobuf-c
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 sed -i "s|^\(libdir=\).*$|\1'${TOOLS_DIR}/lib64/'|" ${TOOLS_DIR}/lib64/libstdc++.la
-export CPPFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"
+export CPPFLAGS="${ABI_CXXFLAGS}"
 
 # build protobuf-all
 cd $OLDPWD/../
