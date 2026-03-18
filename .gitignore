@@ -28,6 +28,8 @@ rpm/obdevtools-llvm
 rpm/obdevtools-bison
 rpm/obdevtools-flex
 rpm/devdeps-vsag
+rpm/devdeps-grpc
+rpm/devdeps-sqlite
 ossutil64
 ossutilmac64
 usr/
