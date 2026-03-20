@@ -16,8 +16,20 @@ export DEPS_PREFIX=$ROOT_DIR/usr/local/oceanbase/deps/devel
 export OPENSSL_DIR=$ROOT_DIR/usr/local/oceanbase/deps/devel
 # 确保解压到 ROOT_DIR，使 OPENSSL_DIR 路径正确
 cd "$ROOT_DIR" || exit 1
-wget https://mirrors.aliyun.com/oceanbase/development-kit/darwin/15/arm64/devdeps-openssl-1.1.1u-20251204.tar.gz
-tar -xf devdeps-openssl-1.1.1u-20251204.tar.gz
+MACOS_VERSION=${MACOS_VERSION:-$(sw_vers -productVersion | awk -F. '{print $1}')}
+ARCH="$(uname -m)"
+# 按 macOS 主版本选择镜像路径与包名（darwin/15 与 darwin/13）
+if [ "${MACOS_VERSION}" -ge 15 ]; then
+  DARWIN_KIT="15"
+  OPENSSL_TAR="devdeps-openssl-1.1.1u-20251204.tar.gz"
+else
+  DARWIN_KIT="13"
+  OPENSSL_TAR="devdeps-openssl-1.1.1u-20260126.tar.gz"
+fi
+OPENSSL_URL="https://mirrors.aliyun.com/oceanbase/development-kit/darwin/${DARWIN_KIT}/${ARCH}/${OPENSSL_TAR}"
+echo "[deps] macOS ${MACOS_VERSION} (${ARCH}) -> ${OPENSSL_URL}"
+wget "${OPENSSL_URL}" -O "${OPENSSL_TAR}"
+tar -xf "${OPENSSL_TAR}"
 
 # Configure custom source file directory
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
