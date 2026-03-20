@@ -71,16 +71,14 @@ cmake ../.. -DgRPC_INSTALL=ON                \
             -DBUILD_SHARED_LIBS=OFF
 make -j${CPU_CORES} install
 
-if [ "$SEEKDB_USE" = "1" ]; then
-    mv $TMP_INSTALL/lib $TMP_INSTALL/grpc_lib
-    mv $TMP_INSTALL/lib64 $TMP_INSTALL/grpc_lib64
-    mkdir -p $TMP_INSTALL/lib/grpc
-    mkdir -p $TMP_INSTALL/lib64/grpc
-    cp -r $TMP_INSTALL/grpc_lib/* $TMP_INSTALL/lib/grpc
-    cp -r $TMP_INSTALL/grpc_lib64/* $TMP_INSTALL/lib64/grpc
-    rm -rf $TMP_INSTALL/grpc_lib
-    rm -rf $TMP_INSTALL/grpc_lib64
-fi
+mv $TMP_INSTALL/lib $TMP_INSTALL/grpc_lib
+# mv $TMP_INSTALL/lib64 $TMP_INSTALL/grpc_lib64
+mkdir -p $TMP_INSTALL/lib/grpc
+# mkdir -p $TMP_INSTALL/lib64/grpc
+cp -r $TMP_INSTALL/grpc_lib/* $TMP_INSTALL/lib/grpc
+# cp -r $TMP_INSTALL/grpc_lib64/* $TMP_INSTALL/lib64/grpc
+rm -rf $TMP_INSTALL/grpc_lib
+# rm -rf $TMP_INSTALL/grpc_lib64
 
 # copy install file
 cp -r $TMP_INSTALL/* $TOP_DIR
