@@ -1,0 +1,64 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -3290,7 +3290,8 @@
+ endif()
+ 
+ 
+-if(gRPC_BUILD_CODEGEN)
++# ob-deps Android: grpc++_reflection without gRPC_BUILD_CODEGEN=ON (needs host grpc_cpp_plugin on PATH).
++if(NOT gRPC_USE_PROTO_LITE)
+ add_library(grpc++_reflection
+   ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/reflection/v1alpha/reflection.pb.cc
+   ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/reflection/v1alpha/reflection.grpc.pb.cc
+@@ -3347,10 +3348,9 @@
+   )
+ endforeach()
+ endif()
+-
+-if(gRPC_BUILD_CODEGEN)
+ 
+-if(gRPC_INSTALL)
++# grpc++_reflection install (not gated on gRPC_BUILD_CODEGEN)
++if(gRPC_INSTALL AND NOT gRPC_USE_PROTO_LITE)
+   install(TARGETS grpc++_reflection EXPORT gRPCTargets
+     RUNTIME DESTINATION ${gRPC_INSTALL_BINDIR}
+     BUNDLE DESTINATION  ${gRPC_INSTALL_BINDIR}
+@@ -3358,8 +3358,6 @@
+     ARCHIVE DESTINATION ${gRPC_INSTALL_LIBDIR}
+   )
+ endif()
+-
+-endif()
+ if(gRPC_BUILD_TESTS)
+ 
+ add_library(grpc++_test
+@@ -3887,7 +3885,8 @@
+ 
+ # grpcpp_channelz doesn't build with protobuf-lite
+ # See https://github.com/grpc/grpc/issues/19473
+-if(gRPC_BUILD_CODEGEN AND NOT gRPC_USE_PROTO_LITE)
++# ob-deps Android: grpcpp_channelz without gRPC_BUILD_CODEGEN=ON
++if(NOT gRPC_USE_PROTO_LITE)
+ add_library(grpcpp_channelz
+   ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/channelz.pb.cc
+   ${_gRPC_PROTO_GENS_DIR}/src/proto/grpc/channelz/channelz.grpc.pb.cc
+@@ -3944,9 +3943,7 @@
+ endforeach()
+ endif()
+ 
+-if(gRPC_BUILD_CODEGEN)
+-
+-# grpcpp_channelz doesn't build with protobuf-lite, so no install required
++# grpcpp_channelz install (not gated on gRPC_BUILD_CODEGEN)
+ # See https://github.com/grpc/grpc/issues/22826
+ if(gRPC_INSTALL AND NOT gRPC_USE_PROTO_LITE)
+   install(TARGETS grpcpp_channelz EXPORT gRPCTargets
+@@ -3955,8 +3952,6 @@
+     LIBRARY DESTINATION ${gRPC_INSTALL_LIBDIR}
+     ARCHIVE DESTINATION ${gRPC_INSTALL_LIBDIR}
+   )
+-endif()
+-
+ endif()
+ 
+ add_library(upb

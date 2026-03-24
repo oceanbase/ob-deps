@@ -61,3 +61,9 @@
 [submodule "sources/llvm-project"]
 	path = sources/llvm-project
 	url = https://github.com/llvm/llvm-project.git
+[submodule "sources/sqlite"]
+	path = sources/sqlite
+	url = https://github.com/sqlite/sqlite.git
+[submodule "sources/grpc"]
+	path = sources/grpc
+	url = https://github.com/grpc/grpc.git

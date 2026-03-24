@@ -1,0 +1,18 @@
+Cross-compiling with bundled protobuf: find_program(protoc) can pick up
+CMAKE_INSTALL_PREFIX/bin/protoc (Android binary). Prefer protobuf_PROTOC_EXECUTABLE.
+
+--- a/cmake/protobuf.cmake
++++ b/cmake/protobuf.cmake
+@@ -39,7 +39,11 @@ endif()
+     if(TARGET protoc)
+       set(_gRPC_PROTOBUF_PROTOC protoc)
+       if(CMAKE_CROSSCOMPILING)
+-        find_program(_gRPC_PROTOBUF_PROTOC_EXECUTABLE protoc)
++        if(protobuf_PROTOC_EXECUTABLE)
++          set(_gRPC_PROTOBUF_PROTOC_EXECUTABLE "${protobuf_PROTOC_EXECUTABLE}")
++        else()
++          find_program(_gRPC_PROTOBUF_PROTOC_EXECUTABLE protoc)
++        endif()
+       else()
+         set(_gRPC_PROTOBUF_PROTOC_EXECUTABLE $<TARGET_FILE:protoc>)
+       endif()
