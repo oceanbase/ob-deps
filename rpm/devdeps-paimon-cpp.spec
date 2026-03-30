@@ -24,7 +24,7 @@ mkdir -p $RPM_BUILD_ROOT/%{_prefix}
 export CFLAGS="-O2 -fPIC -z noexecstack -z now -pie -fstack-protector-strong"
 export CXXFLAGS="-O2 -fPIC -z noexecstack -z now -pie -fstack-protector-strong"
 export CPPFLAGS="${ABI_CXXFLAGS}"
-CPU_CORES=$(grep -c ^processor /proc/cpuinfo)
+CPU_CORES=8
 ROOT_DIR=$OLDPWD/..
 
 cd $ROOT_DIR
