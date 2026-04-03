@@ -13,8 +13,8 @@
 #   - Target protobuf: -Dprotobuf_BUILD_PROTOC=OFF and -Dprotobuf_PROTOC_EXECUTABLE=...
 #   - Every configure uses NDK android.toolchain.cmake (run_android_cmake).
 #   - No deps required under PREFIX before build: zlib/re2/absl from gRPC third_party; OpenSSL from
-#     prebuilt tarball (override URL with GRPC_OPENSSL_URL). install_to_prefix still copies this
-#     package into shared PREFIX afterward for downstream scripts.
+#     prebuilt tarball (override URL with GRPC_OPENSSL_URL). After build, install_to_prefix STAGING grpc
+#     copies the staged tree (including host protoc/plugins under bin/) into shared PREFIX for downstreams.
 #
 source "$(dirname "$0")/common.sh"
 
@@ -120,6 +120,9 @@ fi
 echo "Host protoc: $PROTOC_EXE"
 export PATH="$(dirname "$PROTOC_EXE"):$PATH"
 
+# Also record the protoc version string for the versioned symlink (e.g. protoc-3.19.5.0)
+PROTOC_VERSION=$("$PROTOC_EXE" --version 2>/dev/null | awk '{print $2}') || true
+
 # --- 宿主机：仅构建 grpc_cpp_plugin ---
 # Android 工程 CMAKE_CROSSCOMPILING=ON 时，protobuf_generate_grpc_cpp() 用 find_program 找插件；
 # 若 PATH 上没有可在本机运行的 grpc_cpp_plugin，会变为 _gRPC_CPP_PLUGIN-NOTFOUND。
@@ -138,19 +141,27 @@ rm -rf "$HOST_GRPC_TOOLS"
 		-DgRPC_INSTALL=OFF \
 		-DgRPC_BUILD_CODEGEN=ON \
 		-DgRPC_BUILD_GRPC_CPP_PLUGIN=ON \
-		-DgRPC_BUILD_GRPC_CSHARP_PLUGIN=OFF \
-		-DgRPC_BUILD_GRPC_NODE_PLUGIN=OFF \
-		-DgRPC_BUILD_GRPC_OBJECTIVE_C_PLUGIN=OFF \
-		-DgRPC_BUILD_GRPC_PHP_PLUGIN=OFF \
-		-DgRPC_BUILD_GRPC_PYTHON_PLUGIN=OFF \
-		-DgRPC_BUILD_GRPC_RUBY_PLUGIN=OFF \
+		-DgRPC_BUILD_GRPC_CSHARP_PLUGIN=ON \
+		-DgRPC_BUILD_GRPC_NODE_PLUGIN=ON \
+		-DgRPC_BUILD_GRPC_OBJECTIVE_C_PLUGIN=ON \
+		-DgRPC_BUILD_GRPC_PHP_PLUGIN=ON \
+		-DgRPC_BUILD_GRPC_PYTHON_PLUGIN=ON \
+		-DgRPC_BUILD_GRPC_RUBY_PLUGIN=ON \
 		-DgRPC_BUILD_CSHARP_EXT=OFF
 )
-if ! cmake --build "$HOST_GRPC_TOOLS" --target grpc_cpp_plugin -j"${CPU_CORES}"; then
-	echo "Host grpc_cpp_plugin parallel build failed; retry -j1:"
-	cmake --build "$HOST_GRPC_TOOLS" --target grpc_cpp_plugin -j1
-	exit 1
-fi
+# Build all host plugins needed for bin/
+HOST_PLUGIN_TARGETS=(
+	grpc_cpp_plugin grpc_csharp_plugin grpc_node_plugin
+	grpc_objective_c_plugin grpc_php_plugin grpc_python_plugin grpc_ruby_plugin
+)
+for _tgt in "${HOST_PLUGIN_TARGETS[@]}"; do
+	if ! cmake --build "$HOST_GRPC_TOOLS" --target "$_tgt" -j"${CPU_CORES}"; then
+		echo "Host $_tgt parallel build failed; retry -j1:"
+		cmake --build "$HOST_GRPC_TOOLS" --target "$_tgt" -j1
+	fi
+done
+
+# Locate grpc_cpp_plugin (required; others are best-effort)
 GRPC_CPP_PLUGIN_EXE=""
 for cand in "$HOST_GRPC_TOOLS/grpc_cpp_plugin" "$HOST_GRPC_TOOLS/Release/grpc_cpp_plugin" "$HOST_GRPC_TOOLS/Debug/grpc_cpp_plugin"; do
 	if [[ -x "$cand" ]]; then
@@ -290,6 +301,60 @@ if ! cmake --build "$GRPC_BUILD" -j"${CPU_CORES}"; then
 fi
 cmake --install "$GRPC_BUILD"
 
+# ---------------------------------------------------------------------------
+# Install host-native tools into $STAGING/bin/ so they land in the tarball.
+# These are the x86_64 (or arm64 macOS) executables that downstream build
+# machines (Linux x86_64) need to run at compile time.
+# ---------------------------------------------------------------------------
+mkdir -p "$STAGING/bin"
+
+# protoc + versioned alias
+install -m 0755 "$PROTOC_EXE" "$STAGING/bin/protoc"
+if [[ -n "$PROTOC_VERSION" ]]; then
+	ln -sf protoc "$STAGING/bin/protoc-${PROTOC_VERSION}"
+fi
+
+# All grpc plugins built in HOST_GRPC_TOOLS
+for _plugin in "${HOST_PLUGIN_TARGETS[@]}"; do
+	_exe=""
+	for _cand in "$HOST_GRPC_TOOLS/$_plugin" "$HOST_GRPC_TOOLS/Release/$_plugin"; do
+		if [[ -x "$_cand" ]]; then _exe="$_cand"; break; fi
+	done
+	[[ -z "$_exe" ]] && _exe=$(find "$HOST_GRPC_TOOLS" -name "$_plugin" -type f -perm -111 2>/dev/null | head -1)
+	if [[ -n "$_exe" && -f "$_exe" ]]; then
+		install -m 0755 "$_exe" "$STAGING/bin/$_plugin"
+		echo "Installed host tool: $_plugin"
+	else
+		echo "WARNING: host tool $_plugin not found, skipping"
+	fi
+done
+
+# c-ares host tools (acountry, adig, ahost) -- build a native (non-NDK) c-ares
+HOST_CARES_BUILD="$BUILD_DIR/grpc_host_cares"
+rm -rf "$HOST_CARES_BUILD"
+(
+	unset CC CXX CPP AR AS RANLIB STRIP LD
+	unset CFLAGS CXXFLAGS CPPFLAGS LDFLAGS
+	cmake -S "$SRC/third_party/cares/cares" -B "$HOST_CARES_BUILD" \
+		-DCMAKE_C_COMPILER="$HOST_CC" \
+		-DCMAKE_CXX_COMPILER="$HOST_CXX" \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCARES_STATIC=ON \
+		-DCARES_SHARED=OFF \
+		-DCARES_STATIC_PIC=ON \
+		-DCARES_BUILD_TOOLS=ON
+)
+cmake --build "$HOST_CARES_BUILD" -j"${CPU_CORES}" || cmake --build "$HOST_CARES_BUILD" -j1
+for _tool in acountry adig ahost; do
+	_exe=$(find "$HOST_CARES_BUILD" -name "$_tool" -type f -perm -111 2>/dev/null | head -1)
+	if [[ -n "$_exe" ]]; then
+		install -m 0755 "$_exe" "$STAGING/bin/$_tool"
+		echo "Installed host tool: $_tool"
+	else
+		echo "WARNING: c-ares host tool $_tool not found, skipping"
+	fi
+done
+
 for _need in libgrpcpp_channelz.a libgrpc++_reflection.a; do
 	if [[ ! -f "$STAGING/lib/$_need" ]]; then
 		echo "ERROR: $STAGING/lib/$_need missing after install."
@@ -307,6 +372,6 @@ shopt -u nullglob
 [[ -d "$STAGING/lib/cmake" ]] && mv "$STAGING/lib/cmake" "$GRPC_SUB/"
 [[ -d "$STAGING/lib/pkgconfig" ]] && mv "$STAGING/lib/pkgconfig" "$GRPC_SUB/"
 
-install_to_prefix "$STAGING"
+install_to_prefix "$STAGING" grpc
 package_dep "$NAME" "$VERSION" "$STAGING"
 echo "=== $NAME $VERSION done ==="

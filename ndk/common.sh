@@ -76,7 +76,10 @@ package_dep() {
     rm -rf "$layout_dir"
     mkdir -p "$layout_dir/${pkg_name}/usr/local/oceanbase/deps/devel"
 
-    # Copy lib/ and include/ if they exist
+    # Copy bin/, lib/ and include/ if they exist
+    if [[ -d "$staging/bin" ]]; then
+        cp -r "$staging/bin" "$layout_dir/${pkg_name}/usr/local/oceanbase/deps/devel/"
+    fi
     if [[ -d "$staging/lib" ]]; then
         cp -r "$staging/lib" "$layout_dir/${pkg_name}/usr/local/oceanbase/deps/devel/"
     fi
@@ -91,11 +94,17 @@ package_dep() {
     rm -rf "$layout_dir"
 }
 
-# install_to_prefix STAGING_DIR
+# install_to_prefix STAGING_DIR [grpc]
 #   Copies lib/ and include/ from staging into the shared PREFIX
 #   so downstream deps can find headers and libraries.
+#   Pass second arg "grpc" to also copy bin/ (host protoc / grpc_cpp_plugin for codegen).
 install_to_prefix() {
     local staging=$1
+    local install_bin=${2:-}
+    if [[ "$install_bin" == grpc ]] && [[ -d "$staging/bin" ]]; then
+        mkdir -p "$PREFIX/bin"
+        cp -r "$staging/bin"/* "$PREFIX/bin/" 2>/dev/null || true
+    fi
     if [[ -d "$staging/lib" ]]; then
         cp -r "$staging/lib"/* "$PREFIX/lib/" 2>/dev/null || true
     fi
