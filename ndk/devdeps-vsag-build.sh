@@ -144,28 +144,28 @@ BOOST_EOF
 fi
 
 # -----------------------------------------------------------------------
-# Patch 9: DefaultLogger -- use fprintf(stderr) instead of spdlog on Android
-# spdlog headers may not be in the include path during compilation
+# Patch 9: DefaultLogger -- silence all output on Android
+# Original fprintf(stderr) had no log level check, printing all levels unconditionally.
+# Android embed uses OB's own logger; vsag internal logs are not needed.
 # -----------------------------------------------------------------------
 LOGGER_CPP="src/impl/logger/default_logger.cpp"
 if [[ -f "$LOGGER_CPP" ]]; then
     cat > "$LOGGER_CPP" << 'LOGGER_EOF'
 // Copyright 2024-present the vsag project
-// Modified for Android: uses fprintf(stderr) instead of spdlog
+// Modified for Android: suppress all output (caller manages logging via OB logger)
 
 #include "default_logger.h"
 
 #ifdef __ANDROID__
-#include <cstdio>
 
 namespace vsag {
 void DefaultLogger::SetLevel(Logger::Level log_level) { (void)log_level; }
-void DefaultLogger::Trace(const std::string& msg) { fprintf(stderr, "[TRACE] %s\n", msg.c_str()); }
-void DefaultLogger::Debug(const std::string& msg) { fprintf(stderr, "[DEBUG] %s\n", msg.c_str()); }
-void DefaultLogger::Info(const std::string& msg) { fprintf(stderr, "[INFO] %s\n", msg.c_str()); }
-void DefaultLogger::Warn(const std::string& msg) { fprintf(stderr, "[WARN] %s\n", msg.c_str()); }
-void DefaultLogger::Error(const std::string& msg) { fprintf(stderr, "[ERROR] %s\n", msg.c_str()); }
-void DefaultLogger::Critical(const std::string& msg) { fprintf(stderr, "[CRITICAL] %s\n", msg.c_str()); }
+void DefaultLogger::Trace(const std::string& msg) { (void)msg; }
+void DefaultLogger::Debug(const std::string& msg) { (void)msg; }
+void DefaultLogger::Info(const std::string& msg) { (void)msg; }
+void DefaultLogger::Warn(const std::string& msg) { (void)msg; }
+void DefaultLogger::Error(const std::string& msg) { (void)msg; }
+void DefaultLogger::Critical(const std::string& msg) { (void)msg; }
 }  // namespace vsag
 
 #else
