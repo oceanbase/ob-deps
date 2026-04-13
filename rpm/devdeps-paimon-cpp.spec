@@ -55,8 +55,8 @@ cmake .. -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} \
 make -j${CPU_CORES}
 make install
 
-# Merge CRoaring objects into libpaimon.a so downstream static linking
-# does not require a separate libroaring_bitmap.a.
+# Merge third-party static libs into libpaimon.a so downstream static linking
+# does not require separate libroaring_bitmap.a / libfmt.a.
 PAIMON_STATIC_ARCHIVE=
 for libdir in "${RPM_BUILD_ROOT}/%{_prefix}/lib64" "${RPM_BUILD_ROOT}/%{_prefix}/lib"; do
   if [ -f "${libdir}/libpaimon.a" ]; then
@@ -84,6 +84,22 @@ if [ -z "${ROARING_STATIC_ARCHIVE}" ]; then
   exit 1
 fi
 
+FMT_STATIC_ARCHIVE=
+for archive in \
+  "${PWD}/relwithdebinfo/libfmt.a" \
+  "${PWD}/libfmt.a" \
+  "${PWD}/fmt_ep-install/lib/libfmt.a" \
+  "${PWD}/fmt_ep-prefix/src/fmt_ep-build/libfmt.a"; do
+  if [ -f "${archive}" ]; then
+    FMT_STATIC_ARCHIVE="${archive}"
+    break
+  fi
+done
+if [ -z "${FMT_STATIC_ARCHIVE}" ]; then
+  echo "ERROR: libfmt.a not found after build."
+  exit 1
+fi
+
 AR_BIN="${TOOLS_DIR}/bin/ar"
 if [ ! -x "${AR_BIN}" ]; then
   AR_BIN=ar
@@ -97,6 +113,7 @@ fi
 CREATE ${PAIMON_STATIC_ARCHIVE}.merged
 ADDLIB ${PAIMON_STATIC_ARCHIVE}
 ADDLIB ${ROARING_STATIC_ARCHIVE}
+ADDLIB ${FMT_STATIC_ARCHIVE}
 SAVE
 END
 EOF
