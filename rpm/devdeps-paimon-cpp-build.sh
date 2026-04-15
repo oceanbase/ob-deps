@@ -34,12 +34,12 @@ ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 if [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install -y obdevtools-gcc9-9.3.0
-    yum install -y obdevtools-cmake-3.22.1
+    yum install -y obdevtools-cmake-3.30.3
     yum install -y obdevtools-binutils-2.30
 else
     os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
     arch=`uname -p`
-    dep_pkgs=(obdevtools-gcc9-9.3.0-52022092914.el obdevtools-cmake-3.22.1-142025032516.el obdevtools-binutils-2.30-12022100413.el)
+    dep_pkgs=(obdevtools-gcc9-9.3.0-52022092914.el obdevtools-cmake-3.30.3-62025060510.el obdevtools-binutils-2.30-12022100413.el)
  
     target_dir_3rd=${PROJECT_DIR}/deps/3rd
     pkg_dir=$target_dir_3rd/pkg
