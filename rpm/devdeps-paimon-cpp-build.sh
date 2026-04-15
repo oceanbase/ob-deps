@@ -4,16 +4,29 @@ CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
 PROJECT_NAME=${2:-"devdeps-paimon-cpp"}
-VERSION=${3:-"0.1.1"}
+VERSION=${3:-"0.1.2"}
 RELEASE=${4:-"1"}
 
 # Configure custom source file directory
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
 
 # check source code
-if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/paimon-cpp-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
-    echo "Download ${PROJECT_NAME} source code"
-    wget https://github.com/alibaba/paimon-cpp/archive/refs/tags/v${VERSION}.tar.gz -O $ROOT_DIR/paimon-cpp-$VERSION.tar.gz --no-check-certificate
+PAIMON_CPP_COMMIT="8193ed604a3fca58e5341be76c5ca6ad5580f755"
+PAIMON_CPP_PATCH=$CUR_DIR/paimon-cpp-arrow20-fat-archive.patch
+if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
+    echo "Clone ${PROJECT_NAME} source code from master"
+    git clone https://github.com/alibaba/paimon-cpp.git $ROOT_DIR/paimon-cpp-$VERSION
+    cd $ROOT_DIR/paimon-cpp-$VERSION
+    git checkout $PAIMON_CPP_COMMIT
+    echo "Apply patch: $PAIMON_CPP_PATCH"
+    git apply $PAIMON_CPP_PATCH
+    cd -
+fi
+# Create tarball for rpmbuild
+if [[ ! -f $ROOT_DIR/paimon-cpp-$VERSION.tar.gz ]]; then
+    cd $ROOT_DIR
+    tar czf paimon-cpp-$VERSION.tar.gz paimon-cpp-$VERSION
+    cd -
 fi
 
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
