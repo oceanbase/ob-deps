@@ -17,7 +17,7 @@ AutoReqProv: no
 Abseil is an open-source collection of C++ library code designed to augment the C++ standard library.
 The Abseil library code is collected from Google's own C++ code base.
 
-%build
+%install
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}
 export CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
 export CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
@@ -41,9 +41,6 @@ cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} \
       -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG" \
       ..
 make -j${CPU_CORES}
-
-%install
-cd ${SOURCE_ROOT}/%{_src}/build
 make install DESTDIR=$RPM_BUILD_ROOT
 
 %files
