@@ -22,10 +22,10 @@ if [[ "${ID}"x == "alinux"x ]]; then
     yum install -y obdevtools-gcc9-9.3.0
     yum install -y obdevtools-cmake-3.22.1
     yum install -y devdeps-openssl-static-1.1.1u
-    yum install -y devdeps-abseil-cpp-20211102.0
+    yum install -y devdeps-abseil-cpp-20250814.1
 else
     os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
-    dep_pkgs=(obdevtools-gcc9-9.3.0-52022092914.el obdevtools-cmake-3.22.1-22022100417.el devdeps-openssl-static-1.1.1u-22023100710.el devdeps-abseil-cpp-20211102.0-62024122014.el)
+    dep_pkgs=(obdevtools-gcc9-9.3.0-52022092914.el obdevtools-cmake-3.22.1-22022100417.el devdeps-openssl-static-1.1.1u-22023100710.el devdeps-abseil-cpp-20250814.1-42026041611.el)
  
     target_dir_3rd=${PROJECT_DIR}/deps/3rd
     pkg_dir=$target_dir_3rd/pkg
