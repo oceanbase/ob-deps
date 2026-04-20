@@ -15,9 +15,9 @@ RELEASE=${4:-"1"}
 
 # check re2 source code (re-download if file is empty/corrupted)
 # check source code
-if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/abseil-cpp-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
+if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/re2-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download ${PROJECT_NAME} source code"
-    wget https://gh-proxy.org/https://github.com/google/re2/archive/refs/tags/${VERSION}.tar.gz -O $ROOT_DIR/re2-${VERSION}.tar.gz --no-check-certificate
+    wget https://hk.gh-proxy.org/https://github.com/google/re2/archive/refs/tags/${VERSION}.tar.gz -O $ROOT_DIR/re2-${VERSION}.tar.gz --no-check-certificate
 fi
 
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
