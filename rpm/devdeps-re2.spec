@@ -30,7 +30,7 @@ echo "Using external abseil from: $abseil_install_dir"
 
 # prepare re2
 rm -rf %{_src}
-tar xf %{_src}.tar.gz
+tar xf ../%{_src}.tar.gz
 cd %{_src}
 source_dir=$(pwd)
 tmp_install_dir=${source_dir}/tmp_install_dir
