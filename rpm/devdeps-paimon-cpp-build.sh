@@ -11,7 +11,7 @@ RELEASE=${4:-"1"}
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
 
 # check source code
-PAIMON_CPP_COMMIT="8193ed604a3fca58e5341be76c5ca6ad5580f755"
+PAIMON_CPP_COMMIT="1ba3589f11c1228312c8664cd1b4aa47d389c7f7"
 PAIMON_CPP_ARROW_PATCH=$ROOT_DIR/patch/paimon-cpp-arrow20-fat-archive.patch
 PAIMON_CPP_DOWNLOAD_MIRROR_PATH=$ROOT_DIR/patch/paimon-cpp-download-mirror.patch
 if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
