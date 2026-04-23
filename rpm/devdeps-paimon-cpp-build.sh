@@ -19,8 +19,9 @@ if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
     git clone https://github.com/alibaba/paimon-cpp.git $ROOT_DIR/paimon-cpp-$VERSION
     cd $ROOT_DIR/paimon-cpp-$VERSION
     git checkout $PAIMON_CPP_COMMIT
-    echo "Apply patch: $PAIMON_CPP_ARROW_PATCH"
-    git apply $PAIMON_CPP_ARROW_PATCH
+    # no need to patch arrow now
+    # echo "Apply patch: $PAIMON_CPP_ARROW_PATCH"
+    # git apply $PAIMON_CPP_ARROW_PATCH
     echo "Apply patch: $PAIMON_CPP_DOWNLOAD_MIRROR_PATH"
     git apply $PAIMON_CPP_DOWNLOAD_MIRROR_PATH
     cd -
