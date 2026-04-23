@@ -12,16 +12,24 @@ RELEASE=${4:-"1"}
 
 # check source code
 PAIMON_CPP_COMMIT="1ba3589f11c1228312c8664cd1b4aa47d389c7f7"
-PAIMON_CPP_ARROW_PATCH=$ROOT_DIR/patch/paimon-cpp-arrow20-fat-archive.patch
+# PAIMON_CPP_ARROW_PATCH=$ROOT_DIR/patch/paimon-cpp-arrow20-fat-archive.patch
+# 解决 orc timezone 卡死问题
+PAIMON_CPP_ORC_TIMEZONE_PATH=$ROOT_DIR/patch/paimon-cpp-orc-timezone.patch
+# 加速镜像下载
 PAIMON_CPP_DOWNLOAD_MIRROR_PATH=$ROOT_DIR/patch/paimon-cpp-download-mirror.patch
 if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
     echo "Clone ${PROJECT_NAME} source code from master"
     git clone https://github.com/alibaba/paimon-cpp.git $ROOT_DIR/paimon-cpp-$VERSION
     cd $ROOT_DIR/paimon-cpp-$VERSION
     git checkout $PAIMON_CPP_COMMIT
+
     # no need to patch arrow now
     # echo "Apply patch: $PAIMON_CPP_ARROW_PATCH"
     # git apply $PAIMON_CPP_ARROW_PATCH
+
+    echo "Apply patch: $PAIMON_CPP_ORC_TIMEZONE_PATH"
+    git apply $PAIMON_CPP_ORC_TIMEZONE_PATH
+    
     echo "Apply patch: $PAIMON_CPP_DOWNLOAD_MIRROR_PATH"
     git apply $PAIMON_CPP_DOWNLOAD_MIRROR_PATH
     cd -
