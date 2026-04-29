@@ -11,7 +11,7 @@ RELEASE=${4:-"1"}
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
 
 # check source code
-PAIMON_CPP_COMMIT="3c94e82fbd743e4be947d443411beb617639857e"
+PAIMON_CPP_COMMIT="9108ac74fbab099c8817ea97dca755997925e18c"
 # PAIMON_CPP_ARROW_PATCH=$ROOT_DIR/patch/paimon-cpp-arrow20-fat-archive.patch
 # 解决 orc timezone 卡死问题
 PAIMON_CPP_ORC_TIMEZONE_PATH=$ROOT_DIR/patch/paimon-cpp-orc-timezone.patch
