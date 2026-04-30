@@ -47,6 +47,7 @@ fi
 rm -rf build && mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} \
          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+         -DCMAKE_SHARED_LINKER_FLAGS="-static-libstdc++ -static-libgcc" \
          -DPAIMON_USE_CXX11_ABI=OFF \
          -DPAIMON_BUILD_TESTS=OFF \
          -DPAIMON_ENABLE_JINDO=OFF \
@@ -64,5 +65,8 @@ make install
 %postun -p /sbin/ldconfig
 
 %changelog
+* Thu Apr 30 2026 OceanBase Deps
+- link shared libs with -static-libstdc++ -static-libgcc for portable libstdc++/libgcc
+
 * Fri Mar 27 2026 OceanBase Deps
 - initial devdeps-paimon-cpp 0.1.1
