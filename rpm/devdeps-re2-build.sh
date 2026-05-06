@@ -1,31 +1,36 @@
 #!/bin/bash
+# Build devdeps-re2 RPM.
+# RE2 depends on Abseil 20250814.1 or newer.
+# Requires devdeps-abseil-cpp >= 20250814.1 to be installed first.
 
 CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
-PROJECT_NAME=${2:-"devdeps-s2geometry"}
-VERSION=${3:-"0.10.0"}
+PROJECT_NAME=${2:-"devdeps-re2"}
+VERSION=${3:-"2025-08-12"}
 RELEASE=${4:-"1"}
 
+# Configure custom source file directory
+[ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
+
+# check re2 source code (re-download if file is empty/corrupted)
 # check source code
-if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/s2geometry-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
-    echo "Download source code"
-    wget https://github.com/google/s2geometry/archive/refs/tags/v${VERSION}.tar.gz -O $ROOT_DIR/s2geometry-$VERSION.tar.gz
+if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/re2-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
+    echo "Download ${PROJECT_NAME} source code"
+    wget https://hk.gh-proxy.org/https://github.com/google/re2/archive/refs/tags/${VERSION}.tar.gz -O $ROOT_DIR/re2-${VERSION}.tar.gz --no-check-certificate
 fi
 
-arch=`uname -p`
-# prepare building environment
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
  
 if [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install -y obdevtools-gcc9-9.3.0
     yum install -y obdevtools-cmake-3.22.1
-    yum install -y devdeps-openssl-static-1.1.1u
     yum install -y devdeps-abseil-cpp-20250814.1
 else
     os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
-    dep_pkgs=(obdevtools-gcc9-9.3.0-52022092914.el obdevtools-cmake-3.22.1-22022100417.el devdeps-openssl-static-1.1.1u-22023100710.el devdeps-abseil-cpp-20250814.1-42026041611.el)
+    arch=`uname -p`
+    dep_pkgs=(obdevtools-gcc9-9.3.0-52022092914.el obdevtools-cmake-3.22.1-22022100417.el devdeps-abseil-cpp-20250814.1-42026041611.el)
  
     target_dir_3rd=${PROJECT_DIR}/deps/3rd
     pkg_dir=$target_dir_3rd/pkg
@@ -44,13 +49,14 @@ else
     done
 fi
 
+export TOOLS_DIR=/usr/local/oceanbase/devtools
 export DEP_DIR=/usr/local/oceanbase/deps/devel
-export PATH=/usr/local/oceanbase/devtools/bin:$PATH
 export ABSL_DIR=$DEP_DIR/lib64/cmake/absl/
-export LD_LIBRARY_PATH=/usr/local/oceanbase/devtools/lib:/usr/local/oceanbase/devtools/lib64:$LD_LIBRARY_PATH
 
-ln -sf /usr/local/oceanbase/devtools/bin/g++  /usr/bin/c++
-ln -sf /usr/local/oceanbase/devtools/bin/gcc  /usr/bin/cc
+export PATH=$TOOLS_DIR/bin:$PATH
+export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
+export CC=$TOOLS_DIR/bin/gcc
+export CXX=$TOOLS_DIR/bin/g++
 
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE
