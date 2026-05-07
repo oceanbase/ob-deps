@@ -26,8 +26,9 @@ else
     wget http://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
 fi
 
-yum install obdevtools-gcc9-9.3.0 -y
+yum install obdevtools-gcc9-9.3.0 devdeps-openssl-static-1.1.1u -y
 export TOOLS_DIR=/usr/local/oceanbase/devtools
+export DEP_DIR=/usr/local/oceanbase/deps/devel
 export PATH=$TOOLS_DIR/bin:$PATH
 export CC=$TOOLS_DIR/bin/gcc
 export CXX=$TOOLS_DIR/bin/g++

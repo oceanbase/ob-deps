@@ -37,7 +37,7 @@ tar -xf %{_src}.tgz
 cd %{_src}
 mkdir build && cd build
 export PROFILE_TASK="-m test --pgo -i test_generators --timeout="
-LDFLAGS='-z noexecstack -z now -Wl,-rpath,\$$ORIGIN/../lib' ../configure --prefix=${RPM_BUILD_ROOT}/%{_prefix} --enable-shared --enable-optimizations --disable-test-modules --without-ensurepip --with-lto
+LDFLAGS='-z noexecstack -z now -Wl,-rpath,\$$ORIGIN/../lib' ../configure --prefix=${RPM_BUILD_ROOT}/%{_prefix} --enable-shared --enable-optimizations --disable-test-modules --without-ensurepip --with-lto --with-openssl=${DEP_DIR}
 
 make -j${CPU_CORES}
 make install
