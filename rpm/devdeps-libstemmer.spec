@@ -25,7 +25,7 @@ License: BSD
 %description
 Headers and static library for developing against libstemmer.
 
-%build
+%install
 ROOT_DIR=$OLDPWD/..
 
 cd $ROOT_DIR
@@ -37,8 +37,6 @@ cd dist/
 tar -xf libstemmer_c-%{version}.tar.gz
 cd libstemmer_c-%{version}/
 make
-
-%install
 
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include
