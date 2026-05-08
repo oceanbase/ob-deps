@@ -36,11 +36,11 @@ cd $ROOT_DIR
 rm -rf %{_src}
 tar xf %{_src}.tar.gz
 cd snowball-%{version}/
-make dist_libstemmer_c
+make CFLAGS="-O2 -fPIC" CXXFLAGS="-O2 -fPIC" dist_libstemmer_c
 cd dist/
 tar -xf libstemmer_c-%{version}.tar.gz
 cd libstemmer_c-%{version}/
-make
+make CFLAGS="-O2 -fPIC" CXXFLAGS="-O2 -fPIC"
 
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include
