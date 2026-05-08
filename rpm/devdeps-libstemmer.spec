@@ -27,6 +27,10 @@ Headers and static library for developing against libstemmer.
 
 %install
 ROOT_DIR=$OLDPWD/..
+export CFLAGS="-O2 -fPIC -pie -fstack-protector-strong"
+export CXXFLAGS="-O2 -fPIC -pie -fstack-protector-strong"
+export CPPFLAGS="${ABI_CXXFLAGS}"
+export LDFLAGS="-pie -z noexecstack -z now"
 
 cd $ROOT_DIR
 rm -rf %{_src}
