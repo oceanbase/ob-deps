@@ -3,7 +3,7 @@ CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/../
 PROJECT_DIR=${1:-"$CUR_DIR"}
 PROJECT_NAME=${2:-"devdeps-vsag"}
-VERSION=${3:-"1.1.0"}
+VERSION=${3:-"1.2.0"}
 RELEASE=${4:-"1"}
  
 if [[ $VERSION == "1.0.0" ]]; then
@@ -12,7 +12,7 @@ elif [[ $VERSION == "1.1.0" ]]; then
   VSAG_VERSION="0.16.22"
 else
   # default use newest vsag
-  VSAG_VERSION="0.18.5"
+  VSAG_VERSION="0.18.6"
 fi
 
 echo "VERSION=${VERSION} VSAG_VERSION=${VSAG_VERSION}"
