@@ -11,10 +11,12 @@ RELEASE=${4:-"1"}
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
 
 # check source code
-PAIMON_CPP_COMMIT="0c055a3117c0fddf0cda81a9eea213a2048ad353"
+PAIMON_CPP_COMMIT="c65575d63fec25890d0988de60224bd1c1baea54"
 # PAIMON_CPP_ARROW_PATCH=$ROOT_DIR/patch/paimon-cpp-arrow20-fat-archive.patch
 # 解决 orc timezone 卡死问题
 PAIMON_CPP_ORC_TIMEZONE_PATH=$ROOT_DIR/patch/paimon-cpp-orc-timezone.patch
+# 解决 Identifier.h 析构 core 的问题
+PAIMON_CPP_IDENTIFIER_CORE=$ROOT_DIR/patch/paimon-cpp-identifier-core.patch
 # 加速镜像下载
 PAIMON_CPP_DOWNLOAD_MIRROR_PATH=$ROOT_DIR/patch/paimon-cpp-download-mirror.patch
 if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
@@ -29,6 +31,9 @@ if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
 
     echo "Apply patch: $PAIMON_CPP_ORC_TIMEZONE_PATH"
     git apply $PAIMON_CPP_ORC_TIMEZONE_PATH
+
+    echo "Apply patch: $PAIMON_CPP_IDENTIFIER_CORE"
+    git apply $PAIMON_CPP_IDENTIFIER_CORE
     
     echo "Apply patch: $PAIMON_CPP_DOWNLOAD_MIRROR_PATH"
     git apply $PAIMON_CPP_DOWNLOAD_MIRROR_PATH
