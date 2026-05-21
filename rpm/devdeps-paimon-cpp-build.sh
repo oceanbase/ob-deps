@@ -11,7 +11,7 @@ RELEASE=${4:-"1"}
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
 
 # check source code
-PAIMON_CPP_COMMIT="c65575d63fec25890d0988de60224bd1c1baea54"
+PAIMON_CPP_COMMIT="40f51484f5562cfd57a7f5a1c701e98aac5060b2"
 # 解决 orc timezone 卡死问题
 PAIMON_CPP_ORC_TIMEZONE_PATH=$ROOT_DIR/patch/paimon-cpp-orc-timezone.patch
 # 解决 Identifier.h 析构 core 的问题
