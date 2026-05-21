@@ -12,7 +12,6 @@ RELEASE=${4:-"1"}
 
 # check source code
 PAIMON_CPP_COMMIT="c65575d63fec25890d0988de60224bd1c1baea54"
-# PAIMON_CPP_ARROW_PATCH=$ROOT_DIR/patch/paimon-cpp-arrow20-fat-archive.patch
 # 解决 orc timezone 卡死问题
 PAIMON_CPP_ORC_TIMEZONE_PATH=$ROOT_DIR/patch/paimon-cpp-orc-timezone.patch
 # 解决 Identifier.h 析构 core 的问题
@@ -24,10 +23,6 @@ if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
     git clone https://github.com/alibaba/paimon-cpp.git $ROOT_DIR/paimon-cpp-$VERSION
     cd $ROOT_DIR/paimon-cpp-$VERSION
     git checkout $PAIMON_CPP_COMMIT
-
-    # no need to patch arrow now
-    # echo "Apply patch: $PAIMON_CPP_ARROW_PATCH"
-    # git apply $PAIMON_CPP_ARROW_PATCH
 
     echo "Apply patch: $PAIMON_CPP_ORC_TIMEZONE_PATH"
     git apply $PAIMON_CPP_ORC_TIMEZONE_PATH
