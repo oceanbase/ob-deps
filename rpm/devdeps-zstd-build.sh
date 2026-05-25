@@ -26,11 +26,11 @@ mkdir -p $pkg_dir
 
 if [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
-    dep_pkgs=(obdevtools-gcc9-9.3.0-152024092711.al)
+    dep_pkgs=(obdevtools-llvm-17.0.6-72025060300.al)
     download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/al"
     os_release=8
 else
-    dep_pkgs=(obdevtools-gcc9-9.3.0-72024081318.el)
+    dep_pkgs=(obdevtools-llvm-17.0.6-72025060300.el)
     download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/el"
 fi
 
@@ -47,8 +47,11 @@ do
     (cd / && rpm2cpio $pkg_dir/$pkg | cpio -di -u --quiet)
 done
 
-export PATH=/usr/local/oceanbase/devtools/bin:$PATH
-export LD_LIBRARY_PATH=/usr/local/oceanbase/devtools/lib:/usr/local/oceanbase/devtools/lib64:$LD_LIBRARY_PATH
- 
+export TOOLS_DIR=/usr/local/oceanbase/devtools
+export PATH=$TOOLS_DIR/bin:$PATH
+export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
+export CC=$TOOLS_DIR/bin/clang
+export CXX=$TOOLS_DIR/bin/clang++
+
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME-$VERSION $VERSION $RELEASE
