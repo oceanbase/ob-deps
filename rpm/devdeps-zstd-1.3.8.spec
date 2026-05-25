@@ -22,8 +22,8 @@ Zstandard - fast lossless compression library and command-line tool
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib/zstd_%{_flag}
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/zstd_%{_flag}
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
-export CFLAGS="-fPIC -fvisibility=hidden -Wno-implicit-fallthrough -DZSTDERRORLIB_VISIBILITY= -DZDICTLIB_VISIBILITY= -DZSTDLIB_VISIBILITY="
-export CXXFLAGS="-fPIC -fvisibility=hidden -D_GLIBCXX_USE_CXX11_ABI=0 -Wno-implicit-fallthrough -DZSTDERRORLIB_VISIBILITY= -DZDICTLIB_VISIBILITY= -DZSTDLIB_VISIBILITY="
+export CFLAGS="-O3 -fPIC -fvisibility=hidden -Wno-implicit-fallthrough -DZSTDERRORLIB_VISIBILITY= -DZDICTLIB_VISIBILITY= -DZSTDLIB_VISIBILITY="
+export CXXFLAGS="-O3 -fPIC -fvisibility=hidden -D_GLIBCXX_USE_CXX11_ABI=0 -Wno-implicit-fallthrough -DZSTDERRORLIB_VISIBILITY= -DZDICTLIB_VISIBILITY= -DZSTDLIB_VISIBILITY="
 ROOT_DIR=$OLDPWD/..
 
 # compile and install
