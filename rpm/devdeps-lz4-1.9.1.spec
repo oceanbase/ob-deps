@@ -21,8 +21,8 @@ LZ4 is a very fast lossless compression algorithm, providing compression speed a
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib/lz4
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/lz4_191
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
-export CFLAGS="-fPIC -fvisibility=hidden -DLZ4LIB_VISIBILITY="
-export CXXFLAGS="-fPIC -fvisibility=hidden -D_GLIBCXX_USE_CXX11_ABI=0 -DLZ4LIB_VISIBILITY="
+export CFLAGS="-O3 -fPIC -fvisibility=hidden -DLZ4LIB_VISIBILITY="
+export CXXFLAGS="-O3 -fPIC -fvisibility=hidden -D_GLIBCXX_USE_CXX11_ABI=0 -DLZ4LIB_VISIBILITY="
 ROOT_DIR=$OLDPWD/..
 
 # compile and install
