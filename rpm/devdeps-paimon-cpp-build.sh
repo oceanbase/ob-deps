@@ -18,6 +18,8 @@ PAIMON_CPP_ORC_TIMEZONE_PATH=$ROOT_DIR/patch/paimon-cpp-orc-timezone.patch
 PAIMON_CPP_IDENTIFIER_CORE=$ROOT_DIR/patch/paimon-cpp-identifier-core.patch
 # 加速镜像下载
 PAIMON_CPP_DOWNLOAD_MIRROR_PATH=$ROOT_DIR/patch/paimon-cpp-download-mirror.patch
+# 新增 paimon::GetLibraryVersion 接口，OB 加载 so 时做版本校验
+PAIMON_CPP_VERSION_SYMBOL_PATH=$ROOT_DIR/patch/paimon-cpp-version-symbol.patch
 if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
     echo "Clone ${PROJECT_NAME} source code from master"
     git clone https://github.com/alibaba/paimon-cpp.git $ROOT_DIR/paimon-cpp-$VERSION
@@ -29,9 +31,12 @@ if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
 
     echo "Apply patch: $PAIMON_CPP_IDENTIFIER_CORE"
     git apply $PAIMON_CPP_IDENTIFIER_CORE
-    
+
     echo "Apply patch: $PAIMON_CPP_DOWNLOAD_MIRROR_PATH"
     git apply $PAIMON_CPP_DOWNLOAD_MIRROR_PATH
+
+    echo "Apply patch: $PAIMON_CPP_VERSION_SYMBOL_PATH"
+    git apply $PAIMON_CPP_VERSION_SYMBOL_PATH
     cd -
 fi
 # Create tarball for rpmbuild

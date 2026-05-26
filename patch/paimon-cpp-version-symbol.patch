@@ -1,0 +1,95 @@
+diff --git a/include/paimon/version.h b/include/paimon/version.h
+new file mode 100644
+index 0000000..f6ce074
+--- /dev/null
++++ b/include/paimon/version.h
+@@ -0,0 +1,42 @@
++/*
++ * Copyright 2024-present Alibaba Inc.
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *   http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#pragma once
++
++#include <cstdint>
++
++#include "paimon/visibility.h"
++
++#define PAIMON_VERSION_MAJOR 0
++#define PAIMON_VERSION_MINOR 1
++#define PAIMON_VERSION_PATCH 2
++#define PAIMON_VERSION_STRING "0.1.2"
++#define PAIMON_VERSION_NUMBER                                            \
++    ((PAIMON_VERSION_MAJOR << 16) | (PAIMON_VERSION_MINOR << 8) | \
++     PAIMON_VERSION_PATCH)
++
++namespace paimon {
++
++/// Return the version string compiled into libpaimon.so (e.g. "0.1.2").
++/// Callers can compare this against PAIMON_VERSION_STRING from the header
++/// they were built with to detect header/library mismatches at load time.
++PAIMON_EXPORT const char* GetLibraryVersion();
++
++/// Return the packed version number compiled into libpaimon.so:
++/// (major << 16) | (minor << 8) | patch.
++PAIMON_EXPORT uint32_t GetLibraryVersionNumber();
++
++}  // namespace paimon
+diff --git a/src/paimon/CMakeLists.txt b/src/paimon/CMakeLists.txt
+index 1a57371..66bf7db 100644
+--- a/src/paimon/CMakeLists.txt
++++ b/src/paimon/CMakeLists.txt
+@@ -38,6 +38,7 @@ set(PAIMON_COMMON_SRCS
+     common/data/serializer/binary_serializer_utils.cpp
+     common/data/timestamp.cpp
+     common/defs.cpp
++    common/version.cpp
+     common/executor/executor.cpp
+     common/factories/singleton.cpp
+     common/factories/io_hook.cpp
+diff --git a/src/paimon/common/version.cpp b/src/paimon/common/version.cpp
+new file mode 100644
+index 0000000..fc90a3b
+--- /dev/null
++++ b/src/paimon/common/version.cpp
+@@ -0,0 +1,29 @@
++/*
++ * Copyright 2024-present Alibaba Inc.
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *   http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "paimon/version.h"
++
++namespace paimon {
++
++const char* GetLibraryVersion() {
++    return PAIMON_VERSION_STRING;
++}
++
++uint32_t GetLibraryVersionNumber() {
++    return PAIMON_VERSION_NUMBER;
++}
++
++}  // namespace paimon
