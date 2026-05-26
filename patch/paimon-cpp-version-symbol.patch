@@ -1,0 +1,79 @@
+diff --git a/include/paimon/version.h b/include/paimon/version.h
+new file mode 100644
+index 0000000..2e156c0
+--- /dev/null
++++ b/include/paimon/version.h
+@@ -0,0 +1,30 @@
++/*
++ * Copyright 2024-present Alibaba Inc.
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *   http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#pragma once
++
++#include "paimon/visibility.h"
++
++#define PAIMON_VERSION_STRING "0.1.2"
++
++namespace paimon {
++
++/// Return the version string compiled into libpaimon.so (e.g. "0.1.2").
++/// Callers can compare this against PAIMON_VERSION_STRING from the header
++/// they were built with to detect header/library mismatches at load time.
++PAIMON_EXPORT const char* GetLibraryVersion();
++
++}  // namespace paimon
+diff --git a/src/paimon/CMakeLists.txt b/src/paimon/CMakeLists.txt
+index db22b01..b543c6c 100644
+--- a/src/paimon/CMakeLists.txt
++++ b/src/paimon/CMakeLists.txt
+@@ -38,6 +38,7 @@ set(PAIMON_COMMON_SRCS
+     common/data/serializer/binary_serializer_utils.cpp
+     common/data/timestamp.cpp
+     common/defs.cpp
++    common/version.cpp
+     common/executor/executor.cpp
+     common/factories/singleton.cpp
+     common/factories/io_hook.cpp
+diff --git a/src/paimon/common/version.cpp b/src/paimon/common/version.cpp
+new file mode 100644
+index 0000000..ea11b38
+--- /dev/null
++++ b/src/paimon/common/version.cpp
+@@ -0,0 +1,25 @@
++/*
++ * Copyright 2024-present Alibaba Inc.
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *   http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "paimon/version.h"
++
++namespace paimon {
++
++const char* GetLibraryVersion() {
++    return PAIMON_VERSION_STRING;
++}
++
++}  // namespace paimon
