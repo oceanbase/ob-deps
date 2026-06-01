@@ -3,14 +3,14 @@
 # http://www.rpm.org/max-rpm/ch-rpm-inside.html              #
 ##############################################################
 Name: devdeps-lua
-Version: 5.4.3
+Version: 5.4.8
 Release: %(echo $RELEASE)%{?dist}
 # if you want use the parameter of rpm_create on build time,
 # uncomment below
 Summary: Lua static library for oceanbase
 Group: Development/Tools
 License: Commercial
-Url: http://www.lua.org/ftp/lua-5.4.3.tar.gz
+Url: http://www.lua.org/ftp/lua-%{version}.tar.gz
 
 %define _prefix /usr/local/oceanbase/deps/devel
 %define _src lua-%{version}
