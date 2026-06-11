@@ -175,24 +175,28 @@ def nested_name_has_root(s):
     return any(s.startswith(token, idx) for token in cpp_root_tokens)
 
 def should_private_cpp(sym):
-    # Normal nested names, e.g. _ZN5arrow..., _ZNK3orc...
+    # Normal nested names: _ZN5arrow..., _ZNK3orc..., etc.
     if sym.startswith("_Z") and nested_name_has_root(sym[2:]):
         return True
-    # Special names for vtable/typeinfo/typeinfo-name/VTT.
-    for prefix in ("_ZTV", "_ZTI", "_ZTS", "_ZTT", "_ZTC"):
-        if sym.startswith(prefix) and nested_name_has_root(sym[len(prefix):]):
-            return True
-    # Local statics inside private dependency functions, e.g.
-    # _ZZN5arrow...E... and their guard variables _ZGVZN5arrow...E...
+    # All _ZTX single-discriminator specials where the nested name starts at
+    # position 4: vtable (_ZTV), typeinfo (_ZTI/_ZTS), VTT (_ZTT), construction
+    # vtable (_ZTC), typeinfo function (_ZTF), and any future _ZTX variants.
+    # Thunks (_ZTh/_ZTv/_ZTc) are excluded here; they are handled below.
+    if (sym.startswith("_ZT")
+            and len(sym) > 4
+            and sym[3] not in "hvc"
+            and nested_name_has_root(sym[4:])):
+        return True
+    # Local statics: _ZZN5arrow...
     if sym.startswith("_ZZ") and nested_name_has_root(sym[3:]):
         return True
+    # Guard/reference symbols: _ZGVZ has the nested name at position 5;
+    # _ZGV, _ZGR, and any future _ZGX variants have it at position 4.
     if sym.startswith("_ZGVZ") and nested_name_has_root(sym[5:]):
         return True
-    # Guard variables for namespace-scope statics in private dependencies.
-    if sym.startswith("_ZGV") and nested_name_has_root(sym[4:]):
+    if sym.startswith("_ZG") and len(sym) > 4 and nested_name_has_root(sym[4:]):
         return True
-    # Thunks encode the target function after the thunk prefix. Only match when
-    # the target function's root namespace is private.
+    # Thunks encode the target function after the thunk prefix.
     thunk_pos = sym.find("_N")
     if sym.startswith(("_ZTh", "_ZTv", "_ZTc")) and thunk_pos >= 0:
         return nested_name_has_root(sym[thunk_pos + 1:])
