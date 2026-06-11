@@ -1,0 +1,25 @@
+diff --git a/include/paimon/catalog/identifier.h b/include/paimon/catalog/identifier.h
+index dd86c91..20843f9 100644
+--- a/include/paimon/catalog/identifier.h
++++ b/include/paimon/catalog/identifier.h
+@@ -34,6 +34,7 @@ class PAIMON_EXPORT Identifier {
+     static const char kDefaultMainBranch[];
+ 
+     explicit Identifier(const std::string& table);
++    ~Identifier();
+     Identifier(const std::string& database, const std::string& table);
+ 
+     bool operator==(const Identifier& other);
+diff --git a/src/paimon/core/catalog/identifier.cpp b/src/paimon/core/catalog/identifier.cpp
+index 3ec998c..cc9a3fe 100644
+--- a/src/paimon/core/catalog/identifier.cpp
++++ b/src/paimon/core/catalog/identifier.cpp
+@@ -38,6 +38,8 @@ Identifier::Identifier(const std::string& table)
+ Identifier::Identifier(const std::string& database, const std::string& table)
+     : database_(database), table_(table) {}
+ 
++Identifier::~Identifier() = default;
++
+ bool Identifier::operator==(const Identifier& other) {
+     return (database_ == other.database_ && table_ == other.table_);
+ }
