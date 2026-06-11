@@ -22,7 +22,7 @@ PAIMON_CPP_DOWNLOAD_MIRROR_PATH=$ROOT_DIR/patch/paimon-cpp-download-mirror.patch
 PAIMON_CPP_VERSION_SYMBOL_PATH=$ROOT_DIR/patch/paimon-cpp-version-symbol.patch
 if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
     echo "Clone ${PROJECT_NAME} source code from master"
-    git clone https://github.com/alibaba/paimon-cpp.git $ROOT_DIR/paimon-cpp-$VERSION
+    git clone https://gh-proxy.org/https://github.com/alibaba/paimon-cpp.git $ROOT_DIR/paimon-cpp-$VERSION
     cd $ROOT_DIR/paimon-cpp-$VERSION
     git checkout $PAIMON_CPP_COMMIT
 
@@ -39,6 +39,7 @@ if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
     git apply $PAIMON_CPP_VERSION_SYMBOL_PATH
     cd -
 fi
+
 # Create tarball for rpmbuild
 if [[ ! -f $ROOT_DIR/paimon-cpp-$VERSION.tar.gz ]]; then
     cd $ROOT_DIR
@@ -46,40 +47,26 @@ if [[ ! -f $ROOT_DIR/paimon-cpp-$VERSION.tar.gz ]]; then
     cd -
 fi
 
+# prepare building environment
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 
 if [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
-    yum install -y obdevtools-gcc9-9.3.0
+    yum install -y obdevtools-llvm-17.0.6
     yum install -y obdevtools-cmake-3.30.3
-    yum install -y obdevtools-binutils-2.30
+    yum install -y obdevtools-gcc9-9.3.0
 else
-    os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
-    arch=`uname -p`
-    dep_pkgs=(obdevtools-gcc9-9.3.0-52022092914.el obdevtools-cmake-3.30.3-62025060510.el obdevtools-binutils-2.30-12022100413.el)
- 
-    target_dir_3rd=${PROJECT_DIR}/deps/3rd
-    pkg_dir=$target_dir_3rd/pkg
-    mkdir -p $pkg_dir
-    for dep_pkg in ${dep_pkgs[@]}
-    do
-        TEMP=$(mktemp -p "/" -u ".XXXX")
-        download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/el"
-        deps_url=${download_base_url}/${os_release}/${arch}
-        pkg=${dep_pkg}${os_release}.${arch}.rpm
-        wget $deps_url/$pkg -O $pkg_dir/$TEMP
-        if [[ $? == 0 ]]; then
-            mv -f $pkg_dir/$TEMP $pkg_dir/$pkg
-        fi
-        (cd / && rpm2cpio $pkg_dir/$pkg | cpio -di -u --quiet)
-    done
+    wget https://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
+    yum install -y obdevtools-llvm-17.0.6
+    yum install -y obdevtools-cmake-3.30.3
+    yum install -y obdevtools-gcc9-9.3.0
 fi
 
 export TOOLS_DIR=/usr/local/oceanbase/devtools
 export PATH=$TOOLS_DIR/bin:$PATH
 export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
-export CC=$TOOLS_DIR/bin/gcc
-export CXX=$TOOLS_DIR/bin/g++
+export CC=$TOOLS_DIR/bin/clang
+export CXX=$TOOLS_DIR/bin/clang++
 
 export ABI_FLAG=$([[ "${CXX_ABI}" == "1" ]] && echo "-abiv1" || echo "")
 export ABI_CXXFLAGS=$([[ "${CXX_ABI}" == "1" ]] && echo "-D_GLIBCXX_USE_CXX11_ABI=1" || echo "-D_GLIBCXX_USE_CXX11_ABI=0")

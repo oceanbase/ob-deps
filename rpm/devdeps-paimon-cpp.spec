@@ -21,8 +21,15 @@ Paimon C++ library built for OceanBase devdeps (Ninja, old C++11 ABI, Jindo disa
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}
 
 # _FORTIFY_SOURCE (often from rpmbuild) requires -O; third_party TBB etc. inherit these flags
-export CFLAGS="-O2 -fPIC -z noexecstack -z now -pie -fstack-protector-strong"
-export CXXFLAGS="-O2 -fPIC -z noexecstack -z now -pie -fstack-protector-strong"
+DISABLE_ATOMIC=""
+arch=`uname -p`
+if [ "x$arch" = "xaarch64" ]; then
+    DISABLE_ATOMIC="-mno-outline-atomics"
+fi
+TOOLCHAIN_FLAGS="--gcc-toolchain=${TOOLS_DIR} -B${TOOLS_DIR}/bin"
+export CFLAGS="${TOOLCHAIN_FLAGS} -O2 -fPIC ${DISABLE_ATOMIC} -z noexecstack -z now -pie -fstack-protector-strong"
+export CXXFLAGS="${TOOLCHAIN_FLAGS} -O2 -fPIC ${DISABLE_ATOMIC} -z noexecstack -z now -pie -fstack-protector-strong"
+export LDFLAGS="${TOOLCHAIN_FLAGS} -fuse-ld=lld ${DISABLE_ATOMIC} ${LDFLAGS:-}"
 export CPPFLAGS="${ABI_CXXFLAGS}"
 CPU_CORES=8
 ROOT_DIR=$OLDPWD/..
@@ -47,14 +54,32 @@ fi
 rm -rf build && mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} \
          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-         -DCMAKE_SHARED_LINKER_FLAGS="-static-libstdc++ -static-libgcc" \
          -DPAIMON_USE_CXX11_ABI=OFF \
          -DPAIMON_BUILD_TESTS=OFF \
          -DPAIMON_ENABLE_JINDO=OFF \
          -DPAIMON_BUILD_STATIC=ON \
-         -DPAIMON_BUILD_SHARED=ON
+         -DPAIMON_BUILD_SHARED=OFF
 make -j${CPU_CORES}
 make install
+
+mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib64/paimon_deps
+cp ./arrow_ep-install/lib/lib*.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
+cp ./avro_ep-install/lib/libavrocpp_s.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
+cp ./orc_ep-prefix/lib/liborc.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
+cp ./protobuf_ep-install/lib/libprotobuf.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
+cp ./snappy_ep-install/lib/libsnappy.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
+cp ./zstd_ep-install/lib/libzstd.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
+cp ./lz4_ep-install/lib/liblz4.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
+cp ./zlib_ep-install/lib/libz.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
+cp ./re2_ep-install/lib/libre2.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
+cp ./fmt_ep-install/lib/libfmt.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
+cp ./glog_ep-install/lib/libglog.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
+cp ./tbb_ep-install/lib/libtbb.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
+cp ./relwithdebinfo/libroaring_bitmap.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
+
+bash "$ROOT_DIR/patch/paimon-cpp-private-repack.sh" \
+  "${RPM_BUILD_ROOT}/%{_prefix}/lib64" \
+  "${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps"
 
 %files
 
