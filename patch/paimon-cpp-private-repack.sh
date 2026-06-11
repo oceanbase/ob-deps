@@ -179,7 +179,7 @@ def should_private_cpp(sym):
     if sym.startswith("_Z") and nested_name_has_root(sym[2:]):
         return True
     # Special names for vtable/typeinfo/typeinfo-name/VTT.
-    for prefix in ("_ZTV", "_ZTI", "_ZTS", "_ZTT"):
+    for prefix in ("_ZTV", "_ZTI", "_ZTS", "_ZTT", "_ZTC"):
         if sym.startswith(prefix) and nested_name_has_root(sym[len(prefix):]):
             return True
     # Local statics inside private dependency functions, e.g.
