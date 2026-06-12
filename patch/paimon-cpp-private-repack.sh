@@ -28,9 +28,15 @@ usage() {
 #    undefined symbol，或者新依赖未私有化导致 duplicate symbol。
 # 4. 如果新增依赖和 OB 有新的符号冲突，需要把对应 C++ 根 namespace
 #    的 mangled token 加到 cpp_root_tokens，或把 C 符号前缀加到 c_prefixes。
-#    C++ 符号必须只按“根 namespace”匹配，不要匹配模板参数里的 namespace。
+#    C++ 符号必须只按”根 namespace”匹配，不要匹配模板参数里的 namespace。
 #    例如 std::future<orc::...> 的根 namespace 是 std，不应该因为模板参数
 #    里出现 orc:: 就被私有化，否则可能影响 libstdc++ 符号和 BOLT 分析。
+#    同理不能做”全量私有化”——paimon:: API 边界上经由 std:: 传参的类型
+#    （如 std::shared_ptr<arrow::Schema>）若被重命名会破坏 ABI 边界。
+#    查漏方法：nm observer | awk 在 paimon_priv_ 符号地址范围内找无前缀的全局符号。
+#    已补充的 namespace：
+#      6apache          → apache::thrift:: (libarrow_bundled_dependencies.a)
+#      14arrow_vendored → arrow_vendored::date:: / double_conversion:: (libarrow.a)
 # 5. 不要私有化 paimon::*。OB 通过 Paimon 头文件直接调用 paimon:: API，
 #    如果 paimon::* 也被 rename，OB 编译出来的原始 paimon:: 符号会链接
 #    不上。只有未来 OB 改成 C wrapper 或完整 namespace wrapper 时，才
@@ -121,6 +127,8 @@ cpp_root_tokens = (
     "7parquet",
     "4avro",
     "3orc",
+    "6apache",         # apache::thrift:: (bundled in libarrow_bundled_dependencies.a)
+    "14arrow_vendored", # arrow_vendored::date:: / arrow_vendored::double_conversion::
     "6google",
     "3fmt",
     "3tbb",
@@ -162,6 +170,12 @@ c_prefixes = (
     "zcfree",
     "zlib",
     "read_long_length_no_check",
+    # Intel ISA-L / QPL / accelerator libs bundled in libarrow_bundled_dependencies.a
+    "isal_",
+    "qpl_",
+    "qae_",
+    "accfg_",
+    "avx512_",
 )
 
 def nested_name_has_root(s):
