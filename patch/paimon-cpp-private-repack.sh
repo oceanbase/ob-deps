@@ -31,12 +31,25 @@ usage() {
 #    C++ 符号必须只按”根 namespace”匹配，不要匹配模板参数里的 namespace。
 #    例如 std::future<orc::...> 的根 namespace 是 std，不应该因为模板参数
 #    里出现 orc:: 就被私有化，否则可能影响 libstdc++ 符号和 BOLT 分析。
-#    同理不能做”全量私有化”——paimon:: API 边界上经由 std:: 传参的类型
-#    （如 std::shared_ptr<arrow::Schema>）若被重命名会破坏 ABI 边界。
+#    同理不能把 3std 加入 cpp_root_tokens 做”全量 std:: 私有化”——
+#    paimon:: API 边界上经由 std:: 传参的类型（如 std::shared_ptr<paimon::Table>、
+#    std::vector<paimon::ColumnData>）若被重命名会破坏 ABI 边界。
+#    但 std:: 模板实例化中含 arrow::/orc:: 等类型时（如
+#    std::__shared_ptr<arrow::SimpleRecordBatch>、
+#    __gnu_cxx::new_allocator<arrow::SimpleRecordBatch>::construct），
+#    它们是 Arrow 内部 weak symbol，链接器可能选择 Paimon 的版本，导致
+#    OB 创建的 RecordBatch 携带 Paimon Arrow 的 vtable，Slice 产出 ABI 不兼容
+#    的 ArrayData，最终触发 memory_sanity_abort。
+#    should_private_cpp 里的 _ZNSt/_ZSt 子串规则专门处理此类情况：
+#    仅当 std:: 符号的模板参数中含有 cpp_root_tokens 里的 token 时才私有化。
+#    由于 6paimon 不在 cpp_root_tokens（注释第5条），std::shared_ptr<paimon::X>
+#    等 API 边界类型不会被误命中。
 #    查漏方法：nm observer | awk 在 paimon_priv_ 符号地址范围内找无前缀的全局符号。
-#    已补充的 namespace：
+#    已补充的 namespace/规则：
 #      6apache          → apache::thrift:: (libarrow_bundled_dependencies.a)
 #      14arrow_vendored → arrow_vendored::date:: / double_conversion:: (libarrow.a)
+#      9__gnu_cxx       → __gnu_cxx::new_allocator<arrow::T>::construct (weak symbol 劫持)
+#      _ZNSt/_ZSt 规则  → std::__shared_ptr<arrow::T> 等含 arrow 模板参数的 std:: weak symbol
 # 5. 不要私有化 paimon::*。OB 通过 Paimon 头文件直接调用 paimon:: API，
 #    如果 paimon::* 也被 rename，OB 编译出来的原始 paimon:: 符号会链接
 #    不上。只有未来 OB 改成 C wrapper 或完整 namespace wrapper 时，才
@@ -135,6 +148,9 @@ cpp_root_tokens = (
     "3re2",
     "7roaring",
     "6snappy",
+    "9__gnu_cxx",      # __gnu_cxx::new_allocator<arrow::T>::construct — weak symbol
+                       # 根因：链接器选了 Paimon 的版本，导致 OB 的 RecordBatch 对象
+                       # 携带 Paimon Arrow 的 vtable，Slice 产出 ABI 不兼容的 ArrayData
 )
 
 c_prefixes = (
@@ -214,6 +230,17 @@ def should_private_cpp(sym):
     thunk_pos = sym.find("_N")
     if sym.startswith(("_ZTh", "_ZTv", "_ZTc")) and thunk_pos >= 0:
         return nested_name_has_root(sym[thunk_pos + 1:])
+    # std:: template instantiations whose template parameters include our types.
+    # Example: std::__shared_ptr<arrow::SimpleRecordBatch>, or
+    #          std::_Hashtable<arrow::FieldPath, ...>.
+    # These are weak (W) symbols that the linker can "steal" from Paimon's archives,
+    # causing OB's RecordBatch/ArrayData to carry Paimon Arrow's vtable/layout.
+    # Root namespace is "std" so nested_name_has_root won't fire; we check whether
+    # any of our root tokens appears anywhere inside the mangled name instead.
+    # Excluding paimon:: symbols is unnecessary here because paimon:: names start
+    # with _ZN6paimon, not _ZNSt / _ZSt.
+    if sym.startswith(("_ZNSt", "_ZSt")):
+        return any(token in sym for token in cpp_root_tokens)
     return False
 
 def should_private(sym):
