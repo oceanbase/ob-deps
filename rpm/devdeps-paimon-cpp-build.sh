@@ -51,10 +51,11 @@ fi
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 
 if [[ "${ID}"x == "alinux"x ]]; then
-    wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
-    yum install -y obdevtools-llvm-17.0.6
-    yum install -y obdevtools-cmake-3.30.3
-    yum install -y obdevtools-gcc9-9.3.0
+    echo "alinux"
+    # wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
+    # yum install -y obdevtools-llvm-17.0.6
+    # yum install -y obdevtools-cmake-3.30.3
+    # yum install -y obdevtools-gcc9-9.3.0
 else
     wget https://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
     yum install -y obdevtools-llvm-17.0.6

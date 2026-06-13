@@ -27,8 +27,8 @@ if [ "x$arch" = "xaarch64" ]; then
     DISABLE_ATOMIC="-mno-outline-atomics"
 fi
 TOOLCHAIN_FLAGS="--gcc-toolchain=${TOOLS_DIR} -B${TOOLS_DIR}/bin"
-export CFLAGS="${TOOLCHAIN_FLAGS} -O2 -fPIC ${DISABLE_ATOMIC} -z noexecstack -z now -pie -fstack-protector-strong"
-export CXXFLAGS="${TOOLCHAIN_FLAGS} -O2 -fPIC ${DISABLE_ATOMIC} -z noexecstack -z now -pie -fstack-protector-strong"
+export CFLAGS="${TOOLCHAIN_FLAGS} -O2 -fPIC ${DISABLE_ATOMIC}"
+export CXXFLAGS="${TOOLCHAIN_FLAGS} -O2 -fPIC ${DISABLE_ATOMIC}"
 export LDFLAGS="${TOOLCHAIN_FLAGS} -fuse-ld=lld ${DISABLE_ATOMIC} ${LDFLAGS:-}"
 export CPPFLAGS="${ABI_CXXFLAGS}"
 CPU_CORES=8
@@ -43,6 +43,9 @@ cd %{_src}
 # Drop Jindo SDK download (Aliyun-only tarball); CMake keeps PAIMON_ENABLE_JINDO=OFF
 grep -v 'PAIMON_JINDOSDK' third_party/versions.txt > third_party/versions.txt.tmp
 mv -f third_party/versions.txt.tmp third_party/versions.txt
+
+# arrow 20.0.0 原始 tarball 不含 paimon 定制修改，替换 arrow.diff
+/bin/cp -f $ROOT_DIR/patch/paimon-cpp-arrow-20.0.0.diff cmake_modules/arrow.diff
 
 # Offline: place third_party.tar.gz next to paimon-cpp-*.tar.gz ($ROOT_DIR); else download
 if [ -f "$ROOT_DIR/third_party.tar.gz" ]; then
