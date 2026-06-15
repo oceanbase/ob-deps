@@ -262,6 +262,12 @@ def should_private_cpp(sym):
     # with _ZN6paimon, not _ZNSt / _ZSt.
     if sym.startswith(("_ZNSt", "_ZNKSt", "_ZNRSt", "_ZNOSt", "_ZNVSt", "_ZSt")):
         return any(token in sym for token in cpp_root_tokens)
+    # protobuf code-generated type metadata structs: TableStruct_<url-encoded-proto-path>::offsets
+    # These use URL-encoded path as struct name (e.g. TableStruct_google_2fprotobuf_2fany_2eproto)
+    # so cpp_root_tokens ("6google" etc.) won't match; detect by struct name prefix instead.
+    # Conflicts with OB's libprotobuf-v371.a (3.7.1) and liborc's generated code.
+    if sym.startswith("_ZN") and "TableStruct_" in sym:
+        return True
     return False
 
 def should_private(sym):
