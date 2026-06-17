@@ -5,7 +5,7 @@ ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
 PROJECT_NAME=${2:-"devdeps-paimon-cpp"}
 VERSION=${3:-"0.1.2"}
-RELEASE=${4:-"2_dev"}
+RELEASE=${4:-"1"}
 
 # Configure custom source file directory
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
