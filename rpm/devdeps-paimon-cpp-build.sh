@@ -5,7 +5,7 @@ ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
 PROJECT_NAME=${2:-"devdeps-paimon-cpp"}
 VERSION=${3:-"0.1.2"}
-RELEASE=${4:-"1"}
+RELEASE=${4:-"2_dev"}
 
 # Configure custom source file directory
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
@@ -20,6 +20,9 @@ PAIMON_CPP_IDENTIFIER_CORE=$ROOT_DIR/patch/paimon-cpp-identifier-core.patch
 PAIMON_CPP_DOWNLOAD_MIRROR_PATH=$ROOT_DIR/patch/paimon-cpp-download-mirror.patch
 # 新增 paimon::GetLibraryVersion 接口，OB 加载 so 时做版本校验
 PAIMON_CPP_VERSION_SYMBOL_PATH=$ROOT_DIR/patch/paimon-cpp-version-symbol.patch
+# 允许 Paimon 使用 OB devdeps-arrow 提供的 Arrow/Parquet
+PAIMON_CPP_SYSTEM_OB_ARROW_PATH=$ROOT_DIR/patch/paimon-cpp-system-ob-arrow.patch
+
 if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
     echo "Clone ${PROJECT_NAME} source code from master"
     git clone https://gh-proxy.org/https://github.com/alibaba/paimon-cpp.git $ROOT_DIR/paimon-cpp-$VERSION
@@ -37,6 +40,9 @@ if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
 
     echo "Apply patch: $PAIMON_CPP_VERSION_SYMBOL_PATH"
     git apply $PAIMON_CPP_VERSION_SYMBOL_PATH
+
+    echo "Apply patch: $PAIMON_CPP_SYSTEM_OB_ARROW_PATH"
+    git apply $PAIMON_CPP_SYSTEM_OB_ARROW_PATH
     cd -
 fi
 
@@ -55,11 +61,13 @@ if [[ "${ID}"x == "alinux"x ]]; then
     yum install -y obdevtools-llvm-17.0.6
     yum install -y obdevtools-cmake-3.30.3
     yum install -y obdevtools-gcc9-9.3.0
+    yum install -y devdeps-apache-arrow-20.0.0
 else
     wget https://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
     yum install -y obdevtools-llvm-17.0.6
     yum install -y obdevtools-cmake-3.30.3
     yum install -y obdevtools-gcc9-9.3.0
+    yum install -y devdeps-apache-arrow-20.0.0
 fi
 
 export TOOLS_DIR=/usr/local/oceanbase/devtools
@@ -67,6 +75,7 @@ export PATH=$TOOLS_DIR/bin:$PATH
 export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
 export CC=$TOOLS_DIR/bin/clang
 export CXX=$TOOLS_DIR/bin/clang++
+export OB_DEPS_PREFIX=/usr/local/oceanbase/deps/devel
 
 export ABI_FLAG=$([[ "${CXX_ABI}" == "1" ]] && echo "-abiv1" || echo "")
 export ABI_CXXFLAGS=$([[ "${CXX_ABI}" == "1" ]] && echo "-D_GLIBCXX_USE_CXX11_ABI=1" || echo "-D_GLIBCXX_USE_CXX11_ABI=0")

@@ -20,20 +20,13 @@ usage() {
 # 1. 这个脚本采用白名单方式处理 Paimon 静态链接闭包中的 archive。
 #    这样范围清晰、可控，避免把测试库、工具库或无关 archive 误打进
 #    devdeps RPM。
-# 2. Paimon 自带的 thirdparty archive 由 Paimon 独占使用，任何全局定义符号
-#    都不应该暴露到 OB 的最终链接命名空间。因此 thirdparty archive 的
-#    defined global symbols 会全量进入 rename map；这能一次覆盖 ORC/Avro/
-#    Protobuf/std weak vtable/typeinfo 等容易漏掉的 ABI 符号。
-# 3. Paimon 自身 archive 不能全量改名，因为 OB 会通过 Paimon 头文件直接
-#    调用 paimon:: API。Paimon archive 里的依赖符号仍通过 cpp_root_tokens/
-#    c_prefixes 以及 thirdparty defined-symbol map 来改名。
-# 4. 如果 Paimon 后续只是升级了 Avro/ORC/Protobuf 等已有依赖，thirdparty
-#    archive 新增的定义符号会自动被全量私有化，通常不需要维护具体符号列表。
-# 5. 如果 Paimon 后续新增了新的 .a 依赖，需要先确认它会进入 OB 最终
-#    静态链接闭包，然后按归属加到 paimon_archives 或 thirdparty_archives
-#    列表。否则可能出现
+# 2. 如果 Paimon 后续只是升级了 Arrow/Avro/ORC/Protobuf 等已有依赖，
+#    新增的同 namespace 符号通常会被 cpp_tokens/c_prefixes 自动匹配，
+#    不需要维护具体符号列表。
+# 3. 如果 Paimon 后续新增了新的 .a 依赖，需要先确认它会进入 OB 最终
+#    静态链接闭包，然后把该 archive 加到 archives 列表。否则可能出现
 #    undefined symbol，或者新依赖未私有化导致 duplicate symbol。
-# 6. 如果 Paimon 自身 archive 出现新的依赖符号规则，需要把对应 C++ 根 namespace
+# 4. 如果新增依赖和 OB 有新的符号冲突，需要把对应 C++ 根 namespace
 #    的 mangled token 加到 cpp_root_tokens，或把 C 符号前缀加到 c_prefixes。
 #    C++ 符号必须只按”根 namespace”匹配，不要匹配模板参数里的 namespace。
 #    例如 std::future<orc::...> 的根 namespace 是 std，不应该因为模板参数
@@ -49,7 +42,7 @@ usage() {
 #    的 ArrayData，最终触发 memory_sanity_abort。
 #    should_private_cpp 里的 _ZN[K/R/O/V]St/_ZSt 子串规则专门处理此类情况：
 #    仅当 std:: 符号的模板参数中含有 cpp_root_tokens 里的 token 时才私有化。
-#    由于 6paimon 不在 cpp_root_tokens（注释第7条），std::shared_ptr<paimon::X>
+#    由于 6paimon 不在 cpp_root_tokens（注释第5条），std::shared_ptr<paimon::X>
 #    等 API 边界类型不会被误命中。
 #    查漏方法：nm observer | awk 在 paimon_priv_ 符号地址范围内找无前缀的全局符号。
 #    已补充的 namespace/规则：
@@ -57,7 +50,7 @@ usage() {
 #      14arrow_vendored → arrow_vendored::date:: / double_conversion:: (libarrow.a)
 #      9__gnu_cxx       → __gnu_cxx::new_allocator<arrow::T>::construct (weak symbol 劫持)
 #      _ZNSt/_ZNKSt/_ZNRSt/_ZNOSt/_ZNVSt/_ZSt 规则 → std::<T>::method[const/&/&&/volatile] 等含 arrow 模板参数的 std:: weak symbol
-# 7. 不要私有化 paimon::*。OB 通过 Paimon 头文件直接调用 paimon:: API，
+# 5. 不要私有化 paimon::*。OB 通过 Paimon 头文件直接调用 paimon:: API，
 #    如果 paimon::* 也被 rename，OB 编译出来的原始 paimon:: 符号会链接
 #    不上。只有未来 OB 改成 C wrapper 或完整 namespace wrapper 时，才
 #    能考虑改这个边界。
@@ -90,18 +83,14 @@ fi
 
 private_map="${paimon_deps_lib_dir}/paimon_private_rename.map"
 private_symbols="${paimon_deps_lib_dir}/.paimon_private_symbols.txt"
-private_defined_symbols="${paimon_deps_lib_dir}/.paimon_private_defined_symbols.txt"
 
-paimon_archives=(
+archives=(
   "${paimon_core_lib_dir}/libpaimon.a"
   "${paimon_core_lib_dir}/libpaimon_parquet_file_format.a"
   "${paimon_core_lib_dir}/libpaimon_avro_file_format.a"
   "${paimon_core_lib_dir}/libpaimon_orc_file_format.a"
   "${paimon_core_lib_dir}/libpaimon_blob_file_format.a"
   "${paimon_core_lib_dir}/libpaimon_local_file_system.a"
-)
-
-thirdparty_archives=(
   "${paimon_deps_lib_dir}/libarrow.a"
   "${paimon_deps_lib_dir}/libparquet.a"
   "${paimon_deps_lib_dir}/libarrow_dataset.a"
@@ -121,38 +110,10 @@ thirdparty_archives=(
   "${paimon_deps_lib_dir}/libroaring_bitmap.a"
 )
 
-is_arrow_archive() {
-  local archive_name
-  archive_name="$(basename "$1")"
-  case "${archive_name}" in
-    libarrow.a|libparquet.a|libarrow_dataset.a|libarrow_acero.a|libarrow_bundled_dependencies.a)
-      return 0
-      ;;
-    *)
-      return 1
-      ;;
-  esac
-}
-
 existing_archives=()
-existing_thirdparty_archives=()
-
-for archive in "${paimon_archives[@]}"; do
+for archive in "${archives[@]}"; do
   if [[ -f "${archive}" ]]; then
     existing_archives+=("${archive}")
-  else
-    echo "Skip missing Paimon archive: ${archive}"
-  fi
-done
-
-for archive in "${thirdparty_archives[@]}"; do
-  if [[ "${PAIMON_PRIVATE_REPACK_SKIP_ARROW:-0}" == "1" ]] && is_arrow_archive "${archive}"; then
-    echo "Skip Arrow/Parquet archive in system Arrow mode: ${archive}"
-    continue
-  fi
-  if [[ -f "${archive}" ]]; then
-    existing_archives+=("${archive}")
-    existing_thirdparty_archives+=("${archive}")
   else
     echo "Skip missing Paimon archive: ${archive}"
   fi
@@ -166,21 +127,14 @@ fi
 : > "${private_symbols}"
 for archive in "${existing_archives[@]}"; do
   "${nm_bin}" -g "${archive}" 2>/dev/null \
-    | awk '{ if (NF >= 2) print $NF }' >> "${private_symbols}"
+    | awk '{ if (NF > 0) print $NF }' >> "${private_symbols}"
 done
 
-: > "${private_defined_symbols}"
-for archive in "${existing_thirdparty_archives[@]}"; do
-  "${nm_bin}" -g --defined-only "${archive}" 2>/dev/null \
-    | awk '{ if (NF >= 2) print $NF }' >> "${private_defined_symbols}"
-done
-
-"${python_bin}" - "${private_symbols}" "${private_defined_symbols}" "${private_map}" <<'PY'
-# -*- coding: utf-8 -*-
+"${python_bin}" - "${private_symbols}" "${private_map}" <<'PY'
 import os
 import sys
 
-symbols_path, defined_symbols_path, map_path = sys.argv[1], sys.argv[2], sys.argv[3]
+symbols_path, map_path = sys.argv[1], sys.argv[2]
 
 cpp_root_tokens = (
     "5arrow",
@@ -342,40 +296,7 @@ def should_private(sym):
         return should_private_cpp(sym)
     return any(sym.startswith(prefix) for prefix in c_prefixes)
 
-never_private_defined = set((
-    "_GLOBAL_OFFSET_TABLE_",
-    "__bss_start",
-    "__dso_handle",
-    "_edata",
-    "_end",
-    "_fini",
-    "_init",
-    "_start",
-    "main",
-))
-
-never_private_defined_prefixes = (
-    "__cxa_",
-    "__gxx_personality",
-    "_Unwind_",
-)
-
-def should_private_defined(sym):
-    if not sym or sym == "-" or sym.startswith("paimon_priv_"):
-        return False
-    if sym in never_private_defined:
-        return False
-    if any(sym.startswith(prefix) for prefix in never_private_defined_prefixes):
-        return False
-    return True
-
 symbols = set()
-with open(defined_symbols_path, "r") as f:
-    for line in f:
-        sym = line.strip()
-        if should_private_defined(sym):
-            symbols.add(sym)
-
 with open(symbols_path, "r") as f:
     for line in f:
         sym = line.strip()
@@ -443,4 +364,4 @@ for archive in "${existing_archives[@]}"; do
   repack_one_archive "${archive}"
 done
 
-rm -f "${private_symbols}" "${private_defined_symbols}"
+rm -f "${private_symbols}"

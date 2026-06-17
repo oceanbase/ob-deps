@@ -1,0 +1,106 @@
+diff --git a/cmake_modules/DefineOptions.cmake b/cmake_modules/DefineOptions.cmake
+index 4add68f..efa6adc 100644
+--- a/cmake_modules/DefineOptions.cmake
++++ b/cmake_modules/DefineOptions.cmake
+@@ -156,10 +156,11 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
+                   "Prefer shared libraries for system third-party packages" OFF)
+ 
+     define_option_string(Arrow_SOURCE
+-                         "Dependency source for Apache Arrow; SYSTEM is unsupported"
++                         "Dependency source for Apache Arrow"
+                          ""
+                          AUTO
+-                         BUNDLED)
++                         BUNDLED
++                         SYSTEM)
+     define_option_string(zstd_SOURCE
+                          "Dependency source for zstd"
+                          ""
+diff --git a/cmake_modules/FindArrowAlt.cmake b/cmake_modules/FindArrowAlt.cmake
+index 8864163..9dce553 100644
+--- a/cmake_modules/FindArrowAlt.cmake
++++ b/cmake_modules/FindArrowAlt.cmake
+@@ -23,6 +23,58 @@ find_package(Parquet CONFIG QUIET ${_PAIMON_ARROW_FIND_ARGS})
+ find_package(ArrowDataset CONFIG QUIET ${_PAIMON_ARROW_FIND_ARGS})
+ find_package(ArrowAcero CONFIG QUIET ${_PAIMON_ARROW_FIND_ARGS})
+ 
++if(NOT TARGET Arrow::arrow_static AND NOT TARGET Arrow::arrow)
++    find_path(ARROW_INCLUDE_DIR
++              NAMES arrow/api.h
++              ${_PAIMON_ARROW_FIND_ARGS}
++              PATH_SUFFIXES include/apache-arrow include)
++    find_library(ARROW_LIBRARY
++                 NAMES arrow
++                 ${_PAIMON_ARROW_FIND_ARGS}
++                 PATH_SUFFIXES lib64 lib)
++    find_library(PARQUET_LIBRARY
++                 NAMES parquet
++                 ${_PAIMON_ARROW_FIND_ARGS}
++                 PATH_SUFFIXES lib64 lib)
++    find_library(ARROW_DATASET_LIBRARY
++                 NAMES arrow_dataset
++                 ${_PAIMON_ARROW_FIND_ARGS}
++                 PATH_SUFFIXES lib64 lib)
++    find_library(ARROW_ACERO_LIBRARY
++                 NAMES arrow_acero
++                 ${_PAIMON_ARROW_FIND_ARGS}
++                 PATH_SUFFIXES lib64 lib)
++
++    if(ARROW_INCLUDE_DIR
++       AND ARROW_LIBRARY
++       AND PARQUET_LIBRARY
++       AND ARROW_DATASET_LIBRARY
++       AND ARROW_ACERO_LIBRARY)
++        add_library(Arrow::arrow_static UNKNOWN IMPORTED)
++        set_target_properties(Arrow::arrow_static
++                              PROPERTIES IMPORTED_LOCATION "${ARROW_LIBRARY}"
++                                         INTERFACE_INCLUDE_DIRECTORIES
++                                         "${ARROW_INCLUDE_DIR}")
++        add_library(Parquet::parquet_static UNKNOWN IMPORTED)
++        set_target_properties(Parquet::parquet_static
++                              PROPERTIES IMPORTED_LOCATION "${PARQUET_LIBRARY}"
++                                         INTERFACE_INCLUDE_DIRECTORIES
++                                         "${ARROW_INCLUDE_DIR}")
++        add_library(ArrowDataset::arrow_dataset_static UNKNOWN IMPORTED)
++        set_target_properties(ArrowDataset::arrow_dataset_static
++                              PROPERTIES IMPORTED_LOCATION
++                                         "${ARROW_DATASET_LIBRARY}"
++                                         INTERFACE_INCLUDE_DIRECTORIES
++                                         "${ARROW_INCLUDE_DIR}")
++        add_library(ArrowAcero::arrow_acero_static UNKNOWN IMPORTED)
++        set_target_properties(ArrowAcero::arrow_acero_static
++                              PROPERTIES IMPORTED_LOCATION
++                                         "${ARROW_ACERO_LIBRARY}"
++                                         INTERFACE_INCLUDE_DIRECTORIES
++                                         "${ARROW_INCLUDE_DIR}")
++    endif()
++endif()
++
+ function(_paimon_select_first_target OUT_VAR)
+     foreach(_target IN LISTS ARGN)
+         if(TARGET ${_target})
+diff --git a/cmake_modules/ThirdpartyToolchain.cmake b/cmake_modules/ThirdpartyToolchain.cmake
+index 9ef5e9f..1a1f8d2 100644
+--- a/cmake_modules/ThirdpartyToolchain.cmake
++++ b/cmake_modules/ThirdpartyToolchain.cmake
+@@ -455,12 +455,14 @@ endfunction()
+ function(paimon_configure_dependency_root DEPENDENCY_NAME SOURCE_VALUE OUT_SOURCE)
+     if("${DEPENDENCY_NAME}" STREQUAL "Arrow" OR "${DEPENDENCY_NAME}" STREQUAL "ORC")
+         if("${SOURCE_VALUE}" STREQUAL "SYSTEM")
+-            message(FATAL_ERROR "${DEPENDENCY_NAME}_SOURCE=SYSTEM is not supported "
+-                                "because paimon-cpp requires project-specific "
+-                                "${DEPENDENCY_NAME} patches. If this value comes "
+-                                "from PAIMON_DEPENDENCY_SOURCE=SYSTEM, set "
+-                                "${DEPENDENCY_NAME}_SOURCE=BUNDLED or leave "
+-                                "${DEPENDENCY_NAME}_SOURCE=AUTO.")
++            if("${DEPENDENCY_NAME}" STREQUAL "ORC")
++                message(FATAL_ERROR "${DEPENDENCY_NAME}_SOURCE=SYSTEM is not supported "
++                                    "because paimon-cpp requires project-specific "
++                                    "${DEPENDENCY_NAME} patches. If this value comes "
++                                    "from PAIMON_DEPENDENCY_SOURCE=SYSTEM, set "
++                                    "${DEPENDENCY_NAME}_SOURCE=BUNDLED or leave "
++                                    "${DEPENDENCY_NAME}_SOURCE=AUTO.")
++            endif()
+         elseif("${SOURCE_VALUE}" STREQUAL "AUTO")
+             set(${OUT_SOURCE}
+                 "BUNDLED"
