@@ -21,6 +21,7 @@ Requires: devdeps-abseil-cpp >= 20250814.1
 %install
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib/re2
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/re2
+mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib64
 
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 
@@ -49,6 +50,7 @@ cmake -DRE2_TEST=OFF \
       -DBUILD_SHARED_LIBS=OFF \
       -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
       -DCMAKE_PREFIX_PATH=${abseil_install_dir} \
+      -DCMAKE_INSTALL_LIBDIR=lib64 \
       -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG" \
@@ -58,16 +60,23 @@ make -j${CPU_CORES}
 make install
 
 # install re2 files
-cp ${tmp_install_dir}/lib/libre2.a $RPM_BUILD_ROOT/%{_prefix}/lib/re2/ 2>/dev/null || cp ${tmp_install_dir}/lib64/libre2.a $RPM_BUILD_ROOT/%{_prefix}/lib/re2/ 2>/dev/null || true
+cp ${tmp_install_dir}/lib64/libre2.a $RPM_BUILD_ROOT/%{_prefix}/lib64/
+cp ${tmp_install_dir}/lib64/libre2.a $RPM_BUILD_ROOT/%{_prefix}/lib/re2/
 cp -r ${tmp_install_dir}/include/re2/* $RPM_BUILD_ROOT/%{_prefix}/include/re2/
+cp -r ${tmp_install_dir}/lib64/cmake $RPM_BUILD_ROOT/%{_prefix}/lib64/
 
 %files
 %defattr(-,root,root)
 %{_prefix}/lib/re2/libre2.a
+%{_prefix}/lib64/libre2.a
+%{_prefix}/lib64/cmake/re2/*.cmake
 %{_prefix}/include/re2/*.h
 %exclude %dir %{_prefix}
 %exclude %dir %{_prefix}/include
 %exclude %dir %{_prefix}/lib
+%exclude %dir %{_prefix}/lib64
+%exclude %dir %{_prefix}/lib64/cmake
+%exclude %dir %{_prefix}/lib64/cmake/re2
 %exclude %dir %{_prefix}/include/re2
 %exclude %dir %{_prefix}/lib/re2
 
