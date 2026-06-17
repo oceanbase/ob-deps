@@ -40,12 +40,17 @@ mkdir -p %{_src}
 tar zxf %{_src}.tar.gz --strip-components=1 -C %{_src}
 cd %{_src}
 
-# Drop Jindo SDK download (Aliyun-only tarball); CMake keeps PAIMON_ENABLE_JINDO=OFF
-grep -v 'PAIMON_JINDOSDK' third_party/versions.txt > third_party/versions.txt.tmp
+# Drop Jindo SDK download (Aliyun-only tarball); CMake keeps PAIMON_ENABLE_JINDO=OFF.
+# Arrow is provided by devdeps-apache-arrow, so don't download a second Arrow source.
+grep -Ev 'PAIMON_JINDOSDK|PAIMON_ARROW_URL' third_party/versions.txt > third_party/versions.txt.tmp
 mv -f third_party/versions.txt.tmp third_party/versions.txt
 
-# arrow 20.0.0 原始 tarball 不含 paimon 定制修改，替换 arrow.diff
-/bin/cp -f $ROOT_DIR/patch/paimon-cpp-arrow-20.0.0.diff cmake_modules/arrow.diff
+for arrow_lib in libarrow.a libparquet.a libarrow_dataset.a libarrow_acero.a; do
+  if [ ! -f "${OB_DEPS_PREFIX}/lib64/${arrow_lib}" ]; then
+    echo "Missing ${OB_DEPS_PREFIX}/lib64/${arrow_lib}; install devdeps-apache-arrow first" >&2
+    exit 1
+  fi
+done
 
 # Offline: place third_party.tar.gz next to paimon-cpp-*.tar.gz ($ROOT_DIR); else download
 if [ -f "$ROOT_DIR/third_party.tar.gz" ]; then
@@ -57,6 +62,19 @@ fi
 rm -rf build && mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} \
          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+         -DArrow_SOURCE=SYSTEM \
+         -DArrow_ROOT="${OB_DEPS_PREFIX}" \
+         -DAvro_SOURCE=BUNDLED \
+         -DORC_SOURCE=BUNDLED \
+         -DProtobuf_SOURCE=BUNDLED \
+         -Dzstd_SOURCE=BUNDLED \
+         -DZLIB_SOURCE=BUNDLED \
+         -DSnappy_SOURCE=BUNDLED \
+         -DLZ4_SOURCE=BUNDLED \
+         -DRE2_SOURCE=BUNDLED \
+         -Dfmt_SOURCE=BUNDLED \
+         -Dglog_SOURCE=BUNDLED \
+         -DTBB_SOURCE=BUNDLED \
          -DPAIMON_USE_CXX11_ABI=OFF \
          -DPAIMON_BUILD_TESTS=OFF \
          -DPAIMON_ENABLE_JINDO=OFF \
@@ -66,7 +84,6 @@ make -j${CPU_CORES}
 make install
 
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib64/paimon_deps
-cp ./arrow_ep-install/lib/lib*.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
 cp ./avro_ep-install/lib/libavrocpp_s.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
 cp ./orc_ep-prefix/lib/liborc.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
 cp ./protobuf_ep-install/lib/libprotobuf.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
@@ -80,7 +97,7 @@ cp ./glog_ep-install/lib/libglog.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_dep
 cp ./tbb_ep-install/lib/libtbb.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
 cp ./relwithdebinfo/libroaring_bitmap.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
 
-bash "$ROOT_DIR/patch/paimon-cpp-private-repack.sh" \
+PAIMON_PRIVATE_REPACK_SKIP_ARROW=1 bash "$ROOT_DIR/patch/paimon-cpp-private-repack.sh" \
   "${RPM_BUILD_ROOT}/%{_prefix}/lib64" \
   "${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps"
 

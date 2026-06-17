@@ -61,6 +61,11 @@ if [ -f "$ROOT_DIR/patch/apache-arrow-parquet-page-mgr-%{version}.patch" ]; then
     git apply --whitespace=fix ../patch/apache-arrow-parquet-page-mgr-%{version}.patch
 fi
 
+if [ -f "$ROOT_DIR/patch/paimon-cpp-arrow-%{version}.diff" ]; then
+    echo "Applying patch: paimon-cpp-arrow-%{version}.diff"
+    git apply --whitespace=fix ../patch/paimon-cpp-arrow-%{version}.diff
+fi
+
 cd cpp
 source_dir=$(pwd)
 tmp_install_dir=${source_dir}/tmp_install_dir
@@ -86,6 +91,8 @@ cmake .. -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/clang \
          -DCMAKE_BUILD_TYPE=Release \
          -DBUILD_SHARED_LIBS=OFF -DARROW_BUILD_SHARED=OFF -DARROW_BUILD_STATIC=ON \
          -DARROW_PARQUET=ON -DPARQUET_BUILD_EXAMPLES=ON -DARROW_FILESYSTEM=ON \
+         -DARROW_COMPUTE=ON -DARROW_DATASET=ON -DARROW_ACERO=ON -DARROW_IPC=ON \
+         -DARROW_JSON=ON -DARROW_WITH_RE2=ON \
          -DARROW_WITH_BROTLI=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_LZ4=ON \
          -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZLIB=ON -DARROW_WITH_ZSTD=ON -DARROW_JEMALLOC=OFF
 # Temporarily disable error exit
