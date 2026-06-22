@@ -13,7 +13,7 @@ RELEASE=${4:-"2"}
 # check source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/protobuf-all-${VERSION}.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download protobuf source code"
-    wget https://github.com/protocolbuffers/protobuf/releases/download/v${VERSION}/protobuf-all-${VERSION}.tar.gz -O $ROOT_DIR/protobuf-all-${VERSION}.tar.gz --no-check-certificate
+    wget https://gh-proxy.org/https://github.com/protocolbuffers/protobuf/releases/download/v${VERSION}/protobuf-all-${VERSION}.tar.gz -O $ROOT_DIR/protobuf-all-${VERSION}.tar.gz --no-check-certificate
 fi
 
 # prepare building environment
