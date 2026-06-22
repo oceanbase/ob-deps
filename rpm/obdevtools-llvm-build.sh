@@ -16,7 +16,7 @@ if [[ x"$arch" == x"loongarch64" ]]; then
     VERSION="13.0.1"
     if [[ -z `find $CUR_DIR -maxdepth 1 -regex ".*/llvm-project_$VERSION-5.*[tar|gz|bz2|xz|zip]$"` ]]; then
         echo "Download $PROJECT_NAME source code"
-        wget https://ftp.loongnix.cn/toolchain/llvm/llvm13/llvm-project_$VERSION-5.src.tar.gz -O $CUR_DIR/llvm-project_$VERSION-5.src.tar.gz
+        wget https://ftp.loongnix.cn/toolchain/llvm/llvm13/llvm-project_$VERSION-5.src.tar.gz -O $ROOT_DIR/llvm-project_$VERSION-5.src.tar.gz --no-check-certificate
     fi
 else
     if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/llvm-${VERSION}.*[tar|gz|bz2|xz|zip]$"` ]]; then
