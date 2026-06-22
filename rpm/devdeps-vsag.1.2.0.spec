@@ -10,7 +10,7 @@ URL: https://github.com/alipay/vsag
 %define _prefix /usr/local/oceanbase/deps/devel
 %define _vsag_src vsag-%{version}
 %define debug_package %{nil}
-%define _default_version_src vsag-1.1.0
+%define _default_version_src vsag-%{version}
 %define _gcc_path /usr/local/oceanbase/devtools/bin
 %define _install_prefix ./install
  
@@ -25,6 +25,21 @@ tar xf %{_vsag_src}.tar.gz
 mv vsag-0.18.7 %{_default_version_src}
 cd %{_default_version_src}
 
+# Accelerate GitHub dependency downloads used by CMake FetchContent.
+find . -type f \( -name 'CMakeLists.txt' -o -name '*.cmake' -o -name '*.cmake.in' \) -print0 \
+  | xargs -0 sed -i 's#https://github.com/#https://gh-proxy.org/https://github.com/#g'
+find ./extern -type f \( -name 'CMakeLists.txt' -o -name '*.cmake' -o -name '*.cmake.in' \) -print0 \
+  | xargs -0 sed -i \
+      -e 's#^\([[:space:]]*\)INACTIVITY_TIMEOUT[[:space:]][[:space:]]*5#\1INACTIVITY_TIMEOUT 30#g' \
+      -e 's#^\([[:space:]]*\)TIMEOUT[[:space:]][[:space:]]*30#\1TIMEOUT 600#g' \
+      -e 's#^\([[:space:]]*\)TIMEOUT[[:space:]][[:space:]]*90#\1TIMEOUT 600#g'
+# Replace boost download URLs: archives.boost.io is slow from China (403 on vsagcache),
+# use SourceForge mirror instead (same official release, ~50x faster).
+sed -i \
+    -e 's#https://archives.boost.io/release/1.67.0/source/boost_1_67_0.tar.gz#https://sourceforge.net/projects/boost/files/boost/1.67.0/boost_1_67_0.tar.gz/download#g' \
+    -e 's#http://vsagcache.oss-rg-china-mainland.aliyuncs.com/boost/boost_1_67_0.tar.gz#https://archives.boost.io/release/1.67.0/source/boost_1_67_0.tar.gz#g' \
+    extern/boost/boost.cmake
+
 export CC=/usr/local/oceanbase/devtools/bin/gcc
 export CXX=/usr/local/oceanbase/devtools/bin/g++
 export FC=/usr/local/oceanbase/devtools/bin/gfortran
@@ -34,7 +49,7 @@ export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong
 export LDFLAGS="-z noexecstack -z now -pie"
 
 cmake . -DENABLE_CXX11_ABI=OFF -DENABLE_INTEL_MKL=OFF -DROARING_DISABLE_AVX512=ON
- 
+
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make  -j${CPU_CORES}
  
