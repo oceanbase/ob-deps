@@ -47,6 +47,10 @@ mv -f third_party/versions.txt.tmp third_party/versions.txt
 # arrow 20.0.0 原始 tarball 不含 paimon 定制修改，替换 arrow.diff
 /bin/cp -f $ROOT_DIR/patch/paimon-cpp-arrow-20.0.0.diff cmake_modules/arrow.diff
 
+# Disable oneTBB weak-symbol allocator probing for the bundled TBB build.
+sed -i 's#set(TBB_CMAKE_CXX_FLAGS "${EP_CXX_FLAGS} -Wno-error")#set(TBB_CMAKE_CXX_FLAGS "${EP_CXX_FLAGS} -Wno-error -D__TBB_WEAK_SYMBOLS_PRESENT=0")#' cmake_modules/ThirdpartyToolchain.cmake
+grep -q '__TBB_WEAK_SYMBOLS_PRESENT=0' cmake_modules/ThirdpartyToolchain.cmake
+
 # Offline: place third_party.tar.gz next to paimon-cpp-*.tar.gz ($ROOT_DIR); else download
 if [ -f "$ROOT_DIR/third_party.tar.gz" ]; then
   tar -xf "$ROOT_DIR/third_party.tar.gz" --strip-components=1 -C third_party/
@@ -78,6 +82,7 @@ cp ./re2_ep-install/lib/libre2.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
 cp ./fmt_ep-install/lib/libfmt.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
 cp ./glog_ep-install/lib/libglog.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
 cp ./tbb_ep-install/lib/libtbb.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
+cp ./tbb_ep-install/lib/libtbbmalloc.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
 cp ./relwithdebinfo/libroaring_bitmap.a ${RPM_BUILD_ROOT}/%{_prefix}/lib64/paimon_deps/
 
 bash "$ROOT_DIR/patch/paimon-cpp-private-repack.sh" \
