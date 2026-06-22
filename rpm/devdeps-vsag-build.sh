@@ -42,11 +42,11 @@ pkg_dir=$target_dir_3rd/pkg
 mkdir -p $pkg_dir
 
 if [[ "${ID}"x == "alinux"x ]]; then
-    # wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
-    # yum install obdevtools-cmake-3.22.1 -y
-    # dep_pkgs=(obdevtools-gcc9-9.3.0-152024092711.al)
-    # download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/al"
-    # embed_gcc="obdevtools-gcc9-9.3.0-162025101315.al"
+    wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
+    yum install obdevtools-cmake-3.22.1 -y
+    dep_pkgs=(obdevtools-gcc9-9.3.0-152024092711.al)
+    download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/al"
+    embed_gcc="obdevtools-gcc9-9.3.0-162025101315.al"
     os_release=8
 else
     dep_pkgs=(obdevtools-gcc9-9.3.0-72024081318.el obdevtools-cmake-3.22.1-142025032516.el)
