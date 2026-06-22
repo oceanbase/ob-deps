@@ -25,6 +25,10 @@ tar xf %{_vsag_src}.tar.gz
 mv vsag-0.15.12 %{_default_version_src}
 cd %{_default_version_src}
 
+# Accelerate GitHub dependency downloads used by CMake FetchContent.
+find . -type f \( -name 'CMakeLists.txt' -o -name '*.cmake' -o -name '*.cmake.in' \) -print0 \
+  | xargs -0 sed -i 's#https://github.com/#https://gh-proxy.org/https://github.com/#g'
+
 export CC=/usr/local/oceanbase/devtools/bin/gcc
 export CXX=/usr/local/oceanbase/devtools/bin/g++
 export FC=/usr/local/oceanbase/devtools/bin/gfortran
