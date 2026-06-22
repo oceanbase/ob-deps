@@ -44,7 +44,7 @@ cmake \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DCMAKE_INSTALL_PREFIX=%{_rel_dir} \
   \
-     ../llvm -G Ninja \
+     ../llvm \
   \
   -DLLVM_TARGETS_TO_BUILD="LoongArch" \
   -DLLVM_INSTALL_UTILS=ON \
@@ -60,8 +60,8 @@ cmake \
   -DLLVM_ENABLE_PROJECTS="clang;lld;compiler-rt" \
   -DLLVM_APPEND_VC_REV=OFF
 
-ninja
-ninja install
+make -j$(nproc)
+make install
 
 
 %install

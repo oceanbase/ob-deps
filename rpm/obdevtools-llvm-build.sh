@@ -37,7 +37,7 @@ fi
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 
 if [[ x"$arch" == x"loongarch64" ]]; then
-    yum install -y ninja-build
+    yum install -y ninja-build libffi-devel
     Loongrepo="https://mirrors.aliyun.com/oceanbase/development-kit/an/8/${arch}"
     yum install -y ${Loongrepo}/obdevtools-cmake-3.30.3-82025062210.an8.loongarch64
 elif [[ "${ID}"x == "alinux"x ]]; then
