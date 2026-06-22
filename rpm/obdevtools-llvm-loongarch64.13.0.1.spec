@@ -27,6 +27,7 @@ source_dir=%{_topdir}/../../
 cd $source_dir
 tar -xf $source_dir/llvm-project_$VERSION-5.src.tar.gz
 cd llvm-project-$VERSION
+rm -rf build-rpm
 mkdir -p build-rpm
 cd build-rpm
 
@@ -44,7 +45,7 @@ cmake \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DCMAKE_INSTALL_PREFIX=%{_rel_dir} \
   \
-     ../llvm \
+     ../llvm -G "Unix Makefiles" \
   \
   -DLLVM_TARGETS_TO_BUILD="LoongArch" \
   -DLLVM_INSTALL_UTILS=ON \
