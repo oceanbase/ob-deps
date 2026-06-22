@@ -14,7 +14,7 @@ arch=`uname -p`
 if [[ x"$arch" == x"loongarch64" ]]; then
     PROJECT_NAME="obdevtools-llvm-loongarch64"
     VERSION="13.0.1"
-    if [[ -z `find $CUR_DIR -maxdepth 1 -regex ".*/llvm-project_$VERSION-5.*[tar|gz|bz2|xz|zip]$"` ]]; then
+    if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/llvm-project_$VERSION-5.*[tar|gz|bz2|xz|zip]$"` ]]; then
         echo "Download $PROJECT_NAME source code"
         wget https://ftp.loongnix.cn/toolchain/llvm/llvm13/llvm-project_$VERSION-5.src.tar.gz -O $ROOT_DIR/llvm-project_$VERSION-5.src.tar.gz --no-check-certificate
     fi
