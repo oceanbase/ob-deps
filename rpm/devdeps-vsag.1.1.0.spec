@@ -10,7 +10,7 @@ URL: https://github.com/alipay/vsag
 %define _prefix /usr/local/oceanbase/deps/devel
 %define _vsag_src vsag-%{version}
 %define debug_package %{nil}
-%define _default_version_src vsag-1.1.0
+%define _default_version_src vsag-%{version}
 %define _gcc_path /usr/local/oceanbase/devtools/bin
 %define _install_prefix ./install
  
@@ -28,6 +28,11 @@ cd %{_default_version_src}
 # Accelerate GitHub dependency downloads used by CMake FetchContent.
 find . -type f \( -name 'CMakeLists.txt' -o -name '*.cmake' -o -name '*.cmake.in' \) -print0 \
   | xargs -0 sed -i 's#https://github.com/#https://gh-proxy.org/https://github.com/#g'
+find ./extern -type f \( -name 'CMakeLists.txt' -o -name '*.cmake' -o -name '*.cmake.in' \) -print0 \
+  | xargs -0 sed -i \
+      -e 's#^\([[:space:]]*\)INACTIVITY_TIMEOUT[[:space:]][[:space:]]*5#\1INACTIVITY_TIMEOUT 30#g' \
+      -e 's#^\([[:space:]]*\)TIMEOUT[[:space:]][[:space:]]*30#\1TIMEOUT 600#g' \
+      -e 's#^\([[:space:]]*\)TIMEOUT[[:space:]][[:space:]]*90#\1TIMEOUT 600#g'
 
 export CC=/usr/local/oceanbase/devtools/bin/gcc
 export CXX=/usr/local/oceanbase/devtools/bin/g++
