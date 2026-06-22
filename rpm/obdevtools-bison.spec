@@ -37,6 +37,10 @@ elif [ "${OS_ARCH}x" = "aarch64x" ]; then
     BUILD_OPTION='--build=aarch64-unknown-linux-gnu'
 elif [ "${OS_ARCH}x" = "ppc64lex" ]; then
     BUILD_OPTION='--build=ppc64le'
+elif [[ x"$arch" == x"loongarch64" ]]; then
+    BUILD_OPTION='--build=loongarch64'
+    cp ../patch/config.guess build-aux/
+    cp ../patch/config.sub build-aux/
 fi
 
 ./configure --prefix=${RPM_BUILD_ROOT}/%{_prefix} ${BUILD_OPTION}
