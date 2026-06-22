@@ -118,6 +118,7 @@ thirdparty_archives=(
   "${paimon_deps_lib_dir}/libfmt.a"
   "${paimon_deps_lib_dir}/libglog.a"
   "${paimon_deps_lib_dir}/libtbb.a"
+  "${paimon_deps_lib_dir}/libtbbmalloc.a"
   "${paimon_deps_lib_dir}/libroaring_bitmap.a"
 )
 
