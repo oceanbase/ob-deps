@@ -1,5 +1,5 @@
 Name: obdevtools-binutils
-Version: 2.30
+Version: %(echo $VERSION)
 Release: %(echo $RELEASE)%{?dist}
 
 Summary: The GNU Binutils are a collection of binary tools. 
