@@ -27,7 +27,7 @@ platform-neutral, extensible mechanism for serializing structured data.
 %install
 
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}
-CPU_CORES=`grep -c ^processor /proc/cpuinfo`
+CPU_CORES=8
 cd $OLDPWD/../;
 rm -rf %{_src}
 tar xf protobuf-all-%{version}.tar.gz
