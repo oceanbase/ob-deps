@@ -20,7 +20,7 @@ This is the repository for in-memory analytics
 # create dirs
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib64
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}
-CPU_CORES=`grep -c ^processor /proc/cpuinfo`
+CPU_CORES=8
 ROOT_DIR=$OLDPWD/..
 
 # install cmake
@@ -60,7 +60,7 @@ export CXXFLAGS="-fPIC -pie -fstack-protector-strong"
 cd ${build_dir}
 cmake .. -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} -DBUILD_JAVA=OFF -DBUILD_CPP_TESTS=OFF -DBUILD_TOOLS=OFF \
          -DSTOP_BUILD_ON_WARNING=OFF -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/gcc -DCMAKE_CXX_COMPILER=$TOOLS_DIR/bin/g++ \
-         -DBUILD_POSITION_INDEPENDENT_LIB=ON -DBUILD_LIBHDFSPP=OFF
+         -DBUILD_POSITION_INDEPENDENT_LIB=ON -DBUILD_LIBHDFSPP=OFF -DPROTOBUF_HOME=%{_prefix}
 
 set +e
 MAX_RETRIES=6
