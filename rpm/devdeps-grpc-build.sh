@@ -28,12 +28,12 @@ arch=`uname -p`
 
 if [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
-    sudo yum install obdevtools-cmake-3.22.1 -y
-    sudo yum install obdevtools-gcc9-9.3.0 -y
-    sudo yum install -y devdeps-openssl-static-1.1.1u
-    sudo yum install -y devdeps-abseil-cpp-20250814.1
-    sudo yum install -y devdeps-protobuf-3.19.5
-    sudo yum install -y devdeps-re2-20250812
+    yum install obdevtools-cmake-3.22.1 -y
+    yum install obdevtools-gcc9-9.3.0 -y
+    yum install -y devdeps-openssl-static-1.1.1u
+    yum install -y devdeps-abseil-cpp-20250814.1
+    yum install -y devdeps-protobuf-3.19.5
+    yum install -y devdeps-re2-20250812
 else
     wget https://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
     yum install obdevtools-cmake-3.22.1 -y
