@@ -21,6 +21,7 @@ fi
 # prepare building environment
 # please prepare environment yourself if the following solution does not work for you.
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
+arch=$(uname -p)
 
 if [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
