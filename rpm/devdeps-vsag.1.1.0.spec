@@ -51,23 +51,13 @@ if [ x"${OS_ARCH}" == x"loongarch64" ]; then
     export LDFLAGS="-pie -mcmodel=large"
 
     sed -i '11a\
-    add_compile_options(\
-    $<$<COMPILE_LANGUAGE:CXX>:-Wno-suggest-override>\
-    )\
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -mcmodel=large")\
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -mcmodel=large")' ./CMakeLists.txt
+add_compile_options(\
+$<$<COMPILE_LANGUAGE:CXX>:-Wno-suggest-override>\
+)\
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -mcmodel=large")\
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -mcmodel=large")' ./CMakeLists.txt
     cp ../loongarch/vsag_openblas.cmake ./extern/openblas/openblas.cmake
     cp ../loongarch/vsag_CMakeLists.txt ./tests/CMakeLists.txt
-    sed -i '1a\#define _GNU_SOURCE' ./_deps/cpuinfo-src/src/api.c
-    sed -i '51a\
-#elif defined(__loongarch__) || defined(__loongarch64)\
-#if defined(__linux__)\
-    /* LoongArch: 暂不实现探测，直接标记初始化成功，避免 abort */\
-    cpuinfo_is_initialized = true;\
-#else\
-    cpuinfo_log_error("operating system is not supported in cpuinfo");\
-#endif' ./_deps/cpuinfo-src/src/init.c
-
 else
     export CC=/usr/local/oceanbase/devtools/bin/gcc
     export CXX=/usr/local/oceanbase/devtools/bin/g++
@@ -81,7 +71,22 @@ fi
 cmake . -DENABLE_CXX11_ABI=OFF -DENABLE_INTEL_MKL=OFF -DROARING_DISABLE_AVX512=ON
 
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
-make -j${CPU_CORES}
+
+for attempt in 1 2 3; do
+    if make -j${CPU_CORES}; then break; fi
+    if [ $attempt -eq 1 ] && [ x"${OS_ARCH}" == x"loongarch64" ]; then
+        sed -i '1a\#define _GNU_SOURCE' ./_deps/cpuinfo-src/src/api.c
+        sed -i '51a\
+#elif defined(__loongarch__) || defined(__loongarch64)\
+#if defined(__linux__)\
+    cpuinfo_is_initialized = true;\
+#else\
+    cpuinfo_log_error("operating system is not supported in cpuinfo");\
+#endif' ./_deps/cpuinfo-src/src/init.c
+    fi
+    [ $attempt -lt 3 ] && echo "Build failed (attempt $attempt/3), retrying..." \
+        || { echo "Build failed after 3 attempts."; exit 1; }
+done
  
 mkdir -p %{buildroot}/%{_prefix}/lib/vsag_lib
 mkdir -p %{buildroot}/%{_prefix}/include/vsag
