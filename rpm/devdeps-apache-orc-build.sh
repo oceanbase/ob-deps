@@ -27,7 +27,9 @@ fi
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 arch=$(uname -p)
 
-if [[ "${ID}"x == "alinux"x ]]; then
+if [ x"${arch}" == x"loongarch64" ]; then
+    yum install -y gcc
+elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install obdevtools-gcc9-9.3.0 -y
 else

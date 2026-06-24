@@ -90,22 +90,38 @@ done
  
 mkdir -p %{buildroot}/%{_prefix}/lib/vsag_lib
 mkdir -p %{buildroot}/%{_prefix}/include/vsag
-cp ./include/vsag/* %{buildroot}/%{_prefix}/include/vsag
-cp /usr/local/oceanbase/devtools/lib64/libgfortran.so.5 %{buildroot}/%{_prefix}/lib/vsag_lib/libgfortran.so
-cp /usr/local/oceanbase/devtools/lib64/libgfortran.a %{buildroot}/%{_prefix}/lib/vsag_lib/libgfortran_static.a
-cp /usr/local/oceanbase/devtools/lib64/libgomp.a %{buildroot}/%{_prefix}/lib/vsag_lib/libgomp_static.a
-cp /usr/local/oceanbase/devtools/lib64/libgomp.so %{buildroot}/%{_prefix}/lib/vsag_lib/libgomp.so
-cp ./src/libvsag.so %{buildroot}/%{_prefix}/lib/vsag_lib
-cp ./src/libvsag_static.a %{buildroot}/%{_prefix}/lib/vsag_lib
-cp ./src/simd/libsimd.a %{buildroot}/%{_prefix}/lib/vsag_lib
-cp ./_deps/cpuinfo-build/libcpuinfo.a %{buildroot}/%{_prefix}/lib/vsag_lib
-cp ./libdiskann.a %{buildroot}/%{_prefix}/lib/vsag_lib
-cp ./openblas/install/lib/libopenblas.a %{buildroot}/%{_prefix}/lib/vsag_lib
-#cp ./_deps/roaringbitmap-build/src/libroaring.a %{buildroot}/%{_prefix}/lib/vsag_lib
-cp ./antlr4/install/lib/libantlr4-runtime.a %{buildroot}/%{_prefix}/lib/vsag_lib/
-cp ./libantlr4-autogen.a %{buildroot}/%{_prefix}/lib/vsag_lib/
-if [[ x"$ENABLE_DYNAMIC" == x"1" ]]; then
-    cp $GCC_DEPS_DIR/usr/local/oceanbase/devtools/lib64/libgomp.a %{buildroot}/%{_prefix}/lib/vsag_lib/libgomp_embed_static.a
+
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    cp ./include/vsag/* %{buildroot}/%{_prefix}/include/vsag
+    cp ./src/libvsag.so %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./src/libvsag_static.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./src/simd/libsimd.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./_deps/cpuinfo-build/libcpuinfo.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./libdiskann.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./openblas/install/lib/libopenblas.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./antlr4/install/lib/libantlr4-runtime.a %{buildroot}/%{_prefix}/lib/vsag_lib/
+    cp ./libantlr4-autogen.a %{buildroot}/%{_prefix}/lib/vsag_lib/
+    cp /usr/lib64/libgfortran.so.5.0.0 %{buildroot}/%{_prefix}/lib/vsag_lib/libgfortran.so
+    cp /usr/lib64/libgomp.so.1.0.0 %{buildroot}/%{_prefix}/lib/vsag_lib/libgomp.so
+    cp /usr/lib/gcc/loongarch64-redhat-linux/8/libgomp.a %{buildroot}/%{_prefix}/lib/vsag_lib/libgomp_static.a
+else
+    cp ./include/vsag/* %{buildroot}/%{_prefix}/include/vsag
+    cp /usr/local/oceanbase/devtools/lib64/libgfortran.so.5 %{buildroot}/%{_prefix}/lib/vsag_lib/libgfortran.so
+    cp /usr/local/oceanbase/devtools/lib64/libgfortran.a %{buildroot}/%{_prefix}/lib/vsag_lib/libgfortran_static.a
+    cp /usr/local/oceanbase/devtools/lib64/libgomp.a %{buildroot}/%{_prefix}/lib/vsag_lib/libgomp_static.a
+    cp /usr/local/oceanbase/devtools/lib64/libgomp.so %{buildroot}/%{_prefix}/lib/vsag_lib/libgomp.so
+    cp ./src/libvsag.so %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./src/libvsag_static.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./src/simd/libsimd.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./_deps/cpuinfo-build/libcpuinfo.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./libdiskann.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./openblas/install/lib/libopenblas.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    #cp ./_deps/roaringbitmap-build/src/libroaring.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./antlr4/install/lib/libantlr4-runtime.a %{buildroot}/%{_prefix}/lib/vsag_lib/
+    cp ./libantlr4-autogen.a %{buildroot}/%{_prefix}/lib/vsag_lib/
+    if [[ x"$ENABLE_DYNAMIC" == x"1" ]]; then
+        cp $GCC_DEPS_DIR/usr/local/oceanbase/devtools/lib64/libgomp.a %{buildroot}/%{_prefix}/lib/vsag_lib/libgomp_embed_static.a
+    fi
 fi
 
 arch=$(uname -p)
