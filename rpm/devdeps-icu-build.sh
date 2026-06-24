@@ -7,11 +7,10 @@ PROJECT_NAME=${2:-"devdeps-icu"}
 VERSION=${3:-"69.1"}
 RELEASE=${4:-"1"}
 
-proxy_prefix=https://gh-proxy.com/
 # check source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/icu-release-69-1.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download source code"
-    wget ${proxy_prefix}https://github.com/unicode-org/icu/archive/refs/tags/release-69-1.tar.gz -O $ROOT_DIR/icu-release-69-1.tar.gz --no-check-certificate
+    wget https://github.com/unicode-org/icu/archive/refs/tags/release-69-1.tar.gz -O $ROOT_DIR/icu-release-69-1.tar.gz --no-check-certificate
 fi
 
 # build dependencies
@@ -46,9 +45,6 @@ fi
 export TOOLS_DIR=/usr/local/oceanbase/devtools
 export DEP_DIR=/usr/local/oceanbase/deps/devel
 export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
-
-CXX_ABI=${CXX_ABI:-0}
-export CXX_ABI
 
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE

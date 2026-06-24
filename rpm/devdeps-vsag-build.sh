@@ -9,7 +9,7 @@ RELEASE=${4:-"1"}
 if [[ $VERSION == "1.0.0" ]]; then
   VSAG_VERSION="0.14.7"
 elif [[ $VERSION == "1.1.0" ]]; then
-  VSAG_VERSION="0.16.10"
+  VSAG_VERSION="0.15.12"
 else
   # default use newest vsag
   VSAG_VERSION="0.18.7"
@@ -78,9 +78,6 @@ fi
 export PATH=/usr/local/oceanbase/devtools/bin:$PATH
 export LD_LIBRARY_PATH=/usr/local/oceanbase/devtools/lib:/usr/local/oceanbase/devtools/lib64:$LD_LIBRARY_PATH
  
-CXX_ABI=${CXX_ABI:-0}
-export CXX_ABI
-
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR ${PROJECT_NAME}.${VERSION} $VERSION $RELEASE
  

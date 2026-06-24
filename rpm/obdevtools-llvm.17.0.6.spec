@@ -1,4 +1,4 @@
-Name: %(echo obdevtools-llvm-abiv$CXX_ABI)
+Name: obdevtools-llvm
 Version: 17.0.6
 Release: %(echo $RELEASE)%{?dist}
 Url: https://github.com/llvm/llvm-project
@@ -69,7 +69,7 @@ mkdir -p build-rpm
 cd build-rpm
 
 cmake ../llvm  \
-    -DCMAKE_CXX_FLAGS="-D_GLIBCXX_USE_CXX11_ABI=${CXX_ABI}" \
+    -DCMAKE_CXX_FLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" \
     -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++" \
     -DCMAKE_AR=${AR} \
     -DCMAKE_RANLIB=${RANLIB} \

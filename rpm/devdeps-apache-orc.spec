@@ -1,4 +1,4 @@
-Name: %(echo devdeps-apache-orc-abiv$CXX_ABI)
+Name: devdeps-apache-orc
 Version: 2.1.1
 Release: %(echo $RELEASE)%{?dist}
 Summary: This is the repository for in-memory analytics
@@ -52,10 +52,10 @@ mkdir -p ${tmp_install_dir}
 mkdir -p ${build_dir}
 
 # compile and install
-export CPPFLAGS="-D_GLIBCXX_USE_CXX11_ABI=${CXX_ABI}"
+export CPPFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"
 export LDFLAGS="-pie -z noexecstack -z now"
 export CFLAGS="-fPIC -pie -fstack-protector-strong"
-export CXXFLAGS="-fPIC -pie -fstack-protector-strong -D_GLIBCXX_USE_CXX11_ABI=${CXX_ABI}"
+export CXXFLAGS="-fPIC -pie -fstack-protector-strong"
 
 cd ${build_dir}
 cmake .. -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} -DBUILD_JAVA=OFF -DBUILD_CPP_TESTS=OFF -DBUILD_TOOLS=OFF \
