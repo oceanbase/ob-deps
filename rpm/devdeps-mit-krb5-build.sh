@@ -28,16 +28,18 @@ else
     wget http://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
 fi
 
-yum install obdevtools-gcc9-9.3.0 -y
+if [ x"${arch}" == x"loongarch64" ]; then
+    yum install -y gcc
+    export TOOLS_DIR=/usr
+else
+    yum install obdevtools-gcc9-9.3.0 -y
+    export TOOLS_DIR=/usr/local/oceanbase/devtools
+fi
 
-export TOOLS_DIR=/usr/local/oceanbase/devtools
 export PATH=$TOOLS_DIR/bin:$PATH
 export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
 export CC=$TOOLS_DIR/bin/gcc
 export CXX=$TOOLS_DIR/bin/g++
-
-ln -sf $TOOLS_DIR/bin/g++  /usr/bin/c++
-ln -sf $TOOLS_DIR/bin/gcc  /usr/bin/cc
 
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE
