@@ -16,16 +16,16 @@ if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/orc-${VERSION}.*[tar|gz|bz2|xz|z
     wget --no-check-certificate https://downloads.apache.org/orc/orc-${VERSION}/orc-${VERSION}.tar.gz -O $ROOT_DIR/orc-${VERSION}.tar.gz
     # wget https://github.com/apache/orc/archive/refs/tags/rel/release-${VERSION}.tar.gz -O $ROOT_DIR/orc-${VERSION}.tar.gz --no-check-certificate
 fi
- 
-# build cmake source to fix ssl problem
-if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/cmake-3.22.1.tar.gz$"` ]]; then
-    echo "Download cmake source code"
-    wget https://cmake.org/files/v3.22/cmake-3.22.1.tar.gz -P $ROOT_DIR
-fi
- 
+
 # build dependencies
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 arch=$(uname -p)
+
+# build cmake source to fix ssl problem
+if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/cmake-3.22.1.tar.gz$"` ]] && [ x"${arch}" != x"loongarch64" ]; then
+    echo "Download cmake source code"
+    wget https://cmake.org/files/v3.22/cmake-3.22.1.tar.gz -P $ROOT_DIR
+fi
 
 if [ x"${arch}" == x"loongarch64" ]; then
     yum install -y gcc
