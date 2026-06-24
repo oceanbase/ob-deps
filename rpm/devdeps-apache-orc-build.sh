@@ -54,6 +54,9 @@ else
 fi
 
 export TOOLS_DIR=/usr/local/oceanbase/devtools
+if [ x"${arch}" == x"loongarch64" ]; then
+    export TOOLS_DIR=/usr
+fi
 export PATH=$TOOLS_DIR/bin:$PATH
 export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
 export CC=$TOOLS_DIR/bin/gcc
