@@ -1,4 +1,4 @@
-Name: devdeps-gtest
+Name: %(echo devdeps-gtest-abiv$CXX_ABI)
 Version: 1.8.0
 Release: %(echo $RELEASE)%{?dist}
 Summary: GoogleTest is Google's C++ testing and mocking framework
@@ -26,7 +26,9 @@ tar -xf %{_src}.tar.gz
 cd %{_src}
 mkdir -p build-rpm
 cd build-rpm
-cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=%{_tmppath} -G 'Unix Makefiles'
+export CC=/usr/local/oceanbase/devtools/bin/gcc
+export CXX=/usr/local/oceanbase/devtools/bin/g++
+cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=%{_tmppath} -DCMAKE_CXX_FLAGS="-D_GLIBCXX_USE_CXX11_ABI=${CXX_ABI}" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -G 'Unix Makefiles'
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES};
 make install

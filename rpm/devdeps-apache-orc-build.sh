@@ -43,6 +43,9 @@ export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
 export CC=$TOOLS_DIR/bin/gcc
 export CXX=$TOOLS_DIR/bin/g++
  
+CXX_ABI=${CXX_ABI:-0}
+export CXX_ABI
+
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE
  
