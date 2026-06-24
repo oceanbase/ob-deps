@@ -81,6 +81,7 @@ mkdir %{_sasl_src_path}
 tar xf %{_sasl_src}.tar.gz -C %{_sasl_src} --strip-components=1
 cd %{_sasl_src}
 
+./autogen.sh
 ./configure --prefix=%_sasl_compiled_prefix --enable-gssapi=%_compiled_prefix --enable-static --enable-otp=no --enable-scram=no --enable-digest=no --enable-staticdlopen=yes --with-gss_impl=mit --with-dblib=none CFLAGS="-g -O2 -fPIC ${EXTRA_FLAGS}" CXXFLAGS="-g -O2 -fPIC ${EXTRA_FLAGS}" LDFLAGS="${EXTRA_FLAGS}"
 
 make
