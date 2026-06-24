@@ -58,6 +58,16 @@ if [ x"${OS_ARCH}" == x"loongarch64" ]; then
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -mcmodel=large")' ./CMakeLists.txt
     cp ../loongarch/vsag_openblas.cmake ./extern/openblas/openblas.cmake
     cp ../loongarch/vsag_CMakeLists.txt ./tests/CMakeLists.txt
+    sed -i '1a\#define _GNU_SOURCE' ./_deps/cpuinfo-src/src/api.c
+    sed -i '51a\
+#elif defined(__loongarch__) || defined(__loongarch64)\
+#if defined(__linux__)\
+    /* LoongArch: 暂不实现探测，直接标记初始化成功，避免 abort */\
+    cpuinfo_is_initialized = true;\
+#else\
+    cpuinfo_log_error("operating system is not supported in cpuinfo");\
+#endif' ./_deps/cpuinfo-src/src/init.c
+
 else
     export CC=/usr/local/oceanbase/devtools/bin/gcc
     export CXX=/usr/local/oceanbase/devtools/bin/g++
