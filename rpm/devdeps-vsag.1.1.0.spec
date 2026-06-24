@@ -40,13 +40,33 @@ sed -i \
     -e 's#http://vsagcache.oss-rg-china-mainland.aliyuncs.com/boost/boost_1_67_0.tar.gz#https://archives.boost.io/release/1.67.0/source/boost_1_67_0.tar.gz#g' \
     extern/boost/boost.cmake
 
-export CC=/usr/local/oceanbase/devtools/bin/gcc
-export CXX=/usr/local/oceanbase/devtools/bin/g++
-export FC=/usr/local/oceanbase/devtools/bin/gfortran
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    export CC=/usr/bin/gcc
+    export CXX=/usr/bin/g++
+    export FC=/usr/bin/gfortran
 
-export CFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
-export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
-export LDFLAGS="-z noexecstack -z now -pie"
+    export CFLAGS="-fPIC -mcmodel=large"
+    export CXXFLAGS="-fPIC -D_GLIBCXX_USE_CXX11_ABI=0 -mcmodel=large"
+    export LDFLAGS="-pie -mcmodel=large"
+
+    sed -i '11a\
+    add_compile_options(\
+    $<$<COMPILE_LANGUAGE:CXX>:-Wno-suggest-override>\
+    )\
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -mcmodel=large")\
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -mcmodel=large")' ./CMakeLists.txt
+    cp ${CUR_DIR}/loongarch/vsag_openblas.cmake ./extern/openblas/openblas.cmake
+    cp ${CUR_DIR}/loongarch/vsag_CMakeLists.txt ./tests/CMakeLists.txt
+else
+    export CC=/usr/local/oceanbase/devtools/bin/gcc
+    export CXX=/usr/local/oceanbase/devtools/bin/g++
+    export FC=/usr/local/oceanbase/devtools/bin/gfortran
+
+    export CFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
+    export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
+    export LDFLAGS="-z noexecstack -z now -pie"
+fi
 
 cmake . -DENABLE_CXX11_ABI=OFF -DENABLE_INTEL_MKL=OFF -DROARING_DISABLE_AVX512=ON
 
