@@ -26,18 +26,26 @@ mkdir -p $TOP_DIR/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
 arch=`uname -p`
 
-target_dir_3rd=${PROJECT_DIR}/deps/3rd
-pkg_dir=$target_dir_3rd/pkg
-mkdir -p $pkg_dir
-TEMP=$(mktemp -p "/" -u ".XXXX")
-pkg=obdevtools-gcc9-9.3.0-52022092914.el${os_release}.${arch}.rpm
-deps_url=https://mirrors.aliyun.com/oceanbase/development-kit/el/${os_release}/${arch}
-wget $deps_url/$pkg -O $pkg_dir/$TEMP
-if [[ $? == 0 ]]; then
-    mv -f $pkg_dir/$TEMP $pkg_dir/$pkg
+if [ x"${arch}" == x"loongarch64" ]; then
+    export TOOLS_DIR=/usr
+elif [[ "${ID}"x == "alinux"x ]]; then
+    wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
+    yum install -y obdevtools-gcc9-9.3.0
+    export TOOLS_DIR=/usr/local/oceanbase/devtools
+else
+    target_dir_3rd=${PROJECT_DIR}/deps/3rd
+    pkg_dir=$target_dir_3rd/pkg
+    mkdir -p $pkg_dir
+    TEMP=$(mktemp -p "/" -u ".XXXX")
+    pkg=obdevtools-gcc9-9.3.0-52022092914.el${os_release}.${arch}.rpm
+    deps_url=https://mirrors.aliyun.com/oceanbase/development-kit/el/${os_release}/${arch}
+    wget $deps_url/$pkg -O $pkg_dir/$TEMP
+    if [[ $? == 0 ]]; then
+        mv -f $pkg_dir/$TEMP $pkg_dir/$pkg
+    fi
+    (cd $target_dir_3rd && rpm2cpio $pkg_dir/$pkg | cpio -di -u --quiet)
+    export TOOLS_DIR=$target_dir_3rd/usr/local/oceanbase/devtools
 fi
-(cd $target_dir_3rd && rpm2cpio $pkg_dir/$pkg | cpio -di -u --quiet)
-export TOOLS_DIR=$target_dir_3rd/usr/local/oceanbase/devtools
 
 rpmbuild --define "_topdir $TOP_DIR" -bb $PROJECT_NAME.spec
 find $TOP_DIR/ -name "*.rpm" -exec mv {} . 2>/dev/null \;
