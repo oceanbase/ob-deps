@@ -23,6 +23,12 @@ mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/lz4_171
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 export CFLAGS="-O3 -fPIC -fvisibility=hidden -DLZ4LIB_VISIBILITY="
 export CXXFLAGS="-O3 -fPIC -fvisibility=hidden -D_GLIBCXX_USE_CXX11_ABI=0 -DLZ4LIB_VISIBILITY="
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    export CFLAGS="${CFLAGS} -mcmodel=large"
+    export CXXFLAGS="${CXXFLAGS} -mcmodel=large"
+    export LDFLAGS="${LDFLAGS} -mcmodel=large"
+fi
 ROOT_DIR=$OLDPWD/..
 
 # compile and install
