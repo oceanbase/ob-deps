@@ -56,8 +56,8 @@ if [ x"${OS_ARCH}" == x"loongarch64" ]; then
     )\
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -mcmodel=large")\
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -mcmodel=large")' ./CMakeLists.txt
-    cp ${CUR_DIR}/loongarch/vsag_openblas.cmake ./extern/openblas/openblas.cmake
-    cp ${CUR_DIR}/loongarch/vsag_CMakeLists.txt ./tests/CMakeLists.txt
+    cp ../loongarch/vsag_openblas.cmake ./extern/openblas/openblas.cmake
+    cp ../loongarch/vsag_CMakeLists.txt ./tests/CMakeLists.txt
 else
     export CC=/usr/local/oceanbase/devtools/bin/gcc
     export CXX=/usr/local/oceanbase/devtools/bin/g++
