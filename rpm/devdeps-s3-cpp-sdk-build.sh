@@ -7,12 +7,11 @@ PROJECT_NAME=${2:-"devdeps-s3-cpp-sdk"}
 VERSION=${3:-"1.11.156"}
 RELEASE=${4:-"1"}
 
-proxy_prefix=https://gh-proxy.com/
 # check source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/aws-sdk-cpp-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download source code"
     cd $ROOT_DIR
-    wget ${proxy_prefix}https://github.com/aws/aws-sdk-cpp/archive/refs/tags/$VERSION.tar.gz \
+    wget https://github.com/aws/aws-sdk-cpp/archive/refs/tags/$VERSION.tar.gz \
          --no-check-certificate -O aws-sdk-cpp-$VERSION.tar.gz
 fi
 
@@ -28,8 +27,5 @@ yum install devdeps-libcurl-static-8.2.1 -y
 
 export PATH=/usr/local/oceanbase/devtools/bin:$PATH
 
-CXX_ABI=${CXX_ABI:-0}
-export CXX_ABI
-
 cd $CUR_DIR
-bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME ${VERSION} $RELEASE
+bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE

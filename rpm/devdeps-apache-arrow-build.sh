@@ -90,8 +90,5 @@ fi
 
 echo "cmake version: $(cmake --version)"
 
-CXX_ABI=${CXX_ABI:-0}
-export CXX_ABI
-
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME-$VERSION $VERSION $RELEASE
