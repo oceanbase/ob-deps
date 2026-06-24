@@ -21,8 +21,8 @@ ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 arch=`uname -p`
 
 if [ x"${arch}" == x"loongarch64" ]; then
-    yum install -y http://30.249.210.117:8000/obdevtools-cmake-3.30.3-1.an8.loongarch64.rpm
-    yum install -y http://30.249.210.117:8000/obdevtools-llvm-13.0.1-1.an8.loongarch64.rpm
+    yum install -y obdevtools-cmake-3.30.3
+    yum install -y obdevtools-llvm-13.0.1
 else
     echo "not supported arch: ${arch}"
     exit 1
@@ -45,4 +45,4 @@ export NM=$TOOLS_DIR/bin/llvm-nm
 echo "cmake version: $(cmake --version)"
 
 cd $CUR_DIR
-bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME-$VERSION $VERSION $RELEASE
+bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME-loong-$VERSION $VERSION $RELEASE

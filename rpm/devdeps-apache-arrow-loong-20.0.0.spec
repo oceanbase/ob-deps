@@ -37,9 +37,13 @@ if [[ x"$arch" == x"aarch64" ]]; then
     DISABLE_ATOMIC="-mno-outline-atomics"
 fi
 export LD=${TOOLS_DIR}/bin/ld.lld
-export CFLAGS="-fPIC -s -mcmodel=large -D_GNU_SOURCE -fstack-protector-strong $DISABLE_ATOMIC -gdwarf-4 -flto=thin --gcc-toolchain=/usr -fuse-ld=lld -isystem -I/usr/include"
-export CXXFLAGS="-std=c++17 -fPIC -s -mcmodel=large -D_GNU_SOURCE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong $DISABLE_ATOMIC -gdwarf-4 -flto=thin --gcc-toolchain=/usr -fuse-ld=lld -isystem -I/usr/include"
-export LDFLAGS="-Wl,-z,noexecstack -Wl,-z,now -pie -mcmodel=large -flto-jobs=8 -fuse-ld=${TOOLS_DIR}/bin/ld.lld --gcc-toolchain=/usr -fuse-ld=lld"
+GCC_VER=$(gcc -dumpversion)
+ARCH_TRIPLET=$(gcc -dumpmachine)
+GCC_LIB_DIR=/usr/lib/gcc/${ARCH_TRIPLET}/${GCC_VER}
+CPP_INCLUDES="-isystem /usr/include/c++/${GCC_VER} -isystem /usr/include/c++/${GCC_VER}/${ARCH_TRIPLET} -isystem /usr/include"
+export CFLAGS="-fPIC -s -mcmodel=large -D_GNU_SOURCE -fstack-protector-strong $DISABLE_ATOMIC -gdwarf-4 -flto=thin --gcc-toolchain=/usr -fuse-ld=lld -B${GCC_LIB_DIR} -L${GCC_LIB_DIR} -L/usr/lib64 -isystem /usr/include"
+export CXXFLAGS="-std=c++17 -fPIC -s -mcmodel=large -D_GNU_SOURCE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong $DISABLE_ATOMIC -gdwarf-4 -flto=thin --gcc-toolchain=/usr -fuse-ld=lld -B${GCC_LIB_DIR} -L${GCC_LIB_DIR} -L/usr/lib64 ${CPP_INCLUDES}"
+export LDFLAGS="-Wl,-z,noexecstack -Wl,-z,now -pie -mcmodel=large -flto-jobs=8 -fuse-ld=${TOOLS_DIR}/bin/ld.lld --gcc-toolchain=/usr -fuse-ld=lld -B${GCC_LIB_DIR} -L${GCC_LIB_DIR} -L/usr/lib64 -lpthread"
 ROOT_DIR=$OLDPWD/..
 
 # install apache-arrow
@@ -76,6 +80,7 @@ cmake .. -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/clang \
          -DCMAKE_CXX_COMPILER=$TOOLS_DIR/bin/clang++ \
          -DCMAKE_AR=$AR -DCMAKE_RANLIB=$RANLIB -DCMAKE_NM=$NM \
          -DCMAKE_LINKER=${TOOLS_DIR}/bin/ld.lld \
+	 -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
          -DCMAKE_C_FLAGS="${CFLAGS}" \
          -DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
          -DCMAKE_CXX_LINK_FLAGS="${LDFLAGS}" \
@@ -114,7 +119,7 @@ fi
 make install
 
 # install files
-cp -r ${tmp_install_dir}/lib64/*.a $RPM_BUILD_ROOT/%{_prefix}/lib64
+cp -r ${tmp_install_dir}/lib/*.a $RPM_BUILD_ROOT/%{_prefix}/lib64
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}
 cp -r ${tmp_install_dir}/include/* $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/
 
