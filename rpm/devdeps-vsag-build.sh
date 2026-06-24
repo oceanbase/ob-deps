@@ -41,7 +41,9 @@ target_dir_3rd=${PROJECT_DIR}/deps/3rd
 pkg_dir=$target_dir_3rd/pkg
 mkdir -p $pkg_dir
 
-if [[ "${ID}"x == "alinux"x ]]; then
+if [ x"${arch}" == x"loongarch64" ]; then
+    yum install -y gcc-gfortran libgfortran libaio-devel
+elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install obdevtools-cmake-3.22.1 -y
     dep_pkgs=(obdevtools-gcc9-9.3.0-152024092711.al)
