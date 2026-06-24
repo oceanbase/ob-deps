@@ -29,7 +29,7 @@ else
 fi
 
 if [ x"${arch}" == x"loongarch64" ]; then
-    yum install -y gcc autoconf automake libtool bison
+    yum install -y gcc autoconf automake libtool byacc
     export TOOLS_DIR=/usr
 else
     yum install obdevtools-gcc9-9.3.0 -y
