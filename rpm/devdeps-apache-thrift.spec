@@ -38,7 +38,13 @@ rm -rf %{_src}
 tar xf %{_src}.tar.gz
 cd %{_src}
 
-./configure --with-boost=$ROOT_DIR/boost_1_74_0 --with-c_glib=yes  --with-cpp=yes  --without-erlang --without-nodejs --without-python --without-py3 --without-perl --without-php --without-php_extension --without-ruby --without-haskell --without-go --without-swift --without-dotnetcore --without-qt5 --prefix=${_compiled_prefix} --enable-tutorial=no --enable-tests=no CFLAGS="-g -O2 -fPIC" CXXFLAGS="-g -O2 -fPIC"
+OS_ARCH="$(uname -m)"
+EXTRA_FLAGS=""
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    EXTRA_FLAGS="-mcmodel=large"
+fi
+
+./configure --with-boost=$ROOT_DIR/boost_1_74_0 --with-c_glib=yes  --with-cpp=yes  --without-erlang --without-nodejs --without-python --without-py3 --without-perl --without-php --without-php_extension --without-ruby --without-haskell --without-go --without-swift --without-dotnetcore --without-qt5 --prefix=${_compiled_prefix} --enable-tutorial=no --enable-tests=no CFLAGS="-g -O2 -fPIC ${EXTRA_FLAGS}" CXXFLAGS="-g -O2 -fPIC ${EXTRA_FLAGS}" LDFLAGS="${EXTRA_FLAGS}"
 
 make -j ${CPU_CORES}
 make install
