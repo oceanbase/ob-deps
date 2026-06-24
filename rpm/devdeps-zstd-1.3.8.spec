@@ -24,6 +24,15 @@ mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/zstd_%{_flag}
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 export CFLAGS="-O3 -fPIC -fvisibility=hidden -Wno-implicit-fallthrough -DZSTDERRORLIB_VISIBILITY= -DZDICTLIB_VISIBILITY= -DZSTDLIB_VISIBILITY="
 export CXXFLAGS="-O3 -fPIC -fvisibility=hidden -D_GLIBCXX_USE_CXX11_ABI=0 -Wno-implicit-fallthrough -DZSTDERRORLIB_VISIBILITY= -DZDICTLIB_VISIBILITY= -DZSTDLIB_VISIBILITY="
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    GCC_VER=$(gcc -dumpversion)
+    ARCH_TRIPLET=$(gcc -dumpmachine)
+    GCC_LIB_DIR=/usr/lib/gcc/${ARCH_TRIPLET}/${GCC_VER}
+    export CFLAGS="${CFLAGS} -mcmodel=large -B${GCC_LIB_DIR} -L${GCC_LIB_DIR} -L/usr/lib64"
+    export CXXFLAGS="${CXXFLAGS} -mcmodel=large -B${GCC_LIB_DIR} -L${GCC_LIB_DIR} -L/usr/lib64"
+    export LDFLAGS="-mcmodel=large -B${GCC_LIB_DIR} -L${GCC_LIB_DIR} -L/usr/lib64"
+fi
 ROOT_DIR=$OLDPWD/..
 
 # compile and install
