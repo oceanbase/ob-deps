@@ -50,6 +50,11 @@ cd $OLDPWD/../
 rm -rf %{_src}
 tar -xf %{_src}.tar.gz
 cd %{_src}
+
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    patch -p1 < ../loongarch/minijail-linux-v18-loongarch.patch
+fi
+
 tar -xf ../%{_libcap}.tar.gz
 cd %{_libcap}
 

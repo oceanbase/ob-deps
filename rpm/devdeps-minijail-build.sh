@@ -12,7 +12,7 @@ RELEASE=${4:-"1"}
 
 # check source code
 LIBCAP_VERSION="2.48"
-if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/minijail-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
+if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/minijail-linux-v$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download source code"
     wget --no-check-certificate https://github.com/google/minijail/archive/refs/tags/linux-v$VERSION.tar.gz -O $ROOT_DIR/minijail-linux-v$VERSION.tar.gz
     wget --no-check-certificate https://mirrors.edge.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-$LIBCAP_VERSION.tar.gz -O $ROOT_DIR/libcap-$LIBCAP_VERSION.tar.gz
