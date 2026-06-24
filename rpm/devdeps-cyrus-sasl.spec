@@ -77,7 +77,8 @@ nm -AC %_compiled_prefix/lib/*.so | grep gss_unwrap
 cd $ROOT_DIR
 # compile and install `cyrus sasl`, note: use gcc and g++ as same as the compiler of observer
 rm -rf %{_sasl_src_path}
-tar xf %{_sasl_src}.tar.gz
+mkdir %{_sasl_src_path}
+tar xf %{_sasl_src}.tar.gz -C %{_sasl_src} --strip-components=1
 cd %{_sasl_src}
 
 ./configure --prefix=%_sasl_compiled_prefix --enable-gssapi=%_compiled_prefix --enable-static --enable-otp=no --enable-scram=no --enable-digest=no --enable-staticdlopen=yes --with-gss_impl=mit --with-dblib=none CFLAGS="-g -O2 -fPIC ${EXTRA_FLAGS}" CXXFLAGS="-g -O2 -fPIC ${EXTRA_FLAGS}" LDFLAGS="${EXTRA_FLAGS}"
