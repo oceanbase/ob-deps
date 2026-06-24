@@ -16,6 +16,18 @@
  #else
  #  error "AUDIT_ARCH value unavailable"
  #endif
+--- a/gen_constants-inl.h
++++ b/gen_constants-inl.h
+@@ -34,6 +34,9 @@
+  */
+ #undef BLKTRACESETUP
+ #undef FS_IOC_FIEMAP
++/* On LoongArch, FPU_ALIGN is defined as __attribute__((aligned(8))) in
++ * signal.h, not a numeric constant, so remove it to avoid build errors. */
++#undef FPU_ALIGN
+
+ /* The old glibc bundled with the Android host toolchain is missing some ioctl
+  * definitions used by minijail policy in crosvm and other projects. Locally
 --- a/util.c
 +++ b/util.c
 @@ -66,6 +66,8 @@
