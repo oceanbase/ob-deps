@@ -1,0 +1,105 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 8cfa6d5..d0cbbb6 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -30,7 +30,12 @@ option(DRCMSG_CASE_SENSITIVE "Whether drcmsg is case sensitive or not" ON)
+ add_compile_definitions($<$<COMPILE_LANGUAGE:CXX>:_GLIBCXX_USE_CXX11_ABI=0>)
+ add_compile_options($<$<COMPILE_LANGUAGE:CXX,C>:-fstack-protector-strong>)
+ add_compile_options($<$<COMPILE_LANGUAGE:CXX,C>:-fPIC>)
+- 
++
++if (CMAKE_SYSTEM_PROCESSOR STREQUAL "loongarch64")
++    add_compile_options($<$<COMPILE_LANGUAGE:CXX,C>:-mcmodel=large>)
++    add_link_options($<$<COMPILE_LANGUAGE:CXX,C>:-mcmodel=large>)
++endif ()
++
+ add_link_options($<$<COMPILE_LANGUAGE:CXX,C>:-Wl,-z,relro,-z,now,-z,noexecstack>)
+ #add_link_options($<$<COMPILE_LANGUAGE:CXX,C>:-pie>)
+ if (DRCMSG_CASE_SENSITIVE)
+diff --git a/build.sh b/build.sh
+index 13286dc..7acd2a4 100755
+--- a/build.sh
++++ b/build.sh
+@@ -4,10 +4,14 @@ TOPDIR=`readlink -f \`dirname $0\``
+ BUILD_SH=$TOPDIR/build.sh
+ 
+ ALL_ARGS=("$@")
+-DEP_DIR=${TOPDIR}/deps/3rd/usr/local/oceanbase/deps/devel
+-TOOLS_DIR=${TOPDIR}/deps/3rd/usr/local/oceanbase/devtools
+-CMAKE_COMMAND="${TOOLS_DIR}/bin/cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DBUILD_AS_MAIN_PROJECT=ON"
+-
++OS_ARCH="$(uname -m)"
++if [ "$OS_ARCH" == "loongarch64" ]; then
++    CMAKE_COMMAND="/usr/bin/cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DBUILD_AS_MAIN_PROJECT=ON"
++else
++    DEP_DIR=${TOPDIR}/deps/3rd/usr/local/oceanbase/deps/devel
++    TOOLS_DIR=${TOPDIR}/deps/3rd/usr/local/oceanbase/devtools
++    CMAKE_COMMAND="${TOOLS_DIR}/bin/cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DBUILD_AS_MAIN_PROJECT=ON"
++fi
+ echo "$0 ${ALL_ARGS[@]}"
+ 
+ CPU_CORES=`grep -c ^processor /proc/cpuinfo`
+diff --git a/cmake/Env.cmake b/cmake/Env.cmake
+index e847629..d21870b 100644
+--- a/cmake/Env.cmake
++++ b/cmake/Env.cmake
+@@ -1,6 +1,9 @@
+ ob_define(DEVTOOLS_DIR "${CMAKE_SOURCE_DIR}/deps/3rd/usr/local/oceanbase/devtools")
+ ob_define(DEP_DIR "${CMAKE_SOURCE_DIR}/deps/3rd/usr/local/oceanbase/deps/devel")
+-
++if (CMAKE_SYSTEM_PROCESSOR STREQUAL "loongarch64")
++    ob_define(DEVTOOLS_DIR "/usr")
++    ob_define(DEP_DIR "/usr")
++else ()
+ set(CMAKE_C_COMPILER "${DEVTOOLS_DIR}/bin/gcc")
+ set(CMAKE_CXX_COMPILER "${DEVTOOLS_DIR}/bin/g++")
+ 
+diff --git a/deps/3rd/dep_create.sh b/deps/3rd/dep_create.sh
+index c0f8003..80da7f6 100644
+--- a/deps/3rd/dep_create.sh
++++ b/deps/3rd/dep_create.sh
+@@ -8,6 +8,7 @@ PWD="$(cd $(dirname $0); pwd)"
+ OS_ARCH="$(uname -m)" || exit 1
+ OS_RELEASE="0"
+ AL3_RELEASE="0"
++AN8_RELEASE="0"
+ 
+ if [[ ! -f /etc/os-release ]]; then
+   echo "[ERROR] os release info not found" 1>&2 && exit 1
+@@ -34,6 +35,12 @@ function compat_alinux3() {
+   OS_RELEASE=8
+ }
+ 
++function compat_loongarch() {
++  echo_log "[NOTICE] '$PNAME' is compatible with Loong116, use an8 dependencies list"
++  AN8_RELEASE="1"
++  OS_RELEASE=8
++}
++
+ function not_supported() {
+   echo "[ERROR] '$PNAME' is not supported yet."
+ }
+@@ -104,7 +111,13 @@ function get_os_release() {
+   elif [[ "${OS_ARCH}x" == "sw_64x" ]]; then
+     case "$ID" in
+       UOS)
+-	version_ge "20" && OS_RELEASE=20 && return
++	      version_ge "20" && OS_RELEASE=20 && return
++      ;;
++    esac
++  elif [[ "${OS_ARCH}x" == "loongarch64x" ]]; then
++    case "$ID" in
++      anolis)
++        version_ge "8.10" && compat_loongarch && return
+       ;;
+     esac
+   fi
+@@ -115,6 +128,8 @@ get_os_release || exit 1
+ 
+ if [[ "${AL3_RELEASE}x" == "1x" ]]; then
+     OS_TAG="al$OS_RELEASE.$OS_ARCH"
++elif [[ "${AN8_RELEASE}x" == "1x" ]]; then
++    OS_TAG="an$OS_RELEASE.$OS_ARCH"
+ else
+     OS_TAG="el$OS_RELEASE.$OS_ARCH"
+ fi

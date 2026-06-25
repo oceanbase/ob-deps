@@ -1,0 +1,7 @@
+
+[target-default]
+os=8
+arch=loongarch64
+repo=https://mirrors.oceanbase.com/oceanbase/development-kit/an/8/loongarch64/
+
+[tools]
