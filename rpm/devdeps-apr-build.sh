@@ -23,5 +23,9 @@ if [[ "${ID}" == "alinux" && "$arch" == "aarch64" ]]; then
     export CXXFLAGS="$CXXFLAGS -mno-outline-atomics"
 fi
 
+if [[ "$arch" == "loongarch64" ]]; then
+    yum install -y expat-devel
+fi
+
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE
