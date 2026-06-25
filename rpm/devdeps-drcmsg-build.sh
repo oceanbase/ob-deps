@@ -10,10 +10,15 @@ if [[ ! -d "$ROOT_DIR/drcmsg" ]]; then
     echo "Download $PROJECT_NAME source code"
     cd $ROOT_DIR
     git clone git@code.alipay.com:oms/drcmsg.git -b 202509-nono_time --depth=20
-    cd $ROOT_DIR/drcmsg
-    git apply $CUR_DIR/loongarch/drcmsg.diff
-    cp $CUR_DIR/loongarch/drcmsg.an8.loongarch64.deps deps/3rd
 fi
 
-rpmbuild --define "_topdir $ROOT_DIR/drcmsg/rpm" -bb $PROJECT_NAME.spec
+if [[ ! -d "$ROOT_DIR/drcmsg/deps/3rd/drcmsg.an8.loongarch64.deps" ]]; then
+    cd $ROOT_DIR/drcmsg
+    git apply $ROOT_DIR/loongarch/drcmsg.diff
+    cp $ROOT_DIR/loongarch/drcmsg.an8.loongarch64.deps deps/3rd
+    cd $CUR_DIR
+fi
+SPEC_DIR=$ROOT_DIR/drcmsg/rpm
+
+rpmbuild --define "_topdir $SPEC_DIR" -bb $PROJECT_NAME.spec
 find $TOP_DIR/ -name "*.rpm" -exec mv {} . 2>/dev/null \;
