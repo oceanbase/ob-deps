@@ -21,6 +21,11 @@ fi
 
 cd $ROOT_DIR/drcmsg/rpm
 
+# set env variables
+export PROJECT_NAME
+export VERSION
+export RELEASE
+
 # prepare rpm build dirs
 rm -rf $TOP_DIR
 mkdir -p $TOP_DIR/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
