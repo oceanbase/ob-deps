@@ -4,6 +4,7 @@ CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/..
 PROJECT_NAME=${2:-"devdeps-drcmsg"}
 VERSION=${3:-"1.1"}
+RELEASE=${4:-"1"}
 TOP_DIR=$CUR_DIR/.rpm_build
 
 # check source code
