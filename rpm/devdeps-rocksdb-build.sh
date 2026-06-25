@@ -29,14 +29,16 @@ fi
 
 # prepare building environment
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
- 
-if [[ "${ID}"x == "alinux"x ]]; then
+arch=`uname -p`
+
+if [[ x"${arch}" == x"loongarch64" ]]; then
+    yum install -y gcc
+elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install -y obdevtools-gcc-12.3.0
     yum install -y obdevtools-cmake-3.22.1
 else
     os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
-    arch=`uname -p`
     dep_pkgs=(obdevtools-gcc-12.3.0-32024122017.el obdevtools-cmake-3.22.1-142025032516.el)
  
     target_dir_3rd=${PROJECT_DIR}/deps/3rd
