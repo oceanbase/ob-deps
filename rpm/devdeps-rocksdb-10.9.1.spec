@@ -34,8 +34,8 @@ if [ x"${OS_ARCH}" == x"loongarch64" ]; then
     GCC_VER=$(gcc -dumpversion)
     ARCH_TRIPLET=$(gcc -dumpmachine)
     GCC_LIB_DIR=/usr/lib/gcc/${ARCH_TRIPLET}/${GCC_VER}
-    export CFLAGS="-fPIC -mcmodel=large -B${GCC_LIB_DIR}"
-    export CXXFLAGS="-mcmodel=large -B${GCC_LIB_DIR}"
+    export CFLAGS="-fPIC -mcmodel=large -B${GCC_LIB_DIR} --gcc-toolchain=/usr"
+    export CXXFLAGS="-mcmodel=large -B${GCC_LIB_DIR} --gcc-toolchain=/usr"
     export LDFLAGS="-mcmodel=large -B${GCC_LIB_DIR} -L${GCC_LIB_DIR} -L/usr/lib64"
 
     sed -i '135a\
