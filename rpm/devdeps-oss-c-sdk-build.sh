@@ -18,7 +18,11 @@ fi
 
 # prepare building environment
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
-os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
+if [[ -r /etc/redhat-release ]]; then
+   os_release=$(grep -Po '(?<=release )\d' /etc/redhat-release)
+else
+   os_release=$(grep -Po '(?<=^VERSION_ID=)"?\K\d+' /etc/os-release)
+fi
 arch=`uname -p`
 target_dir_3rd=${PROJECT_DIR}/deps/3rd
 pkg_dir=$target_dir_3rd/pkg
