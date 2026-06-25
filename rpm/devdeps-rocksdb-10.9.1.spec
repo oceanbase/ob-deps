@@ -31,7 +31,12 @@ cd %{_default_version_src}
 OS_ARCH="$(uname -m)"
 EXTRA_FLAGS=""
 if [ x"${OS_ARCH}" == x"loongarch64" ]; then
-    EXTRA_FLAGS="-mcmodel=large"
+    GCC_VER=$(gcc -dumpversion)
+    ARCH_TRIPLET=$(gcc -dumpmachine)
+    GCC_LIB_DIR=/usr/lib/gcc/${ARCH_TRIPLET}/${GCC_VER}
+    export CFLAGS="-fPIC -mcmodel=large -B${GCC_LIB_DIR} -L${GCC_LIB_DIR} -L/usr/lib64"
+    export CXXFLAGS="-mcmodel=large -B${GCC_LIB_DIR} -L${GCC_LIB_DIR} -L/usr/lib64"
+    export LDFLAGS="-mcmodel=large -B${GCC_LIB_DIR} -L${GCC_LIB_DIR} -L/usr/lib64"
 
     sed -i '135a\
 #elif defined(__loongarch__) // 添加龙芯架构支持\
@@ -48,9 +53,9 @@ cmake .. -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} \
          -DWITH_GFLAGS=0 \
          -DPORTABLE=ON \
          -DCMAKE_CXX_STANDARD=20 \
-         -DCMAKE_C_FLAGES="-fPIC ${EXTRA_FLAGS}" \
-         -DCMAKE_CXX_FLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -Wno-array-bounds -Wno-restrict ${EXTRA_FLAGS}" \
-         -DCMAKE_EXE_LINKER_FLAGS="-lrt ${EXTRA_FLAGS}" \
+         -DCMAKE_C_FLAGES="${CFLAGS}" \
+         -DCMAKE_CXX_FLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -Wno-array-bounds -Wno-restrict ${CXXFLAGS}" \
+         -DCMAKE_EXE_LINKER_FLAGS="-lrt ${LDFLAGS}" \
          -DWITH_ZSTD=ON \
          -DWITH_LZ4=ON
 make -j8
