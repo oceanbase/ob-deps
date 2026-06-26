@@ -23,6 +23,7 @@ arch=`uname -p`
 if [ x"${arch}" == x"loongarch64" ]; then
     yum install -y obdevtools-cmake-3.30.3
     yum install -y obdevtools-llvm-13.0.1
+    yum install -y devdeps-apache-thrift
 else
     echo "not supported arch: ${arch}"
     exit 1
