@@ -4,14 +4,14 @@ CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/..
 PROJECT_NAME=${2:-"devdeps-drcmsg"}
 VERSION=${3:-"1.1"}
-RELEASE=${4:-"1"}
+RELEASE=${4:-"312026052510"}
 TOP_DIR=$CUR_DIR/.rpm_build
 
 # check source code
 if [[ ! -d "$ROOT_DIR/drcmsg" ]]; then
     echo "Download $PROJECT_NAME source code"
     cd $ROOT_DIR
-    git clone git@code.alipay.com:oms/drcmsg.git -b 202509-nono_time --depth=20
+    git clone git@code.alipay.com:oms/drcmsg.git -b 202605 --depth=20
 fi
 
 if [[ ! -d "$ROOT_DIR/drcmsg/deps/3rd/drcmsg.an8.loongarch64.deps" ]]; then
