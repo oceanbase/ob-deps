@@ -46,7 +46,7 @@ if [ x"${OS_ARCH}" == x"loongarch64" ]; then
     cp ../patch/config.sub ./
 fi
 
-./configure --with-boost=$ROOT_DIR/boost_1_74_0 --with-c_glib=yes  --with-cpp=yes  --without-erlang --without-nodejs --without-python --without-py3 --without-perl --without-php --without-php_extension --without-ruby --without-haskell --without-go --without-swift --without-dotnetcore --without-qt5 --prefix=${_compiled_prefix} --enable-tutorial=no --enable-tests=no CFLAGS="-g -O2 -fPIC ${EXTRA_FLAGS}" CXXFLAGS="-g -O2 -fPIC ${EXTRA_FLAGS}" LDFLAGS="${EXTRA_FLAGS}"
+./configure --with-boost=$ROOT_DIR/boost_1_74_0 --with-c_glib=yes  --with-cpp=yes  --without-erlang --without-nodejs --without-python --without-py3 --without-perl --without-php --without-php_extension --without-ruby --without-haskell --without-go --without-swift --without-dotnetcore --without-qt5 --prefix=${_compiled_prefix} --enable-tutorial=no --enable-tests=no CFLAGS="-g -O2 -fPIC ${EXTRA_FLAGS}" CXXFLAGS="-g -O2 -fPIC -D_GLIBCXX_USE_CXX11_ABI=0 ${EXTRA_FLAGS}" LDFLAGS="${EXTRA_FLAGS}"
 
 make -j ${CPU_CORES}
 make install

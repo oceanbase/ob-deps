@@ -55,14 +55,14 @@ mkdir -p ${tmp_install_dir}
 mkdir -p ${build_dir}
 
 # compile and install
-export CPPFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"
 export LDFLAGS="-pie -z noexecstack -z now"
 export CFLAGS="-fPIC -pie -fstack-protector-strong"
-export CXXFLAGS="-fPIC -pie -fstack-protector-strong"
+export CXXFLAGS="-fPIC -pie -fstack-protector-strong -D_GLIBCXX_USE_CXX11_ABI=0"
 
 cd ${build_dir}
 cmake .. -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} -DBUILD_JAVA=OFF -DBUILD_CPP_TESTS=OFF -DBUILD_TOOLS=OFF \
          -DSTOP_BUILD_ON_WARNING=OFF -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/gcc -DCMAKE_CXX_COMPILER=$TOOLS_DIR/bin/g++ \
+         -DCMAKE_C_FLAGS="${CFLAGS}" -DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
          -DBUILD_POSITION_INDEPENDENT_LIB=ON -DBUILD_LIBHDFSPP=OFF
 
 set +e

@@ -23,8 +23,7 @@ This is the repository for apache-avro-cpp
 %install
 # env
 export CFLAGS="-fPIC -fstack-protector-strong"
-export CXXFLAGS="-fPIC -fstack-protector-strong"
-export CPPFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"
+export CXXFLAGS="-fPIC -fstack-protector-strong -D_GLIBCXX_USE_CXX11_ABI=0"
 export LDFLAGS="-pie -z noexecstack -z now"
 OS_ARCH="$(uname -m)"
 if [ x"${OS_ARCH}" == x"loongarch64" ]; then
