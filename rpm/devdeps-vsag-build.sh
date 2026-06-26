@@ -12,7 +12,7 @@ elif [[ $VERSION == "1.1.0" ]]; then
   VSAG_VERSION="0.15.12"
 else
   # default use newest vsag
-  VSAG_VERSION="0.18.7"
+  VSAG_VERSION="0.18.8"
 fi
 
 echo "VERSION=${VERSION} VSAG_VERSION=${VSAG_VERSION}"
