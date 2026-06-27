@@ -58,6 +58,12 @@ mkdir -p ${build_dir}
 export LDFLAGS="-pie -z noexecstack -z now"
 export CFLAGS="-fPIC -pie -fstack-protector-strong"
 export CXXFLAGS="-fPIC -pie -fstack-protector-strong -D_GLIBCXX_USE_CXX11_ABI=0"
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    export CFLAGS="${CFLAGS} -mcmodel=large"
+    export CXXFLAGS="${CXXFLAGS} -mcmodel=large"
+    export LDFLAGS="${LDFLAGS} -mcmodel=large"
+fi
 
 cd ${build_dir}
 cmake .. -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} -DBUILD_JAVA=OFF -DBUILD_CPP_TESTS=OFF -DBUILD_TOOLS=OFF \
