@@ -38,12 +38,18 @@ mkdir -p ${tmp_install_dir}
 mkdir -p ${build_dir}
 
 # compile and install
-export CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
-export CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
+export CFLAGS="-fPIC -fstack-protector-strong"
+export CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -fstack-protector-strong"
 export LDFLAGS="-pie -z noexecstack -z now"
 
 cd ${build_dir}
 OPENSSL_ROOT_DIR=$DEP_DIR
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    export CFLAGS="${CFLAGS} -mcmodel=large"
+    export CXXFLAGS="${CXXFLAGS} -mcmodel=large"
+    export LDFLAGS="${LDFLAGS} -mcmodel=large"
+fi
 cmake .. -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} -DCMAKE_PREFIX_PATH=$DEP_DIR -DCMAKE_CXX_STANDARD=14 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DBUILD_SHARED_LIBS=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES}

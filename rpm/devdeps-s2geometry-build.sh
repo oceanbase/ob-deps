@@ -5,7 +5,7 @@ ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
 PROJECT_NAME=${2:-"devdeps-s2geometry"}
 VERSION=${3:-"0.10.0"}
-RELEASE=${4:-"1"}
+RELEASE=${4:-"20260627"}
 
 # check source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/s2geometry-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
@@ -16,8 +16,10 @@ fi
 arch=`uname -p`
 # prepare building environment
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
- 
-if [[ "${ID}"x == "alinux"x ]]; then
+
+if [ x"${arch}" == x"loongarch64" ]; then
+    yum install -y gcc babassl-ob-8.3.7 devdeps-abseil-cpp-20211102.0
+elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install -y obdevtools-gcc9-9.3.0
     yum install -y obdevtools-cmake-3.22.1
@@ -46,11 +48,11 @@ fi
 
 export DEP_DIR=/usr/local/oceanbase/deps/devel
 export PATH=/usr/local/oceanbase/devtools/bin:$PATH
+if [ x"${arch}" == x"loongarch64" ]; then
+    export BABASSL_DIR=/usr/local/babassl-ob
+fi
 export ABSL_DIR=$DEP_DIR/lib64/cmake/absl/
 export LD_LIBRARY_PATH=/usr/local/oceanbase/devtools/lib:/usr/local/oceanbase/devtools/lib64:$LD_LIBRARY_PATH
-
-ln -sf /usr/local/oceanbase/devtools/bin/g++  /usr/bin/c++
-ln -sf /usr/local/oceanbase/devtools/bin/gcc  /usr/bin/cc
 
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE

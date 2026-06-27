@@ -4,8 +4,8 @@ CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
 PROJECT_NAME=${2:-"devdeps-abseil-cpp"}
-VERSION=${3:-"20250814.1"}
-RELEASE=${4:-"1"}
+VERSION=${3:-"20211102.0"}
+RELEASE=${4:-"20260627"}
 
 # Configure custom source file directory
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
@@ -17,8 +17,10 @@ if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/abseil-cpp-$VERSION.*[tar|gz|bz2
 fi
 
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
- 
-if [[ "${ID}"x == "alinux"x ]]; then
+
+if [ x"${arch}" == x"loongarch64" ]; then
+    yum install -y gcc
+elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install -y obdevtools-gcc9-9.3.0
     yum install -y obdevtools-cmake-3.22.1
@@ -44,7 +46,11 @@ else
     done
 fi
 
-export TOOLS_DIR=/usr/local/oceanbase/devtools
+if [ x"${arch}" == x"loongarch64" ]; then
+    export TOOLS_DIR=/usr
+else
+    export TOOLS_DIR=/usr/local/oceanbase/devtools
+fi
 export PATH=$TOOLS_DIR/bin:$PATH
 export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
 export CC=$TOOLS_DIR/bin/gcc
