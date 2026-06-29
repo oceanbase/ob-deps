@@ -7,6 +7,8 @@ PROJECT_NAME=${2:-"devdeps-apache-thrift"}
 VERSION=${3:-"0.16.0"}
 RELEASE=${4:-"1"}
 
+source "$CUR_DIR/abi-env.sh"
+
 # Configure custom source file directory
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
 

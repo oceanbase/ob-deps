@@ -29,8 +29,8 @@ if [ x"${OS_ARCH}" == x"loongarch64" ]; then
     GCC_VER=$(gcc -dumpversion)
     ARCH_TRIPLET=$(gcc -dumpmachine)
     GCC_LIB_DIR=/usr/lib/gcc/${ARCH_TRIPLET}/${GCC_VER}
-    export CFLAGS="${CFLAGS} -mcmodel=large -B${GCC_LIB_DIR} -L${GCC_LIB_DIR} -L/usr/lib64"
-    export CXXFLAGS="${CXXFLAGS} -mcmodel=large -B${GCC_LIB_DIR} -L${GCC_LIB_DIR} -L/usr/lib64"
+    export CFLAGS="${CFLAGS} -mcmodel=large -B${GCC_LIB_DIR}"
+    export CXXFLAGS="${CXXFLAGS} -mcmodel=large -B${GCC_LIB_DIR}"
     export LDFLAGS="-mcmodel=large -B${GCC_LIB_DIR} -L${GCC_LIB_DIR} -L/usr/lib64"
 fi
 ROOT_DIR=$OLDPWD/..

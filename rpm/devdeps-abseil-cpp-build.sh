@@ -5,8 +5,8 @@ source "$CUR_DIR/abi-env.sh"
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
 PROJECT_NAME=${2:-"devdeps-abseil-cpp"}
-VERSION=${3:-"20211102.0"}
-RELEASE=${4:-"20260627"}
+VERSION=${3:-"20250814.1"}
+RELEASE=${4:-"1"}
 
 # Configure custom source file directory
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
@@ -18,6 +18,7 @@ if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/abseil-cpp-$VERSION.*[tar|gz|bz2
 fi
 
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
+arch=`uname -p`
 
 if [ x"${arch}" == x"loongarch64" ]; then
     yum install -y gcc
@@ -27,7 +28,6 @@ elif [[ "${ID}"x == "alinux"x ]]; then
     yum install -y obdevtools-cmake-3.22.1
 else
     os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
-    arch=`uname -p`
     dep_pkgs=(obdevtools-gcc9-9.3.0-52022092914.el obdevtools-cmake-3.22.1-22022100417.el)
  
     target_dir_3rd=${PROJECT_DIR}/deps/3rd

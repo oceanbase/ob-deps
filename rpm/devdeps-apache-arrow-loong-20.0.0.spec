@@ -41,8 +41,8 @@ GCC_VER=$(gcc -dumpversion)
 ARCH_TRIPLET=$(gcc -dumpmachine)
 GCC_LIB_DIR=/usr/lib/gcc/${ARCH_TRIPLET}/${GCC_VER}
 CPP_INCLUDES="-isystem /usr/include/c++/${GCC_VER} -isystem /usr/include/c++/${GCC_VER}/${ARCH_TRIPLET} -isystem /usr/include"
-export CFLAGS="-fPIC -s -mcmodel=large -D_GNU_SOURCE -fstack-protector-strong $DISABLE_ATOMIC -gdwarf-4 -flto=thin --gcc-toolchain=/usr -fuse-ld=lld -B${GCC_LIB_DIR} -L${GCC_LIB_DIR} -L/usr/lib64 -isystem /usr/include"
-export CXXFLAGS="-std=c++17 -fPIC -s -mcmodel=large -D_GNU_SOURCE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong $DISABLE_ATOMIC -gdwarf-4 -flto=thin --gcc-toolchain=/usr -fuse-ld=lld -B${GCC_LIB_DIR} -L${GCC_LIB_DIR} -L/usr/lib64 ${CPP_INCLUDES}"
+export CFLAGS="-fPIC -s -mcmodel=large -D_GNU_SOURCE -fstack-protector-strong $DISABLE_ATOMIC -gdwarf-4 -flto=thin --gcc-toolchain=/usr -fuse-ld=lld -B${GCC_LIB_DIR} -isystem /usr/include"
+export CXXFLAGS="-std=c++17 -fPIC -s -mcmodel=large -D_GNU_SOURCE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong $DISABLE_ATOMIC -gdwarf-4 -flto=thin --gcc-toolchain=/usr -fuse-ld=lld -B${GCC_LIB_DIR} ${CPP_INCLUDES}"
 export LDFLAGS="-Wl,-z,noexecstack -Wl,-z,now -pie -mcmodel=large -flto-jobs=8 -fuse-ld=${TOOLS_DIR}/bin/ld.lld --gcc-toolchain=/usr -fuse-ld=lld -B${GCC_LIB_DIR} -L${GCC_LIB_DIR} -L/usr/lib64 -lpthread"
 ROOT_DIR=$OLDPWD/..
 

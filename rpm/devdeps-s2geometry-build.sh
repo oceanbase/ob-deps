@@ -6,7 +6,7 @@ ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
 PROJECT_NAME=${2:-"devdeps-s2geometry"}
 VERSION=${3:-"0.10.0"}
-RELEASE=${4:-"20260627"}
+RELEASE=${4:-"1"}
 
 proxy_prefix=https://gh-proxy.com/
 # check source code
