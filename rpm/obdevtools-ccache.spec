@@ -24,18 +24,23 @@ Ccache (or "ccache") is a compiler cache. It speeds up recompilation by caching 
 
 %build
 
+cd $OLDPWD/../;
+rm -rf %{_src}
+tar -xf %{_src}.tar.gz
+cd %{_src}
+
 BUILD_OPTION=''
 OS_ARCH="$(uname -m)"
 if [ "${OS_ARCH}x" = "sw_64x" ]; then
     BUILD_OPTION='--build=sw_64-unknown-linux-gnu'
 elif [ "${OS_ARCH}x" = "aarch64x" ]; then
     BUILD_OPTION='--build=aarch64-unknown-linux-gnu'
+elif [ "${OS_ARCH}x" = "loongarch64x" ]; then
+    BUILD_OPTION='--build=loongarch64'
+    cp ../patch/config.guess ./
+    cp ../patch/config.sub ./
 fi
 
-cd $OLDPWD/../;
-rm -rf %{_src}
-tar -xf %{_src}.tar.gz
-cd %{_src}
 ./configure --prefix=${RPM_BUILD_ROOT}/%{_prefix} --disable-man ${BUILD_OPTION}
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES};

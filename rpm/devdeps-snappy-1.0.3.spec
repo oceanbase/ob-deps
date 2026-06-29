@@ -34,6 +34,12 @@ mkdir -p %{_src}
 tar -xf %{_src}.tar.gz -C %{_src} --strip-components=0
 cd %{_src}
 
+OS_ARCH="$(uname -m)"
+EXTRA_FLAGS=""
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    EXTRA_FLAGS="-mcmodel=large"
+fi
+
 sed -i '16iAM_PROG_AR' ./configure.ac
 ./autogen.sh
 ./configure \
@@ -41,8 +47,8 @@ sed -i '16iAM_PROG_AR' ./configure.ac
     --enable-static \
     --disable-shared \
     --disable-dependency-tracking \
-    CXXFLAGS="-fPIC -fvisibility=hidden" \
-    CFLAGS="-fPIC -fvisibility=hidden"
+    CXXFLAGS="-fPIC -fvisibility=hidden ${EXTRA_FLAGS}" \
+    CFLAGS="-fPIC -fvisibility=hidden ${EXTRA_FLAGS}"
 make -j${CPU_CORES}
 make install
 

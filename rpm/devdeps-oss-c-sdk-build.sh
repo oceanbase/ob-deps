@@ -18,13 +18,16 @@ fi
 
 # prepare building environment
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
-os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
 arch=`uname -p`
 target_dir_3rd=${PROJECT_DIR}/deps/3rd
 pkg_dir=$target_dir_3rd/pkg
 mkdir -p $pkg_dir
 
-if [[ "${ID}"x == "alinux"x ]]; then
+if [[ "$arch" == "loongarch64" ]]; then
+   yum install -y devdeps-libcurl-static-8.12.1
+   yum install -y devdeps-apr-1.6.5
+   yum install -y devdeps-mxml-3.3.1
+elif [[ "${ID}"x == "alinux"x ]]; then
    wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
    yum install -y devdeps-libcurl-static-8.2.1
    yum install -y devdeps-apr-1.6.5

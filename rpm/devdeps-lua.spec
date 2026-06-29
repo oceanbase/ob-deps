@@ -57,7 +57,14 @@ cd $OLDPWD/../;
 rm -rf %{_src}
 tar xvf %{_src}.tar.gz
 cd %{_src}/src
-make a MYCFLAGS=-fPIC
+
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+  make a MYCFLAGS="-fPIC -mcmodel=large"
+else
+  make a MYCFLAGS=-fPIC
+fi
+
 cp %{_to_inc} $RPM_BUILD_ROOT/%{_prefix}/include
 cp %{_to_lib} $RPM_BUILD_ROOT/%{_prefix}/lib
 

@@ -52,6 +52,13 @@ cd $OLDPWD/../;
 rm -rf %{_src}
 unzip %{_src}.zip
 cd %{_src}
+
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+  cp ../patch/config.guess ./
+  cp ../patch/config.sub ./
+fi
+
 ./configure --prefix=${RPM_BUILD_ROOT}/%{_prefix};
 make %{_smp_mflags}; 
 make install;

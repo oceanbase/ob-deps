@@ -25,7 +25,9 @@ export CXXFLAGS="-fPIC -pie -fstack-protector-strong"
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 arch=$(uname -p)
 
-if [[ "${ID}"x == "alinux"x ]]; then
+if [[ "$arch" == "loongarch64" ]]; then
+    yum install -y openssl openssl-devel
+elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install -y devdeps-openssl-static-1.1.1u
     if [[ "$arch" == "aarch64" ]]; then
@@ -37,7 +39,11 @@ else
     yum install -y devdeps-openssl-static-1.1.1u
 fi
 
-export DEP_DIR=/usr/local/oceanbase/deps/devel
+if [[ "$arch" == "loongarch64" ]]; then
+    export DEP_DIR=/usr
+else
+    export DEP_DIR=/usr/local/oceanbase/deps/devel
+fi
 
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE

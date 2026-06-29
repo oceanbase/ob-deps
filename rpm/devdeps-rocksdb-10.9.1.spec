@@ -27,6 +27,25 @@ mkdir -p ${tmp_install_dir}
 rm -rf %{_rocksdb_src}
 tar xf %{_rocksdb_src}.tar.gz
 cd %{_default_version_src}
+
+OS_ARCH="$(uname -m)"
+EXTRA_FLAGS=""
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    GCC_VER=$(gcc -dumpversion)
+    ARCH_TRIPLET=$(gcc -dumpmachine)
+    GCC_LIB_DIR=/usr/lib/gcc/${ARCH_TRIPLET}/${GCC_VER}
+    export CFLAGS="-fPIC -mcmodel=large -B${GCC_LIB_DIR}"
+    export CXXFLAGS="-mcmodel=large -B${GCC_LIB_DIR} -isystem /usr/include/c++/${GCC_VER} -isystem /usr/include/c++/${GCC_VER}/${ARCH_TRIPLET}"
+    export LDFLAGS="-mcmodel=large -B${GCC_LIB_DIR} -L${GCC_LIB_DIR} -L/usr/lib64"
+
+    sed -i '135a\
+#elif defined(__loongarch__) // 添加龙芯架构支持\
+  uint64_t result;\
+  // 使用rdtime.d指令读取时间计数器\
+  __asm__ __volatile__("rdtime.d %0, $zero" : "=r"(result));\
+  return result;' ./utilities/transactions/lock/range/range_tree/lib/portability/toku_time.h
+fi
+
 mkdir build
 cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} \
@@ -34,8 +53,9 @@ cmake .. -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} \
          -DWITH_GFLAGS=0 \
          -DPORTABLE=ON \
          -DCMAKE_CXX_STANDARD=20 \
-         -DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -Wno-array-bounds -Wno-restrict'\
-         -DCMAKE_EXE_LINKER_FLAGS='-lrt' \
+         -DCMAKE_C_FLAGS="${CFLAGS}" \
+         -DCMAKE_CXX_FLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -Wno-array-bounds -Wno-unknown-warning-option ${CXXFLAGS}" \
+         -DCMAKE_EXE_LINKER_FLAGS="-lrt ${LDFLAGS}" \
          -DWITH_ZSTD=ON \
          -DWITH_LZ4=ON
 make -j8

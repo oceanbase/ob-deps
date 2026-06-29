@@ -31,6 +31,13 @@ support self-contained deployment of OceanBase.
 export CFLAGS="-fPIC -z noexecstack -z now -fstack-protector-strong"
 export CXXFLAGS="-fPIC -D_GLIBCXX_USE_CXX11_ABI=0 -z noexecstack -z now -fstack-protector-strong"
 
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    export CFLAGS="${CFLAGS} -mcmodel=large"
+    export CXXFLAGS="${CXXFLAGS} -mcmodel=large"
+    export LDFLAGS="-pie -mcmodel=large"
+fi
+
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 
 # Prepare temporary directories for internal linking
@@ -43,6 +50,11 @@ cd $OLDPWD/../
 rm -rf %{_src}
 tar -xf %{_src}.tar.gz
 cd %{_src}
+
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    patch -p1 < ../loongarch/minijail-linux-v18-loongarch.patch
+fi
+
 tar -xf ../%{_libcap}.tar.gz
 cd %{_libcap}
 

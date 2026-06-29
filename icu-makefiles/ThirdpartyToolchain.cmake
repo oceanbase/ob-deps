@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+EXECUTE_PROCESS(COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE ARCHITECTURE)
+
 set(ORC_VENDOR_DEPENDENCIES)
 set(ORC_SYSTEM_DEPENDENCIES)
 set(ORC_INSTALL_INTERFACE_TARGETS)
@@ -25,6 +27,9 @@ set(SNAPPY_VERSION "1.2.1")
 set(ZLIB_VERSION "1.3.1")
 set(GTEST_VERSION "1.12.1")
 set(PROTOBUF_VERSION "3.5.1")
+if (${ARCHITECTURE} STREQUAL "loongarch64")
+  set(PROTOBUF_VERSION "3.15.1")
+endif()
 set(ZSTD_VERSION "1.5.5")
 
 option(ORC_PREFER_STATIC_PROTOBUF "Prefer static protobuf library, if available" ON)

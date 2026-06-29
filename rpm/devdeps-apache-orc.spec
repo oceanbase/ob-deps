@@ -23,16 +23,19 @@ mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}
 CPU_CORES=8
 ROOT_DIR=$OLDPWD/..
 
-# install cmake
-cd $ROOT_DIR
-rm -rf %{_cmake_src}
-mkdir -p %{_cmake_src}
-tar zxf %{_cmake_src}.tar.gz --strip-components=1 -C %{_cmake_src}
-cd %{_cmake_src}
-./bootstrap --prefix=$ROOT_DIR/%{_cmake_src} -- -DCMAKE_USE_OPENSSL=ON
-make -j${CPU_CORES}
-make install
-export PATH=$ROOT_DIR/%{_cmake_src}/bin:$PATH;
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" != x"loongarch64" ]; then
+    # install cmake
+    cd $ROOT_DIR
+    rm -rf %{_cmake_src}
+    mkdir -p %{_cmake_src}
+    tar zxf %{_cmake_src}.tar.gz --strip-components=1 -C %{_cmake_src}
+    cd %{_cmake_src}
+    ./bootstrap --prefix=$ROOT_DIR/%{_cmake_src} -- -DCMAKE_USE_OPENSSL=ON
+    make -j${CPU_CORES}
+    make install
+    export PATH=$ROOT_DIR/%{_cmake_src}/bin:$PATH;
+fi
 
 cd $ROOT_DIR
 tmp_dir=$(pwd)
@@ -52,15 +55,21 @@ mkdir -p ${tmp_install_dir}
 mkdir -p ${build_dir}
 
 # compile and install
-export CPPFLAGS="${ABI_CXXFLAGS}"
 export LDFLAGS="-pie -z noexecstack -z now"
 export CFLAGS="-fPIC -pie -fstack-protector-strong"
 export CXXFLAGS="-fPIC -pie -fstack-protector-strong ${ABI_CXXFLAGS}"
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    export CFLAGS="${CFLAGS} -mcmodel=large"
+    export CXXFLAGS="${CXXFLAGS} -mcmodel=large"
+    export LDFLAGS="${LDFLAGS} -mcmodel=large"
+fi
 
 cd ${build_dir}
 cmake .. -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} -DBUILD_JAVA=OFF -DBUILD_CPP_TESTS=OFF -DBUILD_TOOLS=OFF \
          -DSTOP_BUILD_ON_WARNING=OFF -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/gcc -DCMAKE_CXX_COMPILER=$TOOLS_DIR/bin/g++ \
-         -DBUILD_POSITION_INDEPENDENT_LIB=ON -DBUILD_LIBHDFSPP=OFF -DPROTOBUF_HOME=%{_prefix}
+         -DCMAKE_C_FLAGS="${CFLAGS}" -DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
+         -DBUILD_POSITION_INDEPENDENT_LIB=ON -DBUILD_LIBHDFSPP=OFF
 
 set +e
 MAX_RETRIES=6

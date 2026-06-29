@@ -37,12 +37,18 @@ rm -rf %{_src}
 tar xf %{_src}.tar.gz
 cd %{_src}/src
 
+OS_ARCH="$(uname -m)"
+EXTRA_FLAGS=""
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    EXTRA_FLAGS="-mcmodel=large"
+fi
+
 # reset config about krb5 source code
 sed -E -i 's/^AC_DEFINE\(KRB5_DNS_LOOKUP, 1,\[Define for DNS support of locating realms and KDCs\]\)/dnl &/' aclocal.m4
 # re-generate make file by -f (force)
 autoreconf -vi -f
 
-./configure --prefix=${_compiled_prefix} --disable-shared --enable-static --without-system-verto --without-libedit --without-ldap --disable-rpath --disable-pkinit --with-crypto-impl=builtin --without-tls-impl --disable-nls --without-keyutils --enable-dns-for-realm=no  CFLAGS="-g -O2 -fPIC" CXXFLAGS="-g -O2 -fPIC"
+./configure --prefix=${_compiled_prefix} --disable-shared --enable-static --without-system-verto --without-libedit --without-ldap --disable-rpath --disable-pkinit --with-crypto-impl=builtin --without-tls-impl --disable-nls --without-keyutils --enable-dns-for-realm=no  CFLAGS="-g -O2 -fPIC ${EXTRA_FLAGS}" CXXFLAGS="-g -O2 -fPIC ${EXTRA_FLAGS}" LDFLAGS="${EXTRA_FLAGS}"
 
 make
 make install

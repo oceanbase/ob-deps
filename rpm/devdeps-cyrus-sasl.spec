@@ -46,6 +46,12 @@ ROOT_DIR=$OLDPWD/..
 
 cd $ROOT_DIR
 
+OS_ARCH="$(uname -m)"
+EXTRA_FLAGS=""
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    EXTRA_FLAGS="-mcmodel=large"
+fi
+
 # compile and install `krb5`, note: use gcc and g++ as same as the compiler of observer
 
 rm -rf %{_src_path}
@@ -57,7 +63,7 @@ sed -E -i 's/^AC_DEFINE\(KRB5_DNS_LOOKUP, 1,\[Define for DNS support of locating
 # re-generate make file by -f (force)
 autoreconf -vi -f
 
-./configure --prefix=%_compiled_prefix --without-system-verto --without-libedit --without-ldap --disable-rpath --disable-pkinit --with-crypto-impl=builtin --without-tls-impl --disable-nls --without-keyutils --enable-dns-for-realm=no  CFLAGS="-g -O2 -fPIC" CXXFLAGS="-g -O2 -fPIC"
+./configure --prefix=%_compiled_prefix --without-system-verto --without-libedit --without-ldap --disable-rpath --disable-pkinit --with-crypto-impl=builtin --without-tls-impl --disable-nls --without-keyutils --enable-dns-for-realm=no  CFLAGS="-g -O2 -fPIC ${EXTRA_FLAGS}" CXXFLAGS="-g -O2 -fPIC ${EXTRA_FLAGS}" LDFLAGS="${EXTRA_FLAGS}"
 
 make
 make install
@@ -71,10 +77,12 @@ nm -AC %_compiled_prefix/lib/*.so | grep gss_unwrap
 cd $ROOT_DIR
 # compile and install `cyrus sasl`, note: use gcc and g++ as same as the compiler of observer
 rm -rf %{_sasl_src_path}
-tar xf %{_sasl_src}.tar.gz
+mkdir %{_sasl_src_path}
+tar xf %{_sasl_src}.tar.gz -C %{_sasl_src} --strip-components=1
 cd %{_sasl_src}
 
-./configure --prefix=%_sasl_compiled_prefix --enable-gssapi=%_compiled_prefix --enable-static --enable-otp=no --enable-scram=no --enable-digest=no --enable-staticdlopen=yes --with-gss_impl=mit --with-dblib=none CFLAGS="-g -O2 -fPIC" CXXFLAGS="-g -O2 -fPIC"
+./autogen.sh
+./configure --prefix=%_sasl_compiled_prefix --enable-gssapi=%_compiled_prefix --enable-static --enable-otp=no --enable-scram=no --enable-digest=no --enable-staticdlopen=yes --with-gss_impl=mit --with-dblib=none CFLAGS="-g -O2 -fPIC ${EXTRA_FLAGS}" CXXFLAGS="-g -O2 -fPIC ${EXTRA_FLAGS}" LDFLAGS="${EXTRA_FLAGS}"
 
 make
 make install

@@ -5,7 +5,7 @@ source "$CUR_DIR/abi-env.sh"
 ROOT_DIR=$CUR_DIR/../
 PROJECT_DIR=${1:-"$CUR_DIR"}
 PROJECT_NAME=${2:-"devdeps-grpc"}
-VERSION=${3:-"1.50.0"}
+VERSION=${3:-"1.46.7"}
 RELEASE=${4:-"1"}
 
 # Configure custom source file directory

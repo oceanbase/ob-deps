@@ -43,6 +43,10 @@ elif [ "${OS_ARCH}x" = "aarch64x" ]; then
     BUILD_OPTION='--build=aarch64-unknown-linux-gnu'
 elif [ "${OS_ARCH}x" = "ppc64lex" ]; then
     BUILD_OPTION='--build=ppc64le'
+elif [ "${OS_ARCH}x" = "loongarch64x" ]; then
+    BUILD_OPTION='--build=loongarch64'
+    cp ../patch/config.guess ./
+    cp ../patch/config.sub ./
 fi
 
 ./configure --prefix=%{_tmppath} PKG_CONFIG="pkg-config SSL_LIBS=-l:libssl.a -l:libcrypto.a" --without-libssh2 --without-nss --disable-ftp \

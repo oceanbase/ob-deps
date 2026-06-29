@@ -55,6 +55,13 @@ cd $OLDPWD/../;
 rm -rf %{_src}
 tar xf %{_src}.tar.gz
 cd %{_src}
+
+OS_ARCH="$(uname -m)"
+if [ "${OS_ARCH}x" = "loongarch64x" ]; then
+    cp ../patch/config.guess ./build
+    cp ../patch/config.sub ./build
+fi
+
 ./configure --prefix=${RPM_BUILD_ROOT}/%{_prefix};
 make %{_smp_mflags}; 
 make install;
@@ -62,6 +69,13 @@ make install;
 cd ..;
 tar xf %{_util_src}.tar.gz
 cd %{_util_src}
+
+OS_ARCH="$(uname -m)"
+if [ "${OS_ARCH}x" = "loongarch64x" ]; then
+    cp ../patch/config.guess ./build
+    cp ../patch/config.sub ./build
+fi
+
 ./configure --prefix=${RPM_BUILD_ROOT}/%{_prefix} --with-apr=${RPM_BUILD_ROOT}/%{_prefix}
 make %{_smp_mflags}; 
 make install

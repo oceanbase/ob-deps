@@ -68,6 +68,16 @@ source_dir=$(pwd)
 sed -i "s?/usr/bin /usr/local/bin /usr/local/apr/bin/?/usr/bin /usr/local/bin /usr/local/apr/bin ${DEP_PATH}/bin?g" ${source_dir}/CMakeLists.txt
 #sed -i 's?/usr/bin /usr/local/bin /usr/local/apr/bin/?/usr/local/oceanbase/deps/devel/bin?g' ${source_dir}/CMakeLists.txt
 #sed -i 's?FIND_PROGRAM(CURL_CONFIG_BIN NAMES curl-config)?FIND_PROGRAM(CURL_CONFIG_BIN NAMES curl-config PATHS /usr/local/oceanbase/deps/devel/bin)?g' ${source_dir}/CMakeLists.txt
+OS_ARCH="$(uname -m)"
+if [ "${OS_ARCH}x" = "loongarch64x" ]; then
+    sed -i '/#curl-config/,/ENDIF()/c\
+ # libcurl metadata is packaged under lib/pkgconfig; do not require curl-config.\
+ FIND_PACKAGE(PkgConfig REQUIRED)\
+ PKG_CHECK_MODULES(CURL REQUIRED libcurl)\
+ SET(CURL_INCLUDE_DIR ${CURL_INCLUDE_DIRS})\
+ SET(CURL_LIBRARIES ${CURL_LDFLAGS})' ${source_dir}/CMakeLists.txt
+    export PKG_CONFIG_PATH=${DEP_PATH}/lib/pkgconfig:$PKG_CONFIG_PATH
+fi
 sed -i 's/add_subdirectory(oss_c_sdk_test)/#add_subdirectory(oss_c_sdk_test)/g' ${source_dir}/CMakeLists.txt
 sed -i 's/add_subdirectory(oss_c_sdk_sample)/#add_subdirectory(oss_c_sdk_sample)/g' ${source_dir}/CMakeLists.txt
 #sed -i '115a include_directories("/usr/local/oceanbase/deps/devel/include/mxml")' ${source_dir}/CMakeLists.txt

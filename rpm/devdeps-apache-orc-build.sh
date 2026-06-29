@@ -17,18 +17,20 @@ if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/orc-${VERSION}.*[tar|gz|bz2|xz|z
     wget --no-check-certificate https://downloads.apache.org/orc/orc-${VERSION}/orc-${VERSION}.tar.gz -O $ROOT_DIR/orc-${VERSION}.tar.gz
     # wget https://github.com/apache/orc/archive/refs/tags/rel/release-${VERSION}.tar.gz -O $ROOT_DIR/orc-${VERSION}.tar.gz --no-check-certificate
 fi
- 
-# build cmake source to fix ssl problem
-if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/cmake-3.22.1.tar.gz$"` ]]; then
-    echo "Download cmake source code"
-    wget https://cmake.org/files/v3.22/cmake-3.22.1.tar.gz -P $ROOT_DIR
-fi
- 
+
 # build dependencies
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 arch=$(uname -p)
 
-if [[ "${ID}"x == "alinux"x ]]; then
+# build cmake source to fix ssl problem
+if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/cmake-3.22.1.tar.gz$"` ]] && [ x"${arch}" != x"loongarch64" ]; then
+    echo "Download cmake source code"
+    wget https://cmake.org/files/v3.22/cmake-3.22.1.tar.gz -P $ROOT_DIR
+fi
+
+if [ x"${arch}" == x"loongarch64" ]; then
+    yum install -y gcc
+elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install obdevtools-gcc9-9.3.0 -y
     yum install -y devdeps-protobuf-3.19.5
@@ -39,6 +41,9 @@ else
 fi
 
 export TOOLS_DIR=/usr/local/oceanbase/devtools
+if [ x"${arch}" == x"loongarch64" ]; then
+    export TOOLS_DIR=/usr
+fi
 export PATH=$TOOLS_DIR/bin:$PATH
 export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
 export CC=$TOOLS_DIR/bin/gcc

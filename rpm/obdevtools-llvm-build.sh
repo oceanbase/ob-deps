@@ -9,12 +9,20 @@ RELEASE=${4:-"1"}
 
 # Configure custom source file directory
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
+arch=`uname -p`
 
 proxy_prefix=https://gh-proxy.com/
 # check source code
-if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/llvm-${VERSION}.*[tar|gz|bz2|xz|zip]$"` ]]; then
-    echo "Download source code"
-
+if [[ x"$arch" == x"loongarch64" ]]; then
+    PROJECT_NAME="obdevtools-llvm-loongarch64"
+    VERSION="13.0.1"
+    if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/llvm-project_$VERSION-5.*[tar|gz|bz2|xz|zip]$"` ]]; then
+        echo "Download $PROJECT_NAME source code"
+        wget https://ftp.loongnix.cn/toolchain/llvm/llvm13/llvm-project_$VERSION-5.src.tar.gz -O $ROOT_DIR/llvm-project_$VERSION-5.src.tar.gz --no-check-certificate
+    fi
+else
+    if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/llvm-${VERSION}.*[tar|gz|bz2|xz|zip]$"` ]]; then
+        echo "Download $PROJECT_NAME source code"
     wget ${proxy_prefix}https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/llvm-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
     wget ${proxy_prefix}https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/lld-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
     # wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/lldb-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
@@ -27,9 +35,12 @@ fi
 
 # prepare building environment
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
-arch=`uname -p`
 
-if [[ "${ID}"x == "alinux"x ]]; then
+if [[ x"$arch" == x"loongarch64" ]]; then
+    yum install -y ninja-build libffi-devel
+    Loongrepo="https://mirrors.aliyun.com/oceanbase/development-kit/an/8/${arch}"
+    yum install -y ${Loongrepo}/obdevtools-cmake-3.30.3-82025062210.an8.loongarch64
+elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install obdevtools-cmake-3.22.1 -y
     yum install obdevtools-gcc-12.3.0 -y
@@ -56,12 +67,21 @@ else
     done
 fi
 
-export PATH=/usr/local/oceanbase/devtools/bin:$PATH
-export LD_LIBRARY_PATH=/usr/local/oceanbase/devtools/lib:/usr/local/oceanbase/devtools/lib64:$LD_LIBRARY_PATH
-export CC=/usr/local/oceanbase/devtools/bin/gcc
-export CXX=/usr/local/oceanbase/devtools/bin/g++
-export AR=/usr/local/oceanbase/devtools/bin/gcc-ar
-export RANLIB=/usr/local/oceanbase/devtools/bin/gcc-ranlib
+if [[ x"$arch" == x"loongarch64" ]]; then
+    export PATH=/usr/local/oceanbase/devtools/bin:$PATH
+    export LD_LIBRARY_PATH=/usr/local/oceanbase/devtools/lib:/usr/local/oceanbase/devtools/lib64:$LD_LIBRARY_PATH
+    export CC=/usr/bin/gcc
+    export CXX=/usr/bin/g++
+    export AR=/usr/bin/gcc-ar
+    export RANLIB=/usr/bin/gcc-ranlib
+else
+    export PATH=/usr/local/oceanbase/devtools/bin:$PATH
+    export LD_LIBRARY_PATH=/usr/local/oceanbase/devtools/lib:/usr/local/oceanbase/devtools/lib64:$LD_LIBRARY_PATH
+    export CC=/usr/local/oceanbase/devtools/bin/gcc
+    export CXX=/usr/local/oceanbase/devtools/bin/g++
+    export AR=/usr/local/oceanbase/devtools/bin/gcc-ar
+    export RANLIB=/usr/local/oceanbase/devtools/bin/gcc-ranlib
+fi
 
 cd $CUR_DIR
 PROJECT_NAME_VERSION=$PROJECT_NAME.$VERSION

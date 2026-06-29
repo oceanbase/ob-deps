@@ -22,10 +22,15 @@ This is the repository for apache-avro-cpp
 
 %install
 # env
-export CFLAGS="-fPIC -pie -fstack-protector-strong"
-export CXXFLAGS="-fPIC -pie -fstack-protector-strong"
-export CPPFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"
+export CFLAGS="-fPIC -fstack-protector-strong"
+export CXXFLAGS="-fPIC -fstack-protector-strong -D_GLIBCXX_USE_CXX11_ABI=0"
 export LDFLAGS="-pie -z noexecstack -z now"
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    export CFLAGS="${CFLAGS} -mcmodel=large"
+    export CXXFLAGS="${CXXFLAGS} -mcmodel=large"
+    export LDFLAGS="${LDFLAGS} -mcmodel=large"
+fi
 # create dirs
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib64
@@ -36,7 +41,7 @@ ROOT_DIR=$OLDPWD/..
 # install snappy
 cd $ROOT_DIR
 cd %{_snappy_src}
-cmake -S . -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=./build/installed -DCMAKE_C_FLAGS="-g -O2 -fPIC" -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/gcc -DCMAKE_CXX_FLAGS="-g -O2 -fPIC" -DCMAKE_CXX_COMPILER=$TOOLS_DIR/bin/g++ 
+cmake -S . -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=./build/installed -DCMAKE_C_FLAGS="${CFLAGS} -g -O2" -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/gcc -DCMAKE_CXX_FLAGS="${CXXFLAGS} -g -O2" -DCMAKE_CXX_COMPILER=$TOOLS_DIR/bin/g++ 
 cd build
 make -j${CPU_CORES}
 make install
@@ -51,9 +56,9 @@ cd lang/c++
 cmake -S. -Bbuild \
           -DCMAKE_INSTALL_PREFIX=./build/installed \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_C_FLAGS="-g -O2 -fPIC -I$ROOT_DIR/%{_snappy_src}/build/installed/include/" \
+          -DCMAKE_C_FLAGS="${CFLAGS} -g -O2 -I$ROOT_DIR/%{_snappy_src}/build/installed/include/" \
           -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/gcc \
-          -DCMAKE_CXX_FLAGS="-g -O2 -fPIC -I$ROOT_DIR/%{_snappy_src}/build/installed/include/" \
+          -DCMAKE_CXX_FLAGS="${CXXFLAGS} -g -O2 -I$ROOT_DIR/%{_snappy_src}/build/installed/include/" \
           -DCMAKE_CXX_COMPILER=$TOOLS_DIR/bin/g++ \
           -DCMAKE_PREFIX_PATH="$ROOT_DIR/%{_snappy_src}/build/installed/" \
           -DAVRO_BUILD_TESTS=OFF
