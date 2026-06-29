@@ -1,5 +1,6 @@
 #!/bin/bash
 CUR_DIR=$(dirname $(readlink -f "$0"))
+source "$CUR_DIR/abi-env.sh"
 ROOT_DIR=$CUR_DIR/../
 PROJECT_DIR=${1:-"$CUR_DIR"}
 PROJECT_NAME=${2:-"devdeps-vsag"}
@@ -12,7 +13,7 @@ elif [[ $VERSION == "1.1.0" ]]; then
   VSAG_VERSION="0.15.12"
 else
   # default use newest vsag
-  VSAG_VERSION="0.18.7"
+  VSAG_VERSION="0.18.8"
 fi
 
 echo "VERSION=${VERSION} VSAG_VERSION=${VSAG_VERSION}"
@@ -79,7 +80,7 @@ fi
  
 export PATH=/usr/local/oceanbase/devtools/bin:$PATH
 export LD_LIBRARY_PATH=/usr/local/oceanbase/devtools/lib:/usr/local/oceanbase/devtools/lib64:$LD_LIBRARY_PATH
- 
+
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR ${PROJECT_NAME}.${VERSION} $VERSION $RELEASE
  

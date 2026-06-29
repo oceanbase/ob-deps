@@ -1,4 +1,4 @@
-Name: devdeps-vsag	
+Name: %(echo devdeps-vsag$ABI_FLAG)
 Version: %(echo $VERSION)	
 Release: %(echo $RELEASE)%{?dist}
 Summary: VSAG is a vector indexing library used for similarity search.
@@ -47,7 +47,7 @@ if [ x"${OS_ARCH}" == x"loongarch64" ]; then
     export FC=/usr/bin/gfortran
 
     export CFLAGS="-fPIC -mcmodel=large"
-    export CXXFLAGS="-fPIC -D_GLIBCXX_USE_CXX11_ABI=0 -mcmodel=large"
+    export CXXFLAGS="-fPIC ${ABI_CXXFLAGS} -mcmodel=large"
     export LDFLAGS="-pie -mcmodel=large"
 
     sed -i '11a\
@@ -63,13 +63,13 @@ else
     export CXX=/usr/local/oceanbase/devtools/bin/g++
     export FC=/usr/local/oceanbase/devtools/bin/gfortran
 
-    export CFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
-    export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
+    export CFLAGS="-fPIC -fPIE ${ABI_CXXFLAGS} -fstack-protector-strong"
+    export CXXFLAGS="-fPIC -fPIE ${ABI_CXXFLAGS} -fstack-protector-strong"
     export LDFLAGS="-z noexecstack -z now -pie"
 fi
 
-cmake . -DENABLE_CXX11_ABI=OFF -DENABLE_INTEL_MKL=OFF -DROARING_DISABLE_AVX512=ON
-
+cmake . -DENABLE_CXX11_ABI=${CXX_ABI} -DENABLE_INTEL_MKL=OFF -DROARING_DISABLE_AVX512=ON
+ 
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 
 for attempt in 1 2 3; do

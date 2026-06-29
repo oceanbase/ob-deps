@@ -1,4 +1,4 @@
-Name: devdeps-vsag	
+Name: %(echo devdeps-vsag$ABI_FLAG)
 Version: %(echo $VERSION)	
 Release: %(echo $RELEASE)%{?dist}
 Summary: VSAG is a vector indexing library used for similarity search.
@@ -22,7 +22,7 @@ mkdir -p %{buildroot}/%{_prefix}
 cd $OLDPWD/../
 rm -rf %{_vsag_src}
 tar xf %{_vsag_src}.tar.gz
-mv vsag-0.18.7 %{_default_version_src}
+mv vsag-0.18.8 %{_default_version_src}
 cd %{_default_version_src}
 
 # Accelerate GitHub dependency downloads used by CMake FetchContent.
@@ -44,12 +44,12 @@ export CC=/usr/local/oceanbase/devtools/bin/gcc
 export CXX=/usr/local/oceanbase/devtools/bin/g++
 export FC=/usr/local/oceanbase/devtools/bin/gfortran
 
-export CFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
-export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
+export CFLAGS="-fPIC -fPIE ${ABI_CXXFLAGS} -fstack-protector-strong"
+export CXXFLAGS="-fPIC -fPIE ${ABI_CXXFLAGS} -fstack-protector-strong"
 export LDFLAGS="-z noexecstack -z now -pie"
 
-cmake . -DENABLE_CXX11_ABI=OFF -DENABLE_INTEL_MKL=OFF -DROARING_DISABLE_AVX512=ON
-
+cmake . -DENABLE_CXX11_ABI=${CXX_ABI} -DENABLE_INTEL_MKL=OFF -DROARING_DISABLE_AVX512=ON
+ 
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make  -j${CPU_CORES}
  

@@ -1,4 +1,4 @@
-Name: devdeps-apache-orc
+Name: %(echo devdeps-apache-orc$ABI_FLAG)
 Version: 2.1.1
 Release: %(echo $RELEASE)%{?dist}
 Summary: This is the repository for in-memory analytics
@@ -20,7 +20,7 @@ This is the repository for in-memory analytics
 # create dirs
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/lib64
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}
-CPU_CORES=`grep -c ^processor /proc/cpuinfo`
+CPU_CORES=8
 ROOT_DIR=$OLDPWD/..
 
 OS_ARCH="$(uname -m)"
@@ -57,7 +57,7 @@ mkdir -p ${build_dir}
 # compile and install
 export LDFLAGS="-pie -z noexecstack -z now"
 export CFLAGS="-fPIC -pie -fstack-protector-strong"
-export CXXFLAGS="-fPIC -pie -fstack-protector-strong -D_GLIBCXX_USE_CXX11_ABI=0"
+export CXXFLAGS="-fPIC -pie -fstack-protector-strong ${ABI_CXXFLAGS}"
 OS_ARCH="$(uname -m)"
 if [ x"${OS_ARCH}" == x"loongarch64" ]; then
     export CFLAGS="${CFLAGS} -mcmodel=large"
