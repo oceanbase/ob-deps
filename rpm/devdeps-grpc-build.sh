@@ -1,6 +1,7 @@
 #!/bin/bash
 
 CUR_DIR=$(dirname $(readlink -f "$0"))
+source "$CUR_DIR/abi-env.sh"
 ROOT_DIR=$CUR_DIR/../
 PROJECT_DIR=${1:-"$CUR_DIR"}
 PROJECT_NAME=${2:-"devdeps-grpc"}
@@ -50,9 +51,6 @@ export DEPS_DIR=/usr/local/oceanbase/deps/devel
 export DEVTOOLS_DIR=/usr/local/oceanbase/devtools
 export CC=$DEVTOOLS_DIR/bin/gcc
 export CXX=$DEVTOOLS_DIR/bin/g++
-
-export ABI_FLAG=$([[ "${CXX_ABI}" == "1" ]] && echo "-abiv1" || echo "")
-export ABI_CXXFLAGS=$([[ "${CXX_ABI}" == "1" ]] && echo "-D_GLIBCXX_USE_CXX11_ABI=1" || echo "-D_GLIBCXX_USE_CXX11_ABI=0")
 
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME-$VERSION $VERSION $RELEASE

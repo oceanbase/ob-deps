@@ -6,6 +6,7 @@ VERSION=$3
 RELEASE=$4
 
 CUR_DIR=$(dirname $(readlink -f "$0"))
+source "$CUR_DIR/abi-env.sh"
 TOP_DIR=$CUR_DIR/.rpm_build
 echo "[BUILD] args: CURDIR=${CUR_DIR} PROJECT_NAME=${PROJECT_NAME} VERSION=${VERSION} RELEASE=${RELEASE}"
 # prepare rpm build dirs

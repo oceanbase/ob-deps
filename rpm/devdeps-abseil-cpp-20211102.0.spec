@@ -1,4 +1,4 @@
-Name: devdeps-abseil-cpp
+Name: %(echo devdeps-abseil-cpp$ABI_FLAG)
 Version: 20211102.0
 Release: %(echo $RELEASE)%{?dist}
 Summary: Abseil is an open-source collection of C++ code (compliant to C++14) designed to augment the C++ standard library.
@@ -22,8 +22,8 @@ The s2geometry-0.10.0 version depends on Abseil.
 
 %install
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}
-export CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
-export CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
+export CFLAGS="${ABI_CXXFLAGS} -fPIC -pie -fstack-protector-strong"
+export CXXFLAGS="${ABI_CXXFLAGS} -fPIC -pie -fstack-protector-strong"
 export LDFLAGS="-pie -z noexecstack -z now"
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 ROOT_DIR=$OLDPWD/..

@@ -1,5 +1,6 @@
 #!/bin/bash
 CUR_DIR=$(dirname $(readlink -f "$0"))
+source "$CUR_DIR/abi-env.sh"
 ROOT_DIR=$CUR_DIR/../
 PROJECT_DIR=${1:-"$CUR_DIR"}
 PROJECT_NAME=${2:-"devdeps-vsag"}
@@ -77,7 +78,7 @@ fi
  
 export PATH=/usr/local/oceanbase/devtools/bin:$PATH
 export LD_LIBRARY_PATH=/usr/local/oceanbase/devtools/lib:/usr/local/oceanbase/devtools/lib64:$LD_LIBRARY_PATH
- 
+
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR ${PROJECT_NAME}.${VERSION} $VERSION $RELEASE
  

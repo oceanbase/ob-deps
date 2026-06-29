@@ -1,16 +1,18 @@
 #!/bin/bash
 
 CUR_DIR=$(dirname $(readlink -f "$0"))
+source "$CUR_DIR/abi-env.sh"
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
 PROJECT_NAME=${2:-"devdeps-icu"}
 VERSION=${3:-"69.1"}
 RELEASE=${4:-"1"}
 
+proxy_prefix=https://gh-proxy.com/
 # check source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/icu-release-69-1.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download source code"
-    wget https://github.com/unicode-org/icu/archive/refs/tags/release-69-1.tar.gz -O $ROOT_DIR/icu-release-69-1.tar.gz --no-check-certificate
+    wget ${proxy_prefix}https://github.com/unicode-org/icu/archive/refs/tags/release-69-1.tar.gz -O $ROOT_DIR/icu-release-69-1.tar.gz --no-check-certificate
 fi
 
 # build dependencies

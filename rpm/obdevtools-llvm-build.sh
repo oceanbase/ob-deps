@@ -1,5 +1,6 @@
 #!/bin/bash
 CUR_DIR=$(dirname $(readlink -f "$0"))
+source "$CUR_DIR/abi-env.sh"
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$CUR_DIR"}
 PROJECT_NAME=${2:-"obdevtools-llvm"}
@@ -9,18 +10,19 @@ RELEASE=${4:-"1"}
 # Configure custom source file directory
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
 
+proxy_prefix=https://gh-proxy.com/
 # check source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/llvm-${VERSION}.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download source code"
 
-    wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/llvm-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
-    wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/lld-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
+    wget ${proxy_prefix}https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/llvm-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
+    wget ${proxy_prefix}https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/lld-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
     # wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/lldb-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
-    wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/clang-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
-    wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/compiler-rt-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
-    wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/libunwind-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
-    wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/third-party-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
-    wget https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/cmake-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
+    wget ${proxy_prefix}https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/clang-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
+    wget ${proxy_prefix}https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/compiler-rt-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
+    wget ${proxy_prefix}https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/libunwind-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
+    wget ${proxy_prefix}https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/third-party-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
+    wget ${proxy_prefix}https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/cmake-${VERSION}.src.tar.xz -P $ROOT_DIR --no-check-certificate
 fi
 
 # prepare building environment
