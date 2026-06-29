@@ -1,4 +1,4 @@
-Name: devdeps-icu
+Name: %(echo devdeps-icu$ABI_FLAG)
 Version: 69.1
 Release: %(echo $RELEASE)%{?dist}
 Summary: This is the repository for the International Components for Unicode
@@ -44,7 +44,7 @@ export CC=$TOOLS_DIR/bin/gcc
 export CXX=$TOOLS_DIR/bin/g++
 
 export CFLAGS="-fPIC -fstack-protector-strong"
-export CXXFLAGS="-fPIC -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
+export CXXFLAGS="-fPIC ${ABI_CXXFLAGS} -fstack-protector-strong"
 export LDFLAGS="-z noexecstack -z now -pie"
 
 cd ${build_dir}
