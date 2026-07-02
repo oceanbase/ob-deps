@@ -20,7 +20,9 @@ arch=`uname -p`
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 
 if [ x"${arch}" == x"loongarch64" ]; then
-    yum install -y gcc babassl-ob-8.3.7 devdeps-abseil-cpp-20211102.0
+    yum install -y gcc cmake
+    yum install -y ${loong_deps_url}/babassl-ob-8.3.7-20260627.an8.loongarch64
+    yum install -y ${loong_deps_url}/devdeps-abseil-cpp-20250814.1-20260630.an8.loongarch64.rpm
 elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install -y obdevtools-gcc9-9.3.0

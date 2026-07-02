@@ -20,7 +20,9 @@ fi
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 arch=$(uname -p)
 
-if [[ "${ID}"x == "alinux"x ]]; then
+if [[ "$arch" == "loongarch64" ]]; then
+    yum install -y gcc openssl openssl-devel
+elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
 else
     OS_RELEASE=$(grep -Po '(?<=PRETTY_NAME=")[^"]+' /etc/os-release | sed 's/^ *//;s/ *$//')
@@ -40,16 +42,18 @@ if [[ "$USE_LIBCURL" == "1" ]]; then
     yum install devdeps-libcurl-static-8.12.1 -y
 fi
 
-yum remove -y openssl-devel
-yum install -y obdevtools-gcc9-9.3.0 devdeps-openssl-static-1.1.1u
-export DEPS_DIR=/usr/local/oceanbase/deps/devel
-export TOOLS_DIR=/usr/local/oceanbase/devtools
+if [ x"${arch}" != x"loongarch64" ]; then
+    yum remove -y openssl-devel
+    yum install -y obdevtools-gcc9-9.3.0 devdeps-openssl-static-1.1.1u
+    export DEPS_DIR=/usr/local/oceanbase/deps/devel
+    export TOOLS_DIR=/usr/local/oceanbase/devtools
+else
+    export DEPS_DIR=/usr
+    export TOOLS_DIR=/usr
+fi
 export PATH=$TOOLS_DIR/bin:${DEPS_DIR}/bin:$PATH
 export CC=$TOOLS_DIR/bin/gcc
 export CXX=$TOOLS_DIR/bin/g++
 
-ln -sf $TOOLS_DIR/bin/g++  /usr/bin/c++
-ln -sf $TOOLS_DIR/bin/gcc  /usr/bin/cc
- 
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME-$VERSION $VERSION $RELEASE

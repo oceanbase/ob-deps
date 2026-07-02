@@ -26,8 +26,13 @@ Python is a programming language that lets you work quickly and integrate system
 
 %install
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}
-export CFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
-export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong"
+OS_ARCH="$(uname -m)"
+EXTRA_FLAGS=""
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    EXTRA_FLAGS="-mcmodel=large"
+fi
+export CFLAGS="-fPIC -fPIE -fstack-protector-strong ${EXTRA_FLAGS}"
+export CXXFLAGS="-fPIC -fPIE -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong ${EXTRA_FLAGS}"
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 ROOT_DIR=$OLDPWD/..
 
@@ -37,7 +42,7 @@ tar -xf %{_src}.tgz
 cd %{_src}
 mkdir build && cd build
 export PROFILE_TASK="-m test --pgo -i test_generators --timeout="
-LDFLAGS='-z noexecstack -z now -Wl,-rpath,\$$ORIGIN/../lib' ../configure --prefix=${RPM_BUILD_ROOT}/%{_prefix} --enable-shared --enable-optimizations --disable-test-modules --without-ensurepip --with-lto --with-openssl=${DEP_DIR}
+LDFLAGS="${EXTRA_FLAGS} -z noexecstack -z now -Wl,-rpath,\$$ORIGIN/../lib" ../configure --prefix=${RPM_BUILD_ROOT}/%{_prefix} --enable-shared --enable-optimizations --disable-test-modules --without-ensurepip --with-lto --with-openssl=${DEP_DIR}
 
 make -j${CPU_CORES}
 make install

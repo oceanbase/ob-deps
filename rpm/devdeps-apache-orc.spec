@@ -56,8 +56,8 @@ mkdir -p ${build_dir}
 
 # compile and install
 export LDFLAGS="-pie -z noexecstack -z now"
-export CFLAGS="-fPIC -pie -fstack-protector-strong"
-export CXXFLAGS="-fPIC -pie -fstack-protector-strong ${ABI_CXXFLAGS}"
+export CFLAGS="-fPIC -fstack-protector-strong"
+export CXXFLAGS="-fPIC -fstack-protector-strong ${ABI_CXXFLAGS}"
 OS_ARCH="$(uname -m)"
 if [ x"${OS_ARCH}" == x"loongarch64" ]; then
     export CFLAGS="${CFLAGS} -mcmodel=large"

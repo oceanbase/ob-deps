@@ -46,6 +46,16 @@ export CXX=$TOOLS_DIR/bin/g++
 export CFLAGS="-fPIC -fstack-protector-strong"
 export CXXFLAGS="-fPIC ${ABI_CXXFLAGS} -fstack-protector-strong"
 export LDFLAGS="-z noexecstack -z now -pie"
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    export CFLAGS="${CFLAGS} -mcmodel=large"
+    export CXXFLAGS="${CXXFLAGS} -mcmodel=large"
+    export LDFLAGS="${LDFLAGS} -mcmodel=large"
+    cp ../patch/config.guess ./icu4c/source
+    cp ../patch/config.sub ./icu4c/source
+    sed -i '118a\
+    defined(__loongarch64__) || defined(__loongarch__) || defined(__loongarch) || \\' ./icu4c/source/i18n/double-conversion-utils.h
+fi
 
 cd ${build_dir}
 cmake .. -DICU_VERSION_DIR=icu4c -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release

@@ -40,41 +40,101 @@ sed -i \
     -e 's#http://vsagcache.oss-rg-china-mainland.aliyuncs.com/boost/boost_1_67_0.tar.gz#https://archives.boost.io/release/1.67.0/source/boost_1_67_0.tar.gz#g' \
     extern/boost/boost.cmake
 
-export CC=/usr/local/oceanbase/devtools/bin/gcc
-export CXX=/usr/local/oceanbase/devtools/bin/g++
-export FC=/usr/local/oceanbase/devtools/bin/gfortran
+OS_ARCH="$(uname -m)"
+EXTRA_CMAKE_ARGS=""
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    export CC=/usr/bin/gcc
+    export CXX=/usr/bin/g++
+    export FC=/usr/bin/gfortran
 
-export CFLAGS="-fPIC -fPIE ${ABI_CXXFLAGS} -fstack-protector-strong"
-export CXXFLAGS="-fPIC -fPIE ${ABI_CXXFLAGS} -fstack-protector-strong"
-export LDFLAGS="-z noexecstack -z now -pie"
+    export CFLAGS="-fPIC -fPIE ${ABI_CXXFLAGS} -fstack-protector-strong -mcmodel=large"
+    export CXXFLAGS="-fPIC -fPIE ${ABI_CXXFLAGS} -fstack-protector-strong -mcmodel=large"
+    export LDFLAGS="-z noexecstack -z now -pie -mcmodel=large"
 
-cmake . -DENABLE_CXX11_ABI=${CXX_ABI} -DENABLE_INTEL_MKL=OFF -DROARING_DISABLE_AVX512=ON
+    # Tests/examples need stdc++fs and <iomanip>; skip them — not needed for the RPM package.
+    EXTRA_CMAKE_ARGS="-DENABLE_TESTS=OFF -DENABLE_EXAMPLES=OFF"
+
+    sed -i '11a\
+add_compile_options(\
+$<$<COMPILE_LANGUAGE:CXX>:-Wno-suggest-override>\
+)\
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -mcmodel=large")\
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -mcmodel=large")' ./CMakeLists.txt
+    cp ../loongarch/vsag_openblas.cmake ./extern/openblas/openblas.cmake
+    cp ../loongarch/vsag_CMakeLists.txt ./tests/CMakeLists.txt
+    # Fix: unique_ptr<IndexFeatureList> destructor requires complete type in GCC 8;
+    # include the full definition so every translation unit can instantiate it.
+    sed -i '/^#include "typing.h"/a #include "../index_feature_list.h"' \
+        ./src/algorithm/inner_index_interface.h
+else
+    export CC=/usr/local/oceanbase/devtools/bin/gcc
+    export CXX=/usr/local/oceanbase/devtools/bin/g++
+    export FC=/usr/local/oceanbase/devtools/bin/gfortran
+
+    export CFLAGS="-fPIC -fPIE ${ABI_CXXFLAGS} -fstack-protector-strong"
+    export CXXFLAGS="-fPIC -fPIE ${ABI_CXXFLAGS} -fstack-protector-strong"
+    export LDFLAGS="-z noexecstack -z now -pie"
+fi
+
+cmake . -DENABLE_CXX11_ABI=${CXX_ABI} -DENABLE_INTEL_MKL=OFF -DROARING_DISABLE_AVX512=ON ${EXTRA_CMAKE_ARGS}
  
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
-make  -j${CPU_CORES}
+
+for attempt in 1 2 3 4 5; do
+    if make -j${CPU_CORES}; then break; fi
+    if [ $attempt -eq 1 ] && [ x"${OS_ARCH}" == x"loongarch64" ]; then
+        sed -i '1a\#define _GNU_SOURCE' ./_deps/cpuinfo-src/src/api.c
+        sed -i '51a\
+#elif defined(__loongarch__) || defined(__loongarch64)\
+#if defined(__linux__)\
+    cpuinfo_is_initialized = true;\
+#else\
+    cpuinfo_log_error("operating system is not supported in cpuinfo");\
+#endif' ./_deps/cpuinfo-src/src/init.c
+    fi
+    [ $attempt -lt 5 ] && echo "Build failed (attempt $attempt/5), retrying..." \
+        || { echo "Build failed after 5 attempts."; exit 1; }
+done
  
 mkdir -p %{buildroot}/%{_prefix}/lib/vsag_lib
 mkdir -p %{buildroot}/%{_prefix}/include/vsag
-cp ./include/vsag/* %{buildroot}/%{_prefix}/include/vsag
-cp /usr/local/oceanbase/devtools/lib64/libgfortran.so.5 %{buildroot}/%{_prefix}/lib/vsag_lib/libgfortran.so
-cp /usr/local/oceanbase/devtools/lib64/libgfortran.a %{buildroot}/%{_prefix}/lib/vsag_lib/libgfortran_static.a
-cp /usr/local/oceanbase/devtools/lib64/libgomp.a %{buildroot}/%{_prefix}/lib/vsag_lib/libgomp_static.a
-cp /usr/local/oceanbase/devtools/lib64/libgomp.so %{buildroot}/%{_prefix}/lib/vsag_lib/libgomp.so
-cp ./src/libvsag.so %{buildroot}/%{_prefix}/lib/vsag_lib
-cp ./src/libvsag_static.a %{buildroot}/%{_prefix}/lib/vsag_lib
-cp ./src/simd/libsimd.a %{buildroot}/%{_prefix}/lib/vsag_lib
-cp ./_deps/cpuinfo-build/libcpuinfo.a %{buildroot}/%{_prefix}/lib/vsag_lib
-cp ./libdiskann.a %{buildroot}/%{_prefix}/lib/vsag_lib
-cp ./openblas/install/lib/libopenblas.a %{buildroot}/%{_prefix}/lib/vsag_lib
-#cp ./_deps/roaringbitmap-build/src/libroaring.a %{buildroot}/%{_prefix}/lib/vsag_lib
-cp ./antlr4/install/lib/libantlr4-runtime.a %{buildroot}/%{_prefix}/lib/vsag_lib/
-cp ./libantlr4-autogen.a %{buildroot}/%{_prefix}/lib/vsag_lib/
-cp ./_deps/fmt-build/libfmt.a %{buildroot}/%{_prefix}/lib/vsag_lib/
 
-if [[ x"$ENABLE_DYNAMIC" == x"1" ]]; then
-    cp $GCC_DEPS_DIR/usr/local/oceanbase/devtools/lib64/libgomp.a %{buildroot}/%{_prefix}/lib/vsag_lib/libgomp_embed_static.a
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    cp ./include/vsag/* %{buildroot}/%{_prefix}/include/vsag
+    cp ./src/libvsag.so %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./src/libvsag_static.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./src/simd/libsimd.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./_deps/cpuinfo-build/libcpuinfo.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./libdiskann.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./openblas/install/lib/libopenblas.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./antlr4/install/lib/libantlr4-runtime.a %{buildroot}/%{_prefix}/lib/vsag_lib/
+    cp ./libantlr4-autogen.a %{buildroot}/%{_prefix}/lib/vsag_lib/
+    cp ./_deps/fmt-build/libfmt.a %{buildroot}/%{_prefix}/lib/vsag_lib/
+
+    cp /usr/lib64/libgfortran.so.5.0.0 %{buildroot}/%{_prefix}/lib/vsag_lib/libgfortran.so
+    cp /usr/lib64/libgomp.so.1.0.0 %{buildroot}/%{_prefix}/lib/vsag_lib/libgomp.so
+    cp /usr/lib/gcc/loongarch64-redhat-linux/8/libgomp.a %{buildroot}/%{_prefix}/lib/vsag_lib/libgomp_static.a
+else
+    cp ./include/vsag/* %{buildroot}/%{_prefix}/include/vsag
+    cp /usr/local/oceanbase/devtools/lib64/libgfortran.so.5 %{buildroot}/%{_prefix}/lib/vsag_lib/libgfortran.so
+    cp /usr/local/oceanbase/devtools/lib64/libgfortran.a %{buildroot}/%{_prefix}/lib/vsag_lib/libgfortran_static.a
+    cp /usr/local/oceanbase/devtools/lib64/libgomp.a %{buildroot}/%{_prefix}/lib/vsag_lib/libgomp_static.a
+    cp /usr/local/oceanbase/devtools/lib64/libgomp.so %{buildroot}/%{_prefix}/lib/vsag_lib/libgomp.so
+    cp ./src/libvsag.so %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./src/libvsag_static.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./src/simd/libsimd.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./_deps/cpuinfo-build/libcpuinfo.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./libdiskann.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./openblas/install/lib/libopenblas.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    #cp ./_deps/roaringbitmap-build/src/libroaring.a %{buildroot}/%{_prefix}/lib/vsag_lib
+    cp ./antlr4/install/lib/libantlr4-runtime.a %{buildroot}/%{_prefix}/lib/vsag_lib/
+    cp ./libantlr4-autogen.a %{buildroot}/%{_prefix}/lib/vsag_lib/
+    cp ./_deps/fmt-build/libfmt.a %{buildroot}/%{_prefix}/lib/vsag_lib/
+
+    if [[ x"$ENABLE_DYNAMIC" == x"1" ]]; then
+        cp $GCC_DEPS_DIR/usr/local/oceanbase/devtools/lib64/libgomp.a %{buildroot}/%{_prefix}/lib/vsag_lib/libgomp_embed_static.a
+    fi
 fi
-
 arch=$(uname -p)
 if [ "$arch" = "x86_64" ]; then
     cp /usr/local/oceanbase/devtools/lib64/libquadmath.so %{buildroot}/%{_prefix}/lib/vsag_lib
@@ -91,6 +151,6 @@ fi
 %postun -p /sbin/ldconfig
  
 %changelog
-* Thu Jun 6 2025 oceanbase
-- vsag-1.2.0
+* Tue Jun 30 2026 oceanbase
+- vsag-1.2.0: fix roaringbitmap download (vsagcache 403)
  

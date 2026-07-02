@@ -17,8 +17,10 @@ fi
 
 # build dependencies
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
-
-if [[ "${ID}"x == "alinux"x ]]; then
+arch=`uname -p`
+if [ x"${arch}" == x"loongarch64" ]; then
+    yum install -y gcc cmake
+elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install obdevtools-gcc9-9.3.0 -y
     yum install obdevtools-cmake-3.22.1 -y
@@ -45,6 +47,9 @@ else
 fi
 
 export TOOLS_DIR=/usr/local/oceanbase/devtools
+if [ x"${arch}" == x"loongarch64" ]; then
+    export TOOLS_DIR=/usr
+fi
 export DEP_DIR=/usr/local/oceanbase/deps/devel
 export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
 

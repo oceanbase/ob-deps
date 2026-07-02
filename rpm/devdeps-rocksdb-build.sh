@@ -32,7 +32,11 @@ ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 arch=`uname -p`
 
 if [[ x"${arch}" == x"loongarch64" ]]; then
-    yum install -y obdevtools-llvm-13.0.1
+    if [[ "${VERSION}" == "10.9.1" ]]; then
+        yum install -y ${loong_deps_url}/obdevtools-llvm-13.0.1-1.an8.loongarch64.rpm
+    else
+        yum install -y gcc cmake
+    fi
 elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install -y obdevtools-gcc-12.3.0
@@ -59,12 +63,18 @@ else
 fi
 
 export TOOLS_DIR=/usr/local/oceanbase/devtools
+if [[ x"${arch}" == x"loongarch64" ]]; then
+    if [[ "${VERSION}" == "10.9.1" ]]; then
+        export CC=$TOOLS_DIR/bin/clang
+        export CXX=$TOOLS_DIR/bin/clang++
+    else
+        export TOOLS_DIR=/usr
+        export CC=$TOOLS_DIR/bin/gcc
+        export CXX=$TOOLS_DIR/bin/g++
+    fi
+fi
 export PATH=$TOOLS_DIR/bin:$PATH
 export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
-if [[ x"${arch}" == x"loongarch64" ]]; then
-    export CC=$TOOLS_DIR/bin/clang
-    export CXX=$TOOLS_DIR/bin/clang++
-fi
 
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME-$VERSION $VERSION $RELEASE

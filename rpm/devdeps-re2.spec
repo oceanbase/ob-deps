@@ -43,6 +43,14 @@ rm -rf ${build_dir}
 mkdir -p ${tmp_install_dir}
 mkdir -p ${build_dir}
 
+OS_ARCH="$(uname -m)"
+EXTRA_FLAGS=""
+ABI_CXXFLAGS=""
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    EXTRA_FLAGS="-mcmodel=large"
+    ABI_CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"
+fi
+
 # compile and install re2
 cd ${build_dir}
 cmake -DRE2_TEST=OFF \
@@ -53,8 +61,8 @@ cmake -DRE2_TEST=OFF \
       -DCMAKE_INSTALL_LIBDIR=lib64 \
       -DCMAKE_INSTALL_PREFIX=${tmp_install_dir} \
       -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG" \
-      -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG" \
+      -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG ${EXTRA_FLAGS}" \
+      -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG ${EXTRA_FLAGS} ${ABI_CXXFLAGS}" \
       -S .. -B .
 make -j${CPU_CORES}
 make install
