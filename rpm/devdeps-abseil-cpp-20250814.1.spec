@@ -19,8 +19,8 @@ The Abseil library code is collected from Google's own C++ code base.
 
 %install
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}
-export CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
-export CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
+export CFLAGS="-fPIC -fstack-protector-strong"
+export CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -fstack-protector-strong"
 export LDFLAGS="-pie -z noexecstack -z now"
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 ROOT_DIR=$OLDPWD/..
@@ -30,6 +30,16 @@ rm -rf %{_src}
 mkdir -p %{_src}
 tar zxf %{_src}.tar.gz --strip-components=1 -C %{_src}
 cd %{_src}
+
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    export CFLAGS="${CFLAGS} -mcmodel=large"
+    export CXXFLAGS="${CXXFLAGS} -mcmodel=large"
+    export LDFLAGS="${LDFLAGS} -mcmodel=large"
+    sed -i '164a\
+#elif defined(__loongarch__)  // LoongArch 架构\
+    return reinterpret_cast<void*>(context->uc_mcontext.__pc);' ./absl/debugging/internal/examine_stack.cc
+fi
 
 mkdir -p build && cd build
 cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} \

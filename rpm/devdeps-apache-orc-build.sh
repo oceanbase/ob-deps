@@ -33,11 +33,11 @@ if [ x"${arch}" == x"loongarch64" ]; then
 elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install obdevtools-gcc9-9.3.0 -y
-    yum install -y devdeps-protobuf-3.19.5
+    # yum install -y devdeps-protobuf-3.19.5
 else
     wget https://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
     yum install obdevtools-gcc9-9.3.0 -y
-    yum install -y devdeps-protobuf-3.19.5
+    # yum install -y devdeps-protobuf-3.19.5
 fi
 
 export TOOLS_DIR=/usr/local/oceanbase/devtools

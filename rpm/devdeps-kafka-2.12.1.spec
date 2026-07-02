@@ -30,6 +30,12 @@ export CFLAGS="-fPIC -fstack-protector-strong -I${DEPS_DIR}/include"
 export CXXFLAGS="-fPIC -D_GLIBCXX_USE_CXX11_ABI=0 -fstack-protector-strong -I${DEPS_DIR}/include"
 export LDFLAGS="-z noexecstack -z now -pie -L${DEPS_DIR}/lib"
 export PKG_CONFIG_PATH=${DEPS_DIR}/lib/pkgconfig:$PKG_CONFIG_PATH
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    export CFLAGS="${CFLAGS} -mcmodel=large"
+    export CXXFLAGS="${CXXFLAGS} -mcmodel=large"
+    export LDFLAGS="${LDFLAGS} -mcmodel=large"
+fi
 
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 ROOT_DIR=$OLDPWD/..

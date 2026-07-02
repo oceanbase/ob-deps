@@ -21,8 +21,11 @@ if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/re2-$VERSION.*[tar|gz|bz2|xz|zip
 fi
 
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
- 
-if [[ "${ID}"x == "alinux"x ]]; then
+arch=`uname -p`
+if [ x"${arch}" == x"loongarch64" ]; then
+    yum install -y gcc cmake
+    yum install -y ${loong_deps_url}/devdeps-abseil-cpp-20250814.1-20260630.an8.loongarch64.rpm
+elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install -y obdevtools-gcc9-9.3.0
     yum install -y obdevtools-cmake-3.22.1
@@ -50,6 +53,9 @@ else
 fi
 
 export TOOLS_DIR=/usr/local/oceanbase/devtools
+if [ x"${arch}" == x"loongarch64" ]; then
+    export TOOLS_DIR=/usr
+fi
 export DEP_DIR=/usr/local/oceanbase/deps/devel
 export ABSL_DIR=$DEP_DIR/lib64/cmake/absl/
 
