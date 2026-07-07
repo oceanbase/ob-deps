@@ -52,8 +52,8 @@ sed -i '16iAM_PROG_AR' ./configure.ac
 make -j${CPU_CORES}
 make install
 
-# 符号本地化（避免符号冲突）
-find $TMP_INSTALL/lib -name "*.a" -exec objcopy --localize-hidden {} \;
+## 符号本地化（避免符号冲突）
+# find $TMP_INSTALL/lib -name "*.a" -exec objcopy --localize-hidden {} \;
 
 # 复制静态库 & 头文件
 cp -r ${source_dir}/%{_src}/*.h $TMP_INSTALL/include/
