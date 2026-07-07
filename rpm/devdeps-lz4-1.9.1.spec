@@ -53,9 +53,9 @@ make install PREFIX=${tmp_install}
 cp -r ${tmp_install}/lib/liblz4.a $RPM_BUILD_ROOT/%{_prefix}/lib/lz4/lz4_191.a || true
 cp -r ${tmp_install}/include/lz4.h $RPM_BUILD_ROOT/%{_prefix}/include/lz4_191/ || true
 cp -r ${tmp_install}/include/lz4hc.h $RPM_BUILD_ROOT/%{_prefix}/include/lz4_191/ || true
-# 符号本地化（防止符号冲突）
-echo "Localizing symbols..."
-objcopy --localize-hidden "$RPM_BUILD_ROOT/%{_prefix}/lib/lz4/lz4_191.a"
+## 符号本地化（防止符号冲突）
+# echo "Localizing symbols..."
+# objcopy --localize-hidden "$RPM_BUILD_ROOT/%{_prefix}/lib/lz4/lz4_191.a"
 
 # package infomation
 %files 

@@ -51,9 +51,9 @@ make install PREFIX=${tmp_install}
 # 复制静态库 & 头文件
 cp -r ${tmp_install}/lib/liblz4.a $RPM_BUILD_ROOT/%{_prefix}/lib/lz4/lz4_171.a || true
 cp -r ${tmp_install}/include/lz4.h $RPM_BUILD_ROOT/%{_prefix}/include/lz4_171/ || true
-# 符号本地化（防止符号冲突）
-echo "Localizing symbols..."
-objcopy --localize-hidden "$RPM_BUILD_ROOT/%{_prefix}/lib/lz4/lz4_171.a"
+## 符号本地化（防止符号冲突）
+# echo "Localizing symbols..."
+# objcopy --localize-hidden "$RPM_BUILD_ROOT/%{_prefix}/lib/lz4/lz4_171.a"
 
 # package infomation
 %files 
