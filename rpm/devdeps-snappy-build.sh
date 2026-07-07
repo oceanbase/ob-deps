@@ -29,7 +29,7 @@ pkg_dir=$target_dir_3rd/pkg
 mkdir -p $pkg_dir
 
 if [[ x"${arch}" == x"loongarch64" ]]; then
-    yum install -y gcc
+    yum install -y gcc automake autoconf libtool
 elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     dep_pkgs=(obdevtools-gcc9-9.3.0-152024092711.al)

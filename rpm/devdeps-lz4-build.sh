@@ -29,7 +29,7 @@ pkg_dir=$target_dir_3rd/pkg
 mkdir -p $pkg_dir
 
 if [[ x"${arch}" == x"loongarch64" ]]; then
-    yum install -y obdevtools-llvm-13.0.1
+    yum install -y ${loong_deps_url}/obdevtools-llvm-13.0.1-1.an8.loongarch64.rpm
 elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     dep_pkgs=(obdevtools-llvm-17.0.6-72025060300.al)
