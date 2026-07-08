@@ -1,5 +1,5 @@
 Name: devdeps-prometheus-cpp
-Version: 1.1.0
+Version: %(echo $VERSION)
 Release: %(echo $RELEASE)%{?dist}
 Url: https://github.com/jupp0r/prometheus-cpp
 Summary: This library implements the Prometheus Data Model to enable Metrics-Driven Development for C++ services.
@@ -33,9 +33,16 @@ mkdir _build
 cd _build
 
 # Please use gcc5.2 or higher version
-export CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -fstack-protector-strong"
+export CFLAGS="-fPIC -fstack-protector-strong"
 export CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -fstack-protector-strong"
 export LDFLAGS="-pie -z noexecstack -z now"
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    export CFLAGS="${CFLAGS} -mcmodel=large"
+    export CXXFLAGS="${CXXFLAGS} -mcmodel=large"
+    export LDFLAGS="${LDFLAGS} -mcmodel=large"
+fi
+
 cmake .. -DCMAKE_INSTALL_PREFIX=%{_prefix} -DBUILD_SHARED_LIBS=OFF -DENABLE_TESTING=OFF
 CPU_CORES=`grep -c ^processor /proc/cpuinfo`
 make -j${CPU_CORES};
