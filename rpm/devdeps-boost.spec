@@ -3,7 +3,7 @@
 # http://www.rpm.org/max-rpm/ch-rpm-inside.html              #
 ##############################################################
 Name: devdeps-boost
-Version: 1.74.0
+Version: 1.81.0
 Release: %(echo $RELEASE)%{?dist}
 # if you want use the parameter of rpm_create on build time,
 # uncomment below
@@ -14,7 +14,7 @@ Url: https://boostorg.jfrog.io/artifactory/main/release/
 %undefine _missing_build_ids_terminate_build
 %define _build_id_links compat
 %define _prefix /usr/local/oceanbase/deps/devel
-%define _src boost_1_74_0
+%define _src boost_1_81_0
 
 %description
 The Boost C++ Libraries are a collection of modern libraries based on the C++ standard.
@@ -66,6 +66,8 @@ rm -rf libs
 %postun -p /sbin/ldconfig
 
 %changelog
+* Wed Jul 29 2026 zongmei.zzm
+- upgrade to 1.81.0
 * Tue Mar 10 2022 xuhao.yf
 - upgrade to 1.74.0
 * Fri Feb 14 2020 yuanqi.xhf

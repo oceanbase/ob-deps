@@ -3,14 +3,14 @@ CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
 PROJECT_NAME=${2:-"devdeps-boost"}
-VERSION=${3:-"1.74.0"}
+VERSION=${3:-"1.81.0"}
 RELEASE=${4:-"1"}
 TOP_DIR=$CUR_DIR/.rpm_build
 
 # download source code
-if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/boost_1_74_0.*[tar|gz|bz2|xz|zip]$"` ]]; then
+if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/boost_1_81_0.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download source code"
-    wget https://sourceforge.net/projects/boost/files/boost/1.74.0/boost_1_74_0.tar.bz2/download -O $ROOT_DIR/boost_1_74_0.tar.bz2 --no-check-certificate
+    wget https://archives.boost.io/release/1.81.0/source/boost_1_81_0.tar.bz2 -O $ROOT_DIR/boost_1_81_0.tar.bz2 --no-check-certificate
 fi
 
 

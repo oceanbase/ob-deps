@@ -3,7 +3,7 @@
 # http://www.rpm.org/max-rpm/ch-rpm-inside.html              #
 ##############################################################
 Name: devdeps-libxml2
-Version: 2.13.6
+Version: 2.15.3
 Release: %(echo $RELEASE)%{?dist}
 # if you want use the parameter of rpm_create on build time,
 # uncomment below
@@ -87,6 +87,8 @@ make install;
 %postun -p /sbin/ldconfig
 
 %changelog
+* Wed Jul 29 2026 zongmei.zzm
+- upgrade to 2.15.3
 * Mon Mar 17 2025 huaixin.lmy
 - upgrade to 2.13.6
 * Mon Nov 14 2022 xuhao.yf
