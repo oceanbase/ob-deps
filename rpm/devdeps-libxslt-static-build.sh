@@ -231,7 +231,8 @@ fi
 
 if [ ! -f "$ROOT_DIR/$SOURCE_ARCHIVE" ]; then
     echo "Download source code"
-    wget "https://download.gnome.org/sources/libxslt/$VERSION_SERIES/$SOURCE_ARCHIVE" \
+    wget --no-check-certificate \
+        "https://download.gnome.org/sources/libxslt/$VERSION_SERIES/$SOURCE_ARCHIVE" \
         -O "$ROOT_DIR/$SOURCE_ARCHIVE"
 fi
 echo "$SOURCE_SHA256  $ROOT_DIR/$SOURCE_ARCHIVE" | sha256sum --check -
