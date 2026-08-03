@@ -6,6 +6,7 @@ PROJECT_DIR=${1:-"$ROOT_DIR"}
 PROJECT_NAME=${2:-"devdeps-libxslt-static"}
 VERSION=${3:-"1.1.34"}
 RELEASE=${4:-"1"}
+VERSION_SERIES=${VERSION%.*}
 
 # Configure custom source file directory
 [ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
@@ -20,6 +21,7 @@ fi
 
 OS_RELEASE=`grep -Po '(?<=release )\d' /etc/redhat-release`
 arch=`uname -p`
+ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 
 setup_centos7_repo()
 {
@@ -39,7 +41,7 @@ setup_centos7_repo()
 
 if [[ "$arch" == "loongarch64" ]]; then
     yum install -y ${loong_deps_url}/devdeps-libxml2-2.15.3-22026073116.an8.loongarch64.rpm
-if [[ "${ID}"x == "alinux"x ]]; then
+elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install devdeps-libxml2-2.15.3 -y
 else
@@ -48,7 +50,7 @@ else
     yum install devdeps-libxml2-2.15.3 -y
 fi
 
-export DEP_DIR=$target_dir_3rd/usr/local/oceanbase/deps/devel
+export DEP_DIR=/usr/local/oceanbase/deps/devel
 export LIBXML2_PREFIX=$DEP_DIR
 
 cd $CUR_DIR
