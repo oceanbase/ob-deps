@@ -34,7 +34,7 @@ cd %{_src}
 export XML_CONFIG="$LIBXML2_PREFIX/bin/xml2-config"
 export LIBXML_CFLAGS="$("$XML_CONFIG" --prefix="$LIBXML2_PREFIX" --cflags)"
 export LIBXML_LIBS="$("$XML_CONFIG" --prefix="$LIBXML2_PREFIX" --libs)"
-export CFLAGS="${CFLAGS:--O2} -fPIC"
+export CFLAGS="${CFLAGS:--O2} -fPIC -fno-reorder-blocks-and-partition"
 
 ./configure \
   --prefix=%{_prefix} \
