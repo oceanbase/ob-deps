@@ -31,6 +31,12 @@ rm -rf %{_src}
 tar xf %{_src}.tar.xz
 cd %{_src}
 
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+  cp ../patch/config.guess ./
+  cp ../patch/config.sub ./
+fi
+
 export XML_CONFIG="$LIBXML2_PREFIX/bin/xml2-config"
 export LIBXML_CFLAGS="$("$XML_CONFIG" --prefix="$LIBXML2_PREFIX" --cflags)"
 export LIBXML_LIBS="$("$XML_CONFIG" --prefix="$LIBXML2_PREFIX" --libs)"
@@ -74,9 +80,16 @@ for metadata in \
     "$RPM_BUILD_ROOT/%{_prefix}/lib/pkgconfig/libxslt.pc" \
     "$RPM_BUILD_ROOT/%{_prefix}/lib/pkgconfig/libexslt.pc" \
     "$RPM_BUILD_ROOT/%{_prefix}/lib/xsltConf.sh"; do
-  sed -i "s|$LIBXML2_PREFIX|%{_libxml2_prefix}|g" "$metadata"
-  if grep -F "$LIBXML2_PREFIX" "$metadata"; then
+  sed -i \
+    -e "s|$LIBXML2_PREFIX|%{_libxml2_prefix}|g" \
+    -E -e "s|[^[:space:]']*/usr/local/oceanbase/deps/devel/lib/libxml2\\.la|-lxml2|g" \
+    "$metadata"
+  if [ "$LIBXML2_PREFIX" != "%{_libxml2_prefix}" ] && grep -F "$LIBXML2_PREFIX" "$metadata"; then
     echo "Temporary libxml2 build path remains in $metadata" >&2
+    exit 1
+  fi
+  if grep -E '/BUILDROOT/.*devdeps-libxml2|/\.rpm_build/BUILDROOT/.*devdeps-libxml2' "$metadata"; then
+    echo "Temporary libxml2 buildroot path remains in $metadata" >&2
     exit 1
   fi
 done
