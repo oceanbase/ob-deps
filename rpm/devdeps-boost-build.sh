@@ -1,23 +1,31 @@
 #!/bin/bash
+set -e
+
 CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
 PROJECT_NAME=${2:-"devdeps-boost"}
-VERSION=${3:-"1.81.0"}
+VERSION=${3:-"1.91.0"}
 RELEASE=${4:-"1"}
 TOP_DIR=$CUR_DIR/.rpm_build
+BOOST_SOURCE_DIR=boost_${VERSION//./_}
+SOURCE_ARCHIVE=${BOOST_SOURCE_DIR}.tar.bz2
+SOURCE_SHA256=de5e6b0e4913395c6bdfa90537febd9028ea4c0735d2cdb0cd9b45d5f51264f5
 
 # download source code
-if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/boost_1_81_0.*[tar|gz|bz2|xz|zip]$"` ]]; then
+if [[ ! -f "$ROOT_DIR/$SOURCE_ARCHIVE" ]]; then
     echo "Download source code"
-    wget https://archives.boost.io/release/1.81.0/source/boost_1_81_0.tar.bz2 -O $ROOT_DIR/boost_1_81_0.tar.bz2 --no-check-certificate
+    wget "https://archives.boost.io/release/$VERSION/source/$SOURCE_ARCHIVE" \
+        -O "$ROOT_DIR/$SOURCE_ARCHIVE" --no-check-certificate
 fi
+echo "$SOURCE_SHA256  $ROOT_DIR/$SOURCE_ARCHIVE" | sha256sum --check -
 
 
 # set env variables
 export PROJECT_NAME
 export VERSION
 export RELEASE
+export BOOST_SOURCE_DIR
 
 # prepare rpm build dirs
 rm -rf $TOP_DIR

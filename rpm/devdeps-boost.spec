@@ -3,18 +3,18 @@
 # http://www.rpm.org/max-rpm/ch-rpm-inside.html              #
 ##############################################################
 Name: devdeps-boost
-Version: 1.81.0
+Version: %(echo $VERSION)
 Release: %(echo $RELEASE)%{?dist}
 # if you want use the parameter of rpm_create on build time,
 # uncomment below
 Summary: boost for oceanbase
 Group: alibaba/application
 License: Boost Software License
-Url: https://boostorg.jfrog.io/artifactory/main/release/
+Url: https://archives.boost.io/release/
 %undefine _missing_build_ids_terminate_build
 %define _build_id_links compat
 %define _prefix /usr/local/oceanbase/deps/devel
-%define _src boost_1_81_0
+%define _src %(echo $BOOST_SOURCE_DIR)
 
 %description
 The Boost C++ Libraries are a collection of modern libraries based on the C++ standard.
@@ -38,7 +38,7 @@ source_dir=$(pwd)
 mkdir -p ${source_dir}/tmp_install
 export PATH=$TOOLS_DIR/bin:$PATH;
 export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
-./bootstrap.sh --prefix=${RPM_BUILD_ROOT}/%{_prefix} --with-libraries=system,thread
+./bootstrap.sh --prefix=${RPM_BUILD_ROOT}/%{_prefix} --with-libraries=thread
 ./b2 cxxflags=-fPIC cflags=-fPIC -a stage --stagedir=${source_dir}/tmp_install variant=release threading=multi link=static
 mkdir -p ${RPM_BUILD_ROOT}/%{_prefix}/lib
 cp -r ${source_dir}/tmp_install/lib/*.a ${RPM_BUILD_ROOT}/%{_prefix}/lib
@@ -66,6 +66,8 @@ rm -rf libs
 %postun -p /sbin/ldconfig
 
 %changelog
+* Tue Aug 04 2026 zongmei.zzm
+- upgrade to 1.91.0
 * Wed Jul 29 2026 zongmei.zzm
 - upgrade to 1.81.0
 * Tue Mar 10 2022 xuhao.yf
