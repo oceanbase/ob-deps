@@ -15,6 +15,9 @@ SOURCE_SHA256=de5e6b0e4913395c6bdfa90537febd9028ea4c0735d2cdb0cd9b45d5f51264f5
 # download source code
 if [[ ! -f "$ROOT_DIR/$SOURCE_ARCHIVE" ]]; then
     echo "Download source code"
+    # archives.boost.io is slow from CN network recently, download from sourceforge temporarily
+    wget "https://master.dl.sourceforge.net/project/boost/boost/$VERSION/$SOURCE_ARCHIVE" \
+        -O "$ROOT_DIR/$SOURCE_ARCHIVE" --no-check-certificate || \
     wget "https://archives.boost.io/release/$VERSION/source/$SOURCE_ARCHIVE" \
         -O "$ROOT_DIR/$SOURCE_ARCHIVE" --no-check-certificate
 fi
