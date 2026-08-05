@@ -20,7 +20,9 @@ SOURCE_SHA256=11f8f032a73cfd91899f170341578cabc040c4473e95a056cdc919c90778fa05
 # download source code
 if [[ ! -f "$ROOT_DIR/$SOURCE_ARCHIVE" ]]; then
     echo "Download source code"
-    # beta tarballs are only on archives.boost.io (sourceforge does not mirror betas)
+    # archives.boost.io is slow from CN network recently, download from sourceforge temporarily
+    wget "https://master.dl.sourceforge.net/project/boost/boost/${VERSION}.beta1/$SOURCE_ARCHIVE" \
+        -O "$ROOT_DIR/$SOURCE_ARCHIVE" --no-check-certificate || \
     wget "https://archives.boost.io/beta/${VERSION}.beta1/source/$SOURCE_ARCHIVE" \
         -O "$ROOT_DIR/$SOURCE_ARCHIVE" --no-check-certificate
 fi
