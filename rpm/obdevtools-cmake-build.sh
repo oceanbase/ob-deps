@@ -4,7 +4,7 @@ CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/../
 PROJECT_DIR=${1:-"$CUR_DIR"}
 PROJECT_NAME=${2:-"obdevtools-cmake"}
-VERSION=${3:-"3.30.3"}
+VERSION=${3:-"4.2.7"}
 RELEASE=${4:-"1"}
 
 # Configure custom source file directory
@@ -17,4 +17,4 @@ if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/cmake-$VERSION.*[tar|gz|bz2|xz|z
 fi
 
 cd $CUR_DIR
-bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE
+bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME-$VERSION $VERSION $RELEASE
