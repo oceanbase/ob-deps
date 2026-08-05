@@ -33,6 +33,7 @@ mkdir -p $TOP_DIR/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
 os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
 arch=`uname -p`
+ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 
 if [ x"${arch}" == x"loongarch64" ]; then
     export TOOLS_DIR=/usr
