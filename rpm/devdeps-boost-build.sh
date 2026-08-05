@@ -34,7 +34,6 @@ export BOOST_SOURCE_DIR
 rm -rf $TOP_DIR
 mkdir -p $TOP_DIR/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
-os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
 arch=`uname -p`
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 
@@ -45,6 +44,7 @@ elif [[ "${ID}"x == "alinux"x ]]; then
     yum install -y obdevtools-gcc9-9.3.0
     export TOOLS_DIR=/usr/local/oceanbase/devtools
 else
+    os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
     target_dir_3rd=${PROJECT_DIR}/deps/3rd
     pkg_dir=$target_dir_3rd/pkg
     mkdir -p $pkg_dir
