@@ -28,7 +28,7 @@ if [[ "${ID}" == "alinux" && "$arch" == "aarch64" ]]; then
 fi
 
 if [[ "$arch" == "loongarch64" ]]; then
-    yum install -y expat-devel
+    yum install -y expat-devel autoconf automake libtool
 fi
 
 cd $CUR_DIR
