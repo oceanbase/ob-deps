@@ -35,7 +35,7 @@ if [ "${OS_ARCH}x" = "sw_64x" ]; then
 fi
 
 ./bootstrap --prefix=${RPM_BUILD_ROOT}/%{_prefix} -- -DCMAKE_USE_OPENSSL=ON
-CPU_CORES=`grep -c ^processor /proc/cpuinfo`
+CPU_CORES=8
 make -j${CPU_CORES};
 
 %install
