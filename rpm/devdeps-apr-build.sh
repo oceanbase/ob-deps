@@ -5,10 +5,14 @@ PROJECT_NAME=${2:-"devdeps-apr"}
 VERSION=${3:-"1.7.5"}
 RELEASE=${4:-"3"}
 
+# Configure custom source file directory
+[ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
+
 # check source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/apr-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download source code"
-    wget https://dlcdn.apache.org//apr/apr-$VERSION.tar.gz -O $ROOT_DIR/apr-$VERSION.tar.gz --no-check-certificate
+    wget https://github.com/apache/apr/archive/refs/tags/$VERSION.tar.gz -O $ROOT_DIR/apr-$VERSION.tar.gz --no-check-certificate
+    # wget https://dlcdn.apache.org//apr/apr-$VERSION.tar.gz -O $ROOT_DIR/apr-$VERSION.tar.gz --no-check-certificate
     wget https://archive.apache.org/dist/apr/apr-util-1.6.3.tar.gz -O $ROOT_DIR/apr-util-1.6.3.tar.gz
 fi
 

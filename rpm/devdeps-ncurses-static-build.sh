@@ -7,6 +7,9 @@ PROJECT_NAME=${2:-"devdeps-ncurses-static"}
 VERSION=${3:-"6.5"}
 RELEASE=${4:-"1"}
 
+# Configure custom source file directory
+[ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
+
 # check source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/ncurses-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download source code"
