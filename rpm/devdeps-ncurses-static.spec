@@ -1,5 +1,5 @@
 Name: devdeps-ncurses-static
-Version: 6.5
+Version: %(echo $VERSION)
 Release: %(echo $RELEASE)%{?dist}
 Url: http://invisible-island.net/ncurses/ncurses.html
 Summary: Static libraries for the ncurses library
