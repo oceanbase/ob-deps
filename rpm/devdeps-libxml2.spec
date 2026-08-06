@@ -48,6 +48,13 @@ CodeRev:%{_source_revision}
 
 # create dirs
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    export CFLAGS="-fPIC -mcmodel=large"
+    export CXXFLAGS="-fPIC -D_GLIBCXX_USE_CXX11_ABI=0 -mcmodel=large"
+    export LDFLAGS="-pie -mcmodel=large"
+fi
+
 cd $OLDPWD/../;
 rm -rf %{_src}
 tar xvf %{_src}.tar.xz
