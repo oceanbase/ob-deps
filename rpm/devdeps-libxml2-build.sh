@@ -4,7 +4,7 @@ CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$CUR_DIR"}
 PROJECT_NAME=${2:-"devdeps-libxml2"}
-VERSION=${3:-"2.13.6"}
+VERSION=${3:-"2.15.3"}
 RELEASE=${4:-"3"}
 
 # Configure custom source file directory
@@ -13,7 +13,7 @@ RELEASE=${4:-"3"}
 # check source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/libxml2-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download source code"
-    wget https://download.gnome.org/sources/libxml2/2.13/libxml2-$VERSION.tar.xz -O $ROOT_DIR/libxml2-$VERSION.tar.xz --no-check-certificate
+    wget https://download.gnome.org/sources/libxml2/2.15/libxml2-$VERSION.tar.xz -O $ROOT_DIR/libxml2-$VERSION.tar.xz --no-check-certificate
 fi
 
 cd $CUR_DIR
