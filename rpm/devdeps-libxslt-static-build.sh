@@ -40,7 +40,7 @@ setup_centos7_repo()
 }
 
 if [[ "$arch" == "loongarch64" ]]; then
-    yum install -y ${loong_deps_url}/devdeps-libxml2-2.15.3-22026073116.an8.loongarch64.rpm
+    yum install -y ${loong_deps_url}/devdeps-libxml2-2.15.3-32026080610.an8.loongarch64.rpm
 elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install devdeps-libxml2-2.15.3 -y
