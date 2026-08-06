@@ -17,6 +17,9 @@ BOOST_SOURCE_DIR=boost_${VERSION//./_}
 SOURCE_ARCHIVE=${BOOST_SOURCE_DIR}_b1.tar.bz2
 SOURCE_SHA256=11f8f032a73cfd91899f170341578cabc040c4473e95a056cdc919c90778fa05
 
+# Configure custom source file directory
+[ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
+
 # download source code
 if [[ ! -f "$ROOT_DIR/$SOURCE_ARCHIVE" ]]; then
     echo "Download source code"
