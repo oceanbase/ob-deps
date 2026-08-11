@@ -61,7 +61,7 @@ if [ "${OS_ARCH}x" = "loongarch64x" ]; then
     cp ../patch/config.guess ./build
     cp ../patch/config.sub ./build
 fi
-
+./buildconf
 ./configure --prefix=${RPM_BUILD_ROOT}/%{_prefix};
 make %{_smp_mflags}; 
 make install;

@@ -4,8 +4,11 @@ CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$CUR_DIR"}
 PROJECT_NAME=${2:-"devdeps-ncurses-static"}
-VERSION=${3:-"6.5"}
+VERSION=${3:-"6.6"}
 RELEASE=${4:-"1"}
+
+# Configure custom source file directory
+[ -n "$SOURCE_DIR" ] && mv $SOURCE_DIR/* $ROOT_DIR
 
 # check source code
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/ncurses-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then

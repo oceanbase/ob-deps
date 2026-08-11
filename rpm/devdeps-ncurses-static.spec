@@ -1,5 +1,5 @@
 Name: devdeps-ncurses-static
-Version: 6.5
+Version: %(echo $VERSION)
 Release: %(echo $RELEASE)%{?dist}
 Url: http://invisible-island.net/ncurses/ncurses.html
 Summary: Static libraries for the ncurses library
@@ -25,9 +25,15 @@ cd $OLDPWD/../
 rm -rf %{_src}
 tar -xf %{_src}.tar.gz
 cd %{_src}
-export CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
-export CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -pie -fstack-protector-strong"
+export CFLAGS="-fPIC -fstack-protector-strong"
+export CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 -fPIC -fstack-protector-strong"
 export LDFLAGS="-pie -z noexecstack -z now"
+OS_ARCH="$(uname -m)"
+if [ x"${OS_ARCH}" == x"loongarch64" ]; then
+    export CFLAGS="${CFLAGS} -mcmodel=large"
+    export CXXFLAGS="${CXXFLAGS} -mcmodel=large"
+    export LDFLAGS="${LDFLAGS} -mcmodel=large"
+fi
 ./configure --with-normal  --enable-overwrite --enable-terminal --with-shared --with-termlib --enable-tinfo --enable-widec=no
 make install DESTDIR=%{_tmppath}
 
