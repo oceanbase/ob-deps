@@ -4,7 +4,7 @@ CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
 PROJECT_NAME=${2:-"devdeps-apache-thrift"}
-VERSION=${3:-"0.23.0"}
+VERSION=${3:-"0.24.0"}
 RELEASE=${4:-"1"}
 
 source "$CUR_DIR/abi-env.sh"
@@ -15,8 +15,9 @@ source "$CUR_DIR/abi-env.sh"
 # check source code of apache thrift
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/thrift-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download apache-thrift source code"
-    wget https://archive.apache.org/dist/thrift/$VERSION/thrift-$VERSION.tar.gz \
-    -O ${ROOT_DIR}/thrift-${VERSION}.tar.gz --no-check-certificate
+    wget https://github.com/apache/thrift/archive/refs/tags/v${VERSION}.tar.gz -O ${ROOT_DIR}/thrift-${VERSION}.tar.gz --no-check-certificate
+    # wget https://archive.apache.org/dist/thrift/$VERSION/thrift-$VERSION.tar.gz \
+    # -O ${ROOT_DIR}/thrift-${VERSION}.tar.gz --no-check-certificate
 fi
 
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/boost_1_74_0.*[tar|gz|bz2|xz|zip]$"` ]]; then
