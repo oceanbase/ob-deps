@@ -4,7 +4,7 @@ CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
 PROJECT_NAME=${2:-"devdeps-apache-thrift"}
-VERSION=${3:-"0.16.0"}
+VERSION=${3:-"0.23.0"}
 RELEASE=${4:-"1"}
 
 source "$CUR_DIR/abi-env.sh"
@@ -48,4 +48,4 @@ export CC=$TOOLS_DIR/bin/gcc
 export CXX=$TOOLS_DIR/bin/g++
 
 cd $CUR_DIR
-bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE
+bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME-$VERSION $VERSION $RELEASE

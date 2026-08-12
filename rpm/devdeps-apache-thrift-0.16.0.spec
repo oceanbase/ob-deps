@@ -1,5 +1,5 @@
 Name: devdeps-apache-thrift
-Version: 0.16.0
+Version: %(echo $VERSION)
 Release: %(echo $RELEASE)%{?dist}
 Summary: This is the repository for accessing hive metastore
 License: https://github.com/apache/thrift/blob/0.16.0/LICENSE
@@ -13,7 +13,7 @@ AutoReqProv:no
 %define debug_package %{nil}
 
 %define _prefix /usr/local/oceanbase/deps/devel
-%define _src thrift-0.16.0
+%define _src thrift-%{version}
 %define _product_prefix thrift
 
 %description
