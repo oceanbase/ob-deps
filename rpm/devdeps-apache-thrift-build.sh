@@ -22,7 +22,7 @@ fi
 
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/boost_1_74_0.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download boost_1_74_0 source code"
-    wget https://archives.boost.io/release/$VERSION/source/boost_1_74_0.tar.bz2 -O $CUR_DIR/boost_1_74_0.tar.bz2 --no-check-certificate
+    wget https://archives.boost.io/release/1.74.0/source/boost_1_74_0.tar.bz2 -O $CUR_DIR/boost_1_74_0.tar.bz2 --no-check-certificate
 fi
 
 arch=$(uname -p)
@@ -37,7 +37,7 @@ else
 fi
 
 if [ x"${arch}" == x"loongarch64" ]; then
-    yum install -y gcc
+    yum install -y gcc autoconf automake libtool
     export TOOLS_DIR=/usr
 else
     yum install obdevtools-gcc9-9.3.0 -y
