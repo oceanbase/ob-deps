@@ -28,8 +28,6 @@ mkdir -p $pkg_dir
 if [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install obdevtools-cmake-3.30.3 -y
-    yum install devdeps-re2-20250812 -y
-    yum install devdeps-abseil-cpp-20250814.1 -y
     dep_pkgs=(obdevtools-gcc9-9.3.0-152024092711.al)
     if [[ $VERSION == "20.0.0" ]]; then
         dep_pkgs=(obdevtools-gcc9-9.3.0-152024092711.al obdevtools-llvm-17.0.6-72025060300.al)
@@ -47,9 +45,6 @@ else
         echo $OS_RELEASE
         echo 'not 7'
     fi
-    wget https://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
-    yum install devdeps-re2-20250812 -y
-    yum install devdeps-abseil-cpp-20250814.1 -y
     dep_pkgs=(obdevtools-gcc9-9.3.0-72024081318.el obdevtools-cmake-3.30.3-62025060510.el)
     download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/el"
     if [[ $VERSION == "20.0.0" ]]; then
