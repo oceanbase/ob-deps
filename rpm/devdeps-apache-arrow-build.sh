@@ -25,7 +25,14 @@ target_dir_3rd=${PROJECT_DIR}/deps/3rd
 pkg_dir=$target_dir_3rd/pkg
 mkdir -p $pkg_dir
 
-if [[ "${ID}"x == "alinux"x ]]; then
+if [ x"${arch}" == x"loongarch64" ]; then
+    if [ -n "${loong_deps_url}" ]; then
+        yum install -y ${loong_deps_url}/obdevtools-cmake-3.30.3-1.an8.loongarch64.rpm
+        yum install -y ${loong_deps_url}/obdevtools-llvm-13.0.1-1.an8.loongarch64.rpm
+        yum install -y ${loong_deps_url}/devdeps-apache-thrift-0.16.0-20260626.an8.loongarch64.rpm
+    fi
+    export loong_flag="-loong-"
+elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install obdevtools-cmake-3.30.3 -y
     dep_pkgs=(obdevtools-gcc9-9.3.0-152024092711.al)
@@ -87,4 +94,4 @@ fi
 echo "cmake version: $(cmake --version)"
 
 cd $CUR_DIR
-bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME-$VERSION $VERSION $RELEASE
+bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME${loong_flag}-$VERSION $VERSION $RELEASE
