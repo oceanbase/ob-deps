@@ -31,7 +31,7 @@ if [ x"${arch}" == x"loongarch64" ]; then
         yum install -y ${loong_deps_url}/obdevtools-llvm-13.0.1-1.an8.loongarch64.rpm
         yum install -y ${loong_deps_url}/devdeps-apache-thrift-0.16.0-20260626.an8.loongarch64.rpm
     fi
-    export loong_flag="-loong-"
+    export loong_flag="-loong"
 elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install obdevtools-cmake-3.30.3 -y
