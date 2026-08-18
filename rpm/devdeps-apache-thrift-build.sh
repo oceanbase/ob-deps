@@ -4,7 +4,7 @@ CUR_DIR=$(dirname $(readlink -f "$0"))
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
 PROJECT_NAME=${2:-"devdeps-apache-thrift"}
-VERSION=${3:-"0.16.0"}
+VERSION=${3:-"0.24.0"}
 RELEASE=${4:-"1"}
 
 source "$CUR_DIR/abi-env.sh"
@@ -15,13 +15,14 @@ source "$CUR_DIR/abi-env.sh"
 # check source code of apache thrift
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/thrift-$VERSION.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download apache-thrift source code"
-    wget https://archive.apache.org/dist/thrift/$VERSION/thrift-$VERSION.tar.gz \
-    -O ${ROOT_DIR}/thrift-${VERSION}.tar.gz --no-check-certificate
+    wget https://github.com/apache/thrift/archive/refs/tags/v${VERSION}.tar.gz -O ${ROOT_DIR}/thrift-${VERSION}.tar.gz --no-check-certificate
+    # wget https://archive.apache.org/dist/thrift/$VERSION/thrift-$VERSION.tar.gz \
+    # -O ${ROOT_DIR}/thrift-${VERSION}.tar.gz --no-check-certificate
 fi
 
 if [[ -z `find $ROOT_DIR -maxdepth 1 -regex ".*/boost_1_74_0.*[tar|gz|bz2|xz|zip]$"` ]]; then
     echo "Download boost_1_74_0 source code"
-    wget https://archives.boost.io/release/$VERSION/source/boost_1_74_0.tar.bz2 -O $CUR_DIR/boost_1_74_0.tar.bz2 --no-check-certificate
+    wget https://archives.boost.io/release/1.74.0/source/boost_1_74_0.tar.bz2 -O $CUR_DIR/boost_1_74_0.tar.bz2 --no-check-certificate
 fi
 
 arch=$(uname -p)
@@ -36,7 +37,7 @@ else
 fi
 
 if [ x"${arch}" == x"loongarch64" ]; then
-    yum install -y gcc
+    yum install -y gcc autoconf automake libtool bison flex
     export TOOLS_DIR=/usr
 else
     yum install obdevtools-gcc9-9.3.0 -y
@@ -48,4 +49,4 @@ export CC=$TOOLS_DIR/bin/gcc
 export CXX=$TOOLS_DIR/bin/g++
 
 cd $CUR_DIR
-bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE
+bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME-$VERSION $VERSION $RELEASE

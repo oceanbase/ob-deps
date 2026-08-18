@@ -1,5 +1,5 @@
 Name: devdeps-apache-thrift
-Version: 0.16.0
+Version: %(echo $VERSION)
 Release: %(echo $RELEASE)%{?dist}
 Summary: This is the repository for accessing hive metastore
 License: https://github.com/apache/thrift/blob/0.16.0/LICENSE
@@ -13,7 +13,7 @@ AutoReqProv:no
 %define debug_package %{nil}
 
 %define _prefix /usr/local/oceanbase/deps/devel
-%define _src thrift-0.16.0
+%define _src thrift-%{version}
 %define _product_prefix thrift
 
 %description
@@ -59,8 +59,8 @@ cp ${_compiled_prefix}/lib/libthrift.a $RPM_BUILD_ROOT/%{_prefix}/lib/
 cp -r ${_compiled_prefix}/include/thrift/* $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/
 
 ## reset config.h file in thrift, it will be conflict with oceanbase source code.
-sed -i 's/^#define PACKAGE_VERSION "0.16.0"/\/\/ #define PACKAGE_VERSION "0.16.0"/' $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/config.h
-sed -i 's/^#define PACKAGE_STRING "thrift 0.16.0"/\/\/ #define PACKAGE_STRING "thrift 0.16.0"/' $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/config.h
+sed -i 's/^#define PACKAGE_VERSION "%{version}"/\/\/ #define PACKAGE_VERSION "%{version}"/' $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/config.h
+sed -i 's/^#define PACKAGE_STRING "thrift %{version}"/\/\/ #define PACKAGE_STRING "thrift %{version}"/' $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/config.h
 sed -i 's/^#define PACKAGE_NAME "thrift"/\/\/ #define PACKAGE_NAME "thrift"/' $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/config.h
 sed -i 's/^#define PACKAGE "thrift"/\/\/ #define PACKAGE "thrift"/' $RPM_BUILD_ROOT/%{_prefix}/include/%{_product_prefix}/config.h
 
