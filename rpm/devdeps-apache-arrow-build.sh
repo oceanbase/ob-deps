@@ -29,12 +29,13 @@ if [ x"${arch}" == x"loongarch64" ]; then
     if [ -n "${loong_deps_url}" ]; then
         yum install -y ${loong_deps_url}/obdevtools-cmake-3.30.3-1.an8.loongarch64.rpm
         yum install -y ${loong_deps_url}/obdevtools-llvm-13.0.1-1.an8.loongarch64.rpm
-        yum install -y ${loong_deps_url}/devdeps-apache-thrift-0.16.0-20260626.an8.loongarch64.rpm
+        yum install -y ${loong_deps_url}/devdeps-apache-thrift-0.24.0-42026081222.an8.loongarch64.rpm
     fi
     export loong_flag="-loong"
 elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install obdevtools-cmake-3.30.3 -y
+    yum install -y devdeps-apache-thrift-0.24.0
     dep_pkgs=(obdevtools-gcc9-9.3.0-152024092711.al)
     if [[ $VERSION == "20.0.0" ]]; then
         dep_pkgs=(obdevtools-gcc9-9.3.0-152024092711.al obdevtools-llvm-17.0.6-72025060300.al)
@@ -54,6 +55,7 @@ else
     fi
     dep_pkgs=(obdevtools-gcc9-9.3.0-72024081318.el obdevtools-cmake-3.30.3-62025060510.el)
     download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/el"
+    yum install -y devdeps-apache-thrift-0.24.0
     if [[ $VERSION == "20.0.0" ]]; then
        dep_pkgs=(obdevtools-gcc9-9.3.0-72024081318.el obdevtools-llvm-17.0.6-72025060300.el obdevtools-cmake-3.30.3-62025060510.el)
     fi
