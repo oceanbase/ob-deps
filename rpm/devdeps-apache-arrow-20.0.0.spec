@@ -61,6 +61,11 @@ if [ -f "$ROOT_DIR/patch/apache-arrow-parquet-page-mgr-%{version}.patch" ]; then
     git apply --whitespace=fix ../patch/apache-arrow-parquet-page-mgr-%{version}.patch
 fi
 
+if [ -f "$ROOT_DIR/patch/apache-arrow-buffered-input-stream-gh-48311-%{version}.patch" ]; then
+    echo "Applying patch: apache-arrow-buffered-input-stream-gh-48311-%{version}.patch"
+    git apply --whitespace=fix ../patch/apache-arrow-buffered-input-stream-gh-48311-%{version}.patch
+fi
+
 cd cpp
 source_dir=$(pwd)
 tmp_install_dir=${source_dir}/tmp_install_dir
