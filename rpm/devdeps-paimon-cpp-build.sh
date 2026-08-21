@@ -14,24 +14,23 @@ RELEASE=${4:-"1"}
 # check source code
 PAIMON_CPP_COMMIT="4e582cb2f3978f09364591aa88403fe104626177"
 # 解决 orc timezone 卡死问题
-PAIMON_CPP_ORC_TIMEZONE_PATH=$ROOT_DIR/patch/paimon-cpp-orc-timezone.patch
+PAIMON_CPP_ORC_TIMEZONE_PATH=$ROOT_DIR/patch/paimon/patches/paimon-cpp-orc-timezone.patch
 # 解决 Identifier.h 析构 core 的问题
-PAIMON_CPP_IDENTIFIER_CORE=$ROOT_DIR/patch/paimon-cpp-identifier-core.patch
+PAIMON_CPP_IDENTIFIER_CORE=$ROOT_DIR/patch/paimon/patches/paimon-cpp-identifier-core.patch
 # 加速镜像下载
-PAIMON_CPP_DOWNLOAD_MIRROR_PATH=$ROOT_DIR/patch/paimon-cpp-download-mirror.patch
-# 新增 paimon::GetLibraryVersion 接口，OB 加载 so 时做版本校验
-PAIMON_CPP_VERSION_SYMBOL_PATH=$ROOT_DIR/patch/paimon-cpp-version-symbol.patch
-# 允许 Paimon 使用 OB devdeps-arrow 提供的 Arrow/Parquet
-PAIMON_CPP_SYSTEM_OB_ARROW_PATH=$ROOT_DIR/patch/paimon-cpp-system-ob-arrow.patch
-
+PAIMON_CPP_DOWNLOAD_MIRROR_PATH=$ROOT_DIR/patch/paimon/patches/paimon-cpp-download-mirror.patch
+# 修复 ArrowMemPoolAdaptor 分配失败仍返回 OK / Realloc 提前覆盖原指针的问题
+PAIMON_CPP_MEMPOOL_OOM_PATH=$ROOT_DIR/patch/paimon/patches/paimon-cpp-mempool-oom.patch
+# 上述修复的故障注入单测
+PAIMON_CPP_MEMPOOL_OOM_TEST_PATH=$ROOT_DIR/patch/paimon/patches/paimon-cpp-mempool-oom-test.patch
 if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
     echo "Clone ${PROJECT_NAME} source code from master"
-    git clone https://gh-proxy.org/https://github.com/alibaba/paimon-cpp.git $ROOT_DIR/paimon-cpp-$VERSION
+    GIT_LFS_SKIP_SMUDGE=1 git clone --no-checkout https://github.com/alibaba/paimon-cpp.git $ROOT_DIR/paimon-cpp-$VERSION
     cd $ROOT_DIR/paimon-cpp-$VERSION
-    git checkout $PAIMON_CPP_COMMIT
+    GIT_LFS_SKIP_SMUDGE=1 git checkout $PAIMON_CPP_COMMIT
 
     echo "Apply patch: $PAIMON_CPP_ORC_TIMEZONE_PATH"
-    git apply $PAIMON_CPP_ORC_TIMEZONE_PATH
+    git apply --whitespace=nowarn $PAIMON_CPP_ORC_TIMEZONE_PATH
 
     echo "Apply patch: $PAIMON_CPP_IDENTIFIER_CORE"
     git apply $PAIMON_CPP_IDENTIFIER_CORE
@@ -39,11 +38,31 @@ if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
     echo "Apply patch: $PAIMON_CPP_DOWNLOAD_MIRROR_PATH"
     git apply $PAIMON_CPP_DOWNLOAD_MIRROR_PATH
 
-    echo "Apply patch: $PAIMON_CPP_VERSION_SYMBOL_PATH"
-    git apply $PAIMON_CPP_VERSION_SYMBOL_PATH
+    echo "Apply patch: $PAIMON_CPP_MEMPOOL_OOM_PATH"
+    git apply $PAIMON_CPP_MEMPOOL_OOM_PATH
 
-    echo "Apply patch: $PAIMON_CPP_SYSTEM_OB_ARROW_PATH"
-    git apply $PAIMON_CPP_SYSTEM_OB_ARROW_PATH
+    echo "Apply patch: $PAIMON_CPP_MEMPOOL_OOM_TEST_PATH"
+    git apply $PAIMON_CPP_MEMPOOL_OOM_TEST_PATH
+
+    # 集成通用外表插件契约（JSON 控制面）：契约头放 include，实现放 src/ob_plugin。
+    # OB 通过 dlopen + 单入口符号 ob_ext_table_plugin_get_api 取整张 vtable。
+    echo "Integrate OB external-table plugin sources and headers"
+    mkdir -p include/paimon src/paimon/ob_plugin
+    cp $ROOT_DIR/patch/paimon/ob_plugin/ob_external_table_plugin.h       include/paimon/ob_external_table_plugin.h
+    cp $ROOT_DIR/patch/paimon/ob_plugin/ob_external_table_protocol.h     include/paimon/ob_external_table_protocol.h
+    cp $ROOT_DIR/patch/paimon/ob_plugin/ob_ext_host_api.h                  include/paimon/ob_ext_host_api.h       
+    cp $ROOT_DIR/patch/paimon/ob_plugin/ob_ext_plugin_host.h             src/paimon/ob_plugin/ob_ext_plugin_host.h
+    cp $ROOT_DIR/patch/paimon/ob_plugin/ob_ext_plugin_host.cpp           src/paimon/ob_plugin/ob_ext_plugin_host.cpp
+    cp $ROOT_DIR/patch/paimon/ob_plugin/ob_ext_plugin.cpp                src/paimon/ob_plugin/ob_ext_plugin.cpp
+    cp $ROOT_DIR/patch/paimon/ob_plugin/ob_ext_plugin_logger.h           src/paimon/ob_plugin/ob_ext_plugin_logger.h
+    cp $ROOT_DIR/patch/paimon/ob_plugin/ob_ext_plugin_logger.cpp        src/paimon/ob_plugin/ob_ext_plugin_logger.cpp
+
+    # 用仓库中的完整 CMakeLists.txt 替换原文件，已包含新插件源文件。
+    cp $ROOT_DIR/patch/paimon/CMakeLists.txt src/paimon/CMakeLists.txt
+
+    # 导出通用契约单入口符号 ob_ext_table_plugin_get_api（否则会被 local:* 隐藏）
+    sed -i 's/^    local:/        ob_ext_table_plugin_get_api;\n\n    local:/' src/paimon/symbols.map
+
     cd -
 fi
 
@@ -64,11 +83,25 @@ if [[ "${ID}"x == "alinux"x ]]; then
     yum install -y obdevtools-gcc9-9.3.0
     yum install -y devdeps-apache-arrow-20.0.0
 else
-    wget https://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
-    yum install -y obdevtools-llvm-17.0.6
-    yum install -y obdevtools-cmake-3.30.3
-    yum install -y obdevtools-gcc9-9.3.0
-    yum install -y devdeps-apache-arrow-20.0.0
+    os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
+    arch=`uname -p`
+    dep_pkgs=(obdevtools-gcc9-9.3.0-52022092914.el obdevtools-cmake-3.30.3-62025060510.el obdevtools-binutils-2.30-12022100413.el)
+
+    target_dir_3rd=${PROJECT_DIR}/deps/3rd
+    pkg_dir=$target_dir_3rd/pkg
+    mkdir -p $pkg_dir
+    for dep_pkg in ${dep_pkgs[@]}
+    do
+        TEMP=$(mktemp -p "/" -u ".XXXX")
+        download_base_url="https://mirrors.aliyun.com/oceanbase/development-kit/el"
+        deps_url=${download_base_url}/${os_release}/${arch}
+        pkg=${dep_pkg}${os_release}.${arch}.rpm
+        wget $deps_url/$pkg -O $pkg_dir/$TEMP
+        if [[ $? == 0 ]]; then
+            mv -f $pkg_dir/$TEMP $pkg_dir/$pkg
+        fi
+        (cd / && rpm2cpio $pkg_dir/$pkg | cpio -di -u --quiet)
+    done
 fi
 
 export TOOLS_DIR=/usr/local/oceanbase/devtools

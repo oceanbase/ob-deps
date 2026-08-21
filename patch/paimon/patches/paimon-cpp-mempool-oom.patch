@@ -1,0 +1,33 @@
+diff --git a/src/paimon/common/utils/arrow/mem_utils.cpp b/src/paimon/common/utils/arrow/mem_utils.cpp
+--- a/src/paimon/common/utils/arrow/mem_utils.cpp
++++ b/src/paimon/common/utils/arrow/mem_utils.cpp
+@@ -32,14 +32,27 @@
+         : pool_(*pool), life_holder_(pool) {}
+ 
+     arrow::Status Allocate(int64_t size, int64_t alignment, uint8_t** out) override {
+-        *out = reinterpret_cast<uint8_t*>(pool_.Malloc(size, alignment));
++        uint8_t* p = reinterpret_cast<uint8_t*>(pool_.Malloc(size, alignment));
++        if (p == nullptr) {
++            return arrow::Status::OutOfMemory("paimon pool Malloc failed, size=", size,
++                                              ", alignment=", alignment);
++        }
++        *out = p;
+         stats_.DidAllocateBytes(size);
+         return arrow::Status::OK();
+     }
+ 
+     arrow::Status Reallocate(int64_t old_size, int64_t new_size, int64_t alignment,
+                              uint8_t** ptr) override {
+-        *ptr = reinterpret_cast<uint8_t*>(pool_.Realloc(*ptr, old_size, new_size, alignment));
++        // Use a temporary: the underlying pool leaves the ORIGINAL buffer
++        // untouched on failure, so *ptr must keep pointing at it (ownership
++        // stays with the caller) and stats must only move on success.
++        uint8_t* p = reinterpret_cast<uint8_t*>(pool_.Realloc(*ptr, old_size, new_size, alignment));
++        if (p == nullptr) {
++            return arrow::Status::OutOfMemory("paimon pool Realloc failed, old_size=", old_size,
++                                              ", new_size=", new_size, ", alignment=", alignment);
++        }
++        *ptr = p;
+         stats_.DidReallocateBytes(old_size, new_size);
+         return arrow::Status::OK();
+     }

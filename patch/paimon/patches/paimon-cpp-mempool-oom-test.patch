@@ -1,0 +1,80 @@
+diff --git a/src/paimon/common/utils/arrow/mem_utils_test.cpp b/src/paimon/common/utils/arrow/mem_utils_test.cpp
+--- a/src/paimon/common/utils/arrow/mem_utils_test.cpp
++++ b/src/paimon/common/utils/arrow/mem_utils_test.cpp
+@@ -71,4 +71,76 @@
+     ASSERT_EQ(50, pool->max_memory());
+ }
+ 
++// A paimon MemoryPool that fails every allocation after `fail_after` successful
++// ones, mimicking a host allocator under memory pressure.
++class FailingPool : public paimon::MemoryPool {
++ public:
++    explicit FailingPool(int64_t fail_after) : fail_after_(fail_after) {}
++
++    void* Malloc(uint64_t size, uint64_t alignment = 0) override {
++        if (count_ >= fail_after_) {
++            return nullptr;
++        }
++        ++count_;
++        return inner_.Malloc(size, alignment);
++    }
++
++    void* Realloc(void* ptr, size_t old_size, size_t new_size, uint64_t alignment = 0) override {
++        if (count_ >= fail_after_) {
++            // Like the OB host pool: leave the original buffer untouched on failure.
++            return nullptr;
++        }
++        ++count_;
++        return inner_.Realloc(ptr, old_size, new_size, alignment);
++    }
++
++    void Free(void* ptr, uint64_t size) override { inner_.Free(ptr, size); }
++    void Free(void* ptr, uint64_t size, uint64_t alignment) override {
++        inner_.Free(ptr, size, alignment);
++    }
++    uint64_t CurrentUsage() const override { return inner_.CurrentUsage(); }
++    uint64_t MaxMemoryUsage() const override { return inner_.MaxMemoryUsage(); }
++
++ private:
++    int64_t fail_after_;
++    int64_t count_ = 0;
++    paimon::MemoryPool& inner_ = *paimon::GetDefaultPool();
++};
++
++// The adaptor must surface allocation failure as arrow::Status::OutOfMemory
++// instead of reporting success with a nullptr.
++TEST(MemUtilsTest, TestAllocateFailure) {
++    auto arrow_pool = GetArrowPool(std::shared_ptr<paimon::MemoryPool>(
++        std::make_shared<FailingPool>(/*fail_after=*/0)));
++    uint8_t* ptr = nullptr;
++    auto st = arrow_pool->Allocate(16, /*alignment=*/64, &ptr);
++    ASSERT_TRUE(st.IsOutOfMemory());
++    ASSERT_EQ(nullptr, ptr);
++    ASSERT_EQ(0, arrow_pool->bytes_allocated());
++    ASSERT_EQ(0, arrow_pool->num_allocations());
++}
++
++// Reallocate failure must keep *ptr pointing at the ORIGINAL buffer (ownership
++// stays with the caller) and must not move the stats.
++TEST(MemUtilsTest, TestReallocateFailureKeepsOriginal) {
++    auto arrow_pool = GetArrowPool(std::shared_ptr<paimon::MemoryPool>(
++        std::make_shared<FailingPool>(/*fail_after=*/1)));
++    const int64_t alignment = 64;
++    uint8_t* ptr = nullptr;
++    ASSERT_TRUE(arrow_pool->Allocate(16, alignment, &ptr).ok());
++    ASSERT_TRUE(ptr);
++    ASSERT_EQ(16, arrow_pool->bytes_allocated());
++
++    uint8_t* original = ptr;
++    auto st = arrow_pool->Reallocate(/*old_size=*/16, /*new_size=*/64, alignment, &ptr);
++    ASSERT_TRUE(st.IsOutOfMemory());
++    ASSERT_EQ(original, ptr);  // original buffer not lost
++    ASSERT_EQ(16, arrow_pool->bytes_allocated());  // stats unchanged
++    ASSERT_EQ(1, arrow_pool->num_allocations());
++
++    // The original buffer is still valid and freeable.
++    arrow_pool->Free(ptr, 16, alignment);
++    ASSERT_EQ(0, arrow_pool->bytes_allocated());
++}
++
+ }  // namespace paimon::test
