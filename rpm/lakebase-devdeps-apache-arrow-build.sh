@@ -27,6 +27,7 @@ mkdir -p $pkg_dir
 if [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install obdevtools-cmake-3.30.3 -y
+    yum install -y devdeps-apache-thrift-0.24.0
     dep_pkgs=(obdevtools-gcc9-9.3.0-152024092711.al)
     if [[ $VERSION == "20.0.0" ]]; then
         yum install devdeps-re2-20250812 -y
@@ -50,6 +51,7 @@ else
     fi
     wget https://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
     yum install obdevtools-cmake-3.30.3 -y
+    yum install -y devdeps-apache-thrift-0.24.0
     dep_pkgs=(obdevtools-gcc9-9.3.0-72024081318.el)
     if [[ $VERSION == "20.0.0" ]]; then
         yum install devdeps-re2-20250812 -y

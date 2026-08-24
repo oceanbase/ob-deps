@@ -106,7 +106,11 @@ cmake .. -DCMAKE_C_COMPILER=$TOOLS_DIR/bin/clang \
          -Dabsl_DIR="${OB_DEPS_PREFIX}/lib64/cmake/absl" \
          -DARROW_WITH_BROTLI=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_LZ4=ON \
          -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZLIB=ON -DARROW_WITH_ZSTD=ON -DARROW_JEMALLOC=OFF \
-         -DARROW_FLIGHT=ON -DARROW_FLIGHT_SQL=ON
+         -DARROW_FLIGHT=ON -DARROW_FLIGHT_SQL=ON \
+         -DThrift_SOURCE=SYSTEM \
+         -DThrift_ROOT=${OB_DEPS_PREFIX} \
+         -DThriftAlt_LIB=${OB_DEPS_PREFIX}/lib/libthrift.a \
+         -DThriftAlt_INCLUDE_DIR=${OB_DEPS_PREFIX}/include
 # Temporarily disable error exit
 set +e
 MAX_RETRIES=3
