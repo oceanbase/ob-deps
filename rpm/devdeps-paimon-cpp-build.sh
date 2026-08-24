@@ -1,7 +1,6 @@
 #!/bin/bash
 
 CUR_DIR=$(dirname $(readlink -f "$0"))
-source "$CUR_DIR/abi-env.sh"
 ROOT_DIR=$CUR_DIR/..
 PROJECT_DIR=${1:-"$ROOT_DIR"}
 PROJECT_NAME=${2:-"devdeps-paimon-cpp"}
@@ -65,7 +64,6 @@ if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
 
     cd -
 fi
-
 # Create tarball for rpmbuild
 if [[ ! -f $ROOT_DIR/paimon-cpp-$VERSION.tar.gz ]]; then
     cd $ROOT_DIR
@@ -73,15 +71,13 @@ if [[ ! -f $ROOT_DIR/paimon-cpp-$VERSION.tar.gz ]]; then
     cd -
 fi
 
-# prepare building environment
 ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 
 if [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
     yum install -y obdevtools-llvm-17.0.6
     yum install -y obdevtools-cmake-3.30.3
-    yum install -y obdevtools-gcc9-9.3.0
-    yum install -y devdeps-apache-arrow-20.0.0
+    yum install -y obdevtools-binutils-2.30
 else
     os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
     arch=`uname -p`
@@ -109,7 +105,9 @@ export PATH=$TOOLS_DIR/bin:$PATH
 export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
 export CC=$TOOLS_DIR/bin/clang
 export CXX=$TOOLS_DIR/bin/clang++
-export OB_DEPS_PREFIX=/usr/local/oceanbase/deps/devel
+
+export ABI_FLAG=$([[ "${CXX_ABI}" == "1" ]] && echo "-abiv1" || echo "")
+export ABI_CXXFLAGS=$([[ "${CXX_ABI}" == "1" ]] && echo "-D_GLIBCXX_USE_CXX11_ABI=1" || echo "-D_GLIBCXX_USE_CXX11_ABI=0")
 
 cd $CUR_DIR
 bash $CUR_DIR/rpmbuild.sh $PROJECT_DIR $PROJECT_NAME $VERSION $RELEASE
