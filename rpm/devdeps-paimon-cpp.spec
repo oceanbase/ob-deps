@@ -21,15 +21,8 @@ Paimon C++ library built for OceanBase devdeps (Ninja, old C++11 ABI, Jindo disa
 mkdir -p $RPM_BUILD_ROOT/%{_prefix}
 
 # _FORTIFY_SOURCE (often from rpmbuild) requires -O; third_party TBB etc. inherit these flags
-DISABLE_ATOMIC=""
-arch=`uname -p`
-if [ "x$arch" = "xaarch64" ]; then
-    DISABLE_ATOMIC="-mno-outline-atomics"
-fi
-TOOLCHAIN_FLAGS="--gcc-toolchain=${TOOLS_DIR} -B${TOOLS_DIR}/bin"
-export CFLAGS="${TOOLCHAIN_FLAGS} -O2 -fPIC ${DISABLE_ATOMIC}"
-export CXXFLAGS="${TOOLCHAIN_FLAGS} -O2 -fPIC ${DISABLE_ATOMIC}"
-export LDFLAGS="${TOOLCHAIN_FLAGS} -fuse-ld=lld ${DISABLE_ATOMIC} ${LDFLAGS:-}"
+export CFLAGS="-O2 -fPIC -z noexecstack -z now -pie -fstack-protector-strong"
+export CXXFLAGS="-O2 -fPIC -z noexecstack -z now -pie -fstack-protector-strong"
 export CPPFLAGS="${ABI_CXXFLAGS}"
 CPU_CORES=8
 ROOT_DIR=$OLDPWD/..
@@ -40,21 +33,9 @@ mkdir -p %{_src}
 tar zxf %{_src}.tar.gz --strip-components=1 -C %{_src}
 cd %{_src}
 
-# Drop Jindo SDK download (Aliyun-only tarball); CMake keeps PAIMON_ENABLE_JINDO=OFF.
-# Arrow is provided by devdeps-apache-arrow, so don't download a second Arrow source.
-grep -Ev 'PAIMON_JINDOSDK|PAIMON_ARROW_URL' third_party/versions.txt > third_party/versions.txt.tmp
+# Drop Jindo SDK download (Aliyun-only tarball); CMake keeps PAIMON_ENABLE_JINDO=OFF
+grep -v 'PAIMON_JINDOSDK' third_party/versions.txt > third_party/versions.txt.tmp
 mv -f third_party/versions.txt.tmp third_party/versions.txt
-
-for arrow_lib in libarrow.a libparquet.a libarrow_dataset.a libarrow_acero.a; do
-  if [ ! -f "${OB_DEPS_PREFIX}/lib64/${arrow_lib}" ]; then
-    echo "Missing ${OB_DEPS_PREFIX}/lib64/${arrow_lib}; install devdeps-apache-arrow first" >&2
-    exit 1
-  fi
-done
-
-# Disable oneTBB weak-symbol allocator probing for the bundled TBB build.
-sed -i 's#set(TBB_CMAKE_CXX_FLAGS "${EP_CXX_FLAGS} -Wno-error")#set(TBB_CMAKE_CXX_FLAGS "${EP_CXX_FLAGS} -Wno-error -D__TBB_WEAK_SYMBOLS_PRESENT=0")#' cmake_modules/ThirdpartyToolchain.cmake
-grep -q '__TBB_WEAK_SYMBOLS_PRESENT=0' cmake_modules/ThirdpartyToolchain.cmake
 
 # Offline: place third_party.tar.gz next to paimon-cpp-*.tar.gz ($ROOT_DIR); else download
 if [ -f "$ROOT_DIR/third_party.tar.gz" ]; then
@@ -71,7 +52,7 @@ cmake .. -DCMAKE_INSTALL_PREFIX=${RPM_BUILD_ROOT}/%{_prefix} \
          -DPAIMON_BUILD_TESTS=OFF \
          -DPAIMON_ENABLE_JINDO=OFF \
          -DPAIMON_BUILD_STATIC=ON \
-         -DPAIMON_BUILD_SHARED=OFF
+         -DPAIMON_BUILD_SHARED=ON
 make -j${CPU_CORES}
 
 # ---- 单体 lib_ob_paimon.so：把 paimon 全部组件和第三方静态库重链接成一个 .so ----
