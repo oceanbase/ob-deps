@@ -75,7 +75,7 @@ ID=$(grep -Po '(?<=^ID=).*' /etc/os-release | tr -d '"')
 
 if [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
-    yum install -y obdevtools-llvm-17.0.6
+    yum install -y obdevtools-gcc9-9.3.0
     yum install -y obdevtools-cmake-3.30.3
     yum install -y obdevtools-binutils-2.30
 else
@@ -103,8 +103,8 @@ fi
 export TOOLS_DIR=/usr/local/oceanbase/devtools
 export PATH=$TOOLS_DIR/bin:$PATH
 export LD_LIBRARY_PATH=$TOOLS_DIR/lib:$TOOLS_DIR/lib64:$LD_LIBRARY_PATH
-export CC=$TOOLS_DIR/bin/clang
-export CXX=$TOOLS_DIR/bin/clang++
+export CC=$TOOLS_DIR/bin/gcc
+export CXX=$TOOLS_DIR/bin/g++
 
 export ABI_FLAG=$([[ "${CXX_ABI}" == "1" ]] && echo "-abiv1" || echo "")
 export ABI_CXXFLAGS=$([[ "${CXX_ABI}" == "1" ]] && echo "-D_GLIBCXX_USE_CXX11_ABI=1" || echo "-D_GLIBCXX_USE_CXX11_ABI=0")
