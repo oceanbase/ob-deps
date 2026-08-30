@@ -25,13 +25,14 @@ fi
 wget http://mirrors.aliyun.com/oceanbase/OceanBase.repo -P /etc/yum.repos.d/
 yum install obdevtools-cmake-3.22.1 -y
 
+cd $ROOT_DIR
 # depends on libcurl(suggest 7.32.0 or higher)
 wget --no-check-certificate https://curl.se/download/curl-8.1.2.tar.gz -O curl-8.1.2.tar.gz
 tar -zxvf curl-8.1.2.tar.gz
 
 # depends on expat
-wget --no-check-certificate https://sourceforge.net/projects/expat/files/expat/2.5.0/expat-2.5.0.tar.gz/download -O expat-2.5.0.tar.gz
-tar -zxvf expat-2.5.0.tar.gz
+wget --no-check-certificate https://sourceforge.net/projects/expat/files/expat/2.6.2/expat-2.6.2.tar.gz/download -O expat-2.6.2.tar.gz
+tar -zxvf expat-2.6.2.tar.gz
 
 # depends on apr(suggest 1.5.2 or higher)
 wget --no-check-certificate https://dlcdn.apache.org//apr/apr-1.7.4.tar.gz -O apr-1.7.4.tar.gz
