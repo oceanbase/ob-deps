@@ -333,6 +333,7 @@ set(PAIMON_CORE_SRCS
     core/utils/snapshot_manager.cpp
     core/utils/special_field_ids.cpp
     core/utils/tag_manager.cpp
+    ob_plugin/ob_ext_scan_task_producer.cpp
     ob_plugin/ob_ext_plugin.cpp
     ob_plugin/ob_ext_plugin_host.cpp
     ob_plugin/ob_ext_plugin_logger.cpp)
@@ -367,6 +368,15 @@ add_subdirectory(common/file_index)
 add_subdirectory(common/global_index)
 
 if(PAIMON_BUILD_TESTS)
+    add_paimon_test(ob_ext_scan_task_producer_test
+                    SOURCES
+                    ob_plugin/ob_ext_scan_task_producer_test.cpp
+                    STATIC_LINK_LIBS
+                    paimon_shared
+                    test_utils_static
+                    fmt
+                    ${GTEST_LINK_TOOLCHAIN})
+
     add_paimon_test(memory_test
                     SOURCES
                     common/memory/memory_pool_test.cpp

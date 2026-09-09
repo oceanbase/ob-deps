@@ -1,0 +1,43 @@
+diff --git a/include/paimon/table/source/data_split.h b/include/paimon/table/source/data_split.h
+index 5ef0577..8f375ef 100644
+--- a/include/paimon/table/source/data_split.h
++++ b/include/paimon/table/source/data_split.h
+@@ -80,5 +80,10 @@ class DataSplit : public Split {
+     /// Get the list of metadata for all data files in this split.
+     /// @note This method will be removed in future versions and is only used for append tables.
+     virtual std::vector<SimpleDataFileMeta> GetFileList() const = 0;
++
++    /// Whether this split can bypass merge processing and be read as raw files.
++    /// Deletion vectors and schema evolution still require their normal handling.
++    /// @return true if merge processing can be bypassed
++    virtual bool RawConvertible() const = 0;
+ };
+ }  // namespace paimon
+diff --git a/src/paimon/core/table/source/data_split_impl.h b/src/paimon/core/table/source/data_split_impl.h
+index 6a1c667..99fa2b7 100644
+--- a/src/paimon/core/table/source/data_split_impl.h
++++ b/src/paimon/core/table/source/data_split_impl.h
+@@ -81,7 +81,7 @@ class DataSplitImpl : public DataSplit {
+         return is_streaming_;
+     }
+ 
+-    bool RawConvertible() const {
++    bool RawConvertible() const override {
+         return raw_convertible_;
+     }
+ 
+diff --git a/src/paimon/core/table/source/fallback_data_split.h b/src/paimon/core/table/source/fallback_data_split.h
+index 37ce92d..60ee19c 100644
+--- a/src/paimon/core/table/source/fallback_data_split.h
++++ b/src/paimon/core/table/source/fallback_data_split.h
+@@ -30,6 +30,10 @@ class FallbackDataSplit : public DataSplit {
+         return split_->GetFileList();
+     }
+ 
++    bool RawConvertible() const override {
++        return split_->RawConvertible();
++    }
++
+     bool IsFallback() const {
+         return is_fallback_;
+     }

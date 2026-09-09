@@ -22,6 +22,8 @@ PAIMON_CPP_DOWNLOAD_MIRROR_PATH=$ROOT_DIR/patch/paimon/patches/paimon-cpp-downlo
 PAIMON_CPP_MEMPOOL_OOM_PATH=$ROOT_DIR/patch/paimon/patches/paimon-cpp-mempool-oom.patch
 # 上述修复的故障注入单测
 PAIMON_CPP_MEMPOOL_OOM_TEST_PATH=$ROOT_DIR/patch/paimon/patches/paimon-cpp-mempool-oom-test.patch
+# 暴露 DataSplit 的 raw-convertible 语义供插件规划使用
+PAIMON_CPP_RAW_CONVERTIBLE_PATH=$ROOT_DIR/patch/paimon/patches/paimon-cpp-raw-convertible.patch
 if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
     echo "Clone ${PROJECT_NAME} source code from master"
     GIT_LFS_SKIP_SMUDGE=1 git clone --no-checkout https://github.com/alibaba/paimon-cpp.git $ROOT_DIR/paimon-cpp-$VERSION
@@ -43,6 +45,9 @@ if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
     echo "Apply patch: $PAIMON_CPP_MEMPOOL_OOM_TEST_PATH"
     git apply $PAIMON_CPP_MEMPOOL_OOM_TEST_PATH
 
+    echo "Apply patch: $PAIMON_CPP_RAW_CONVERTIBLE_PATH"
+    git apply $PAIMON_CPP_RAW_CONVERTIBLE_PATH
+
     # 集成通用外表插件契约（JSON 控制面）：契约头放 include，实现放 src/ob_plugin。
     # OB 通过 dlopen + 单入口符号 ob_ext_table_plugin_get_api 取整张 vtable。
     echo "Integrate OB external-table plugin sources and headers"
@@ -55,6 +60,9 @@ if [[ ! -d $ROOT_DIR/paimon-cpp-$VERSION ]]; then
     cp $ROOT_DIR/patch/paimon/ob_plugin/ob_ext_plugin.cpp                src/paimon/ob_plugin/ob_ext_plugin.cpp
     cp $ROOT_DIR/patch/paimon/ob_plugin/ob_ext_plugin_logger.h           src/paimon/ob_plugin/ob_ext_plugin_logger.h
     cp $ROOT_DIR/patch/paimon/ob_plugin/ob_ext_plugin_logger.cpp        src/paimon/ob_plugin/ob_ext_plugin_logger.cpp
+    cp $ROOT_DIR/patch/paimon/ob_plugin/ob_ext_scan_task_producer.cpp    src/paimon/ob_plugin/ob_ext_scan_task_producer.cpp
+    cp $ROOT_DIR/patch/paimon/ob_plugin/ob_ext_scan_task_producer.h      src/paimon/ob_plugin/ob_ext_scan_task_producer.h
+    cp $ROOT_DIR/patch/paimon/ob_plugin/ob_ext_scan_task_producer_test.cpp src/paimon/ob_plugin/ob_ext_scan_task_producer_test.cpp
 
     # 用仓库中的完整 CMakeLists.txt 替换原文件，已包含新插件源文件。
     cp $ROOT_DIR/patch/paimon/CMakeLists.txt src/paimon/CMakeLists.txt

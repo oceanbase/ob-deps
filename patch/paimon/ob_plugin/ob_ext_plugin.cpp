@@ -20,6 +20,7 @@
 #include "paimon/ob_external_table_plugin.h"
 #include "ob_ext_plugin_host.h"
 #include "ob_ext_plugin_logger.h"
+#include "ob_ext_scan_task_producer.h"
 
 #include <arrow/api.h>
 #include <arrow/c/bridge.h>
@@ -27,7 +28,6 @@
 
 #include "rapidjson/document.h"
 #include "rapidjson/stringbuffer.h"
-#include "rapidjson/writer.h"
 #include "rapidjson/writer.h"
 
 #include "paimon/catalog/identifier.h"
@@ -49,7 +49,6 @@
 #include "paimon/schema/schema.h"
 #include "paimon/status.h"
 #include "paimon/table/source/plan.h"
-#include "paimon/table/source/data_split.h"
 #include "paimon/table/source/split.h"
 #include "paimon/table/source/table_read.h"
 #include "paimon/table/source/table_scan.h"
@@ -203,38 +202,6 @@ bool recognize_hms_paimon(const rapidjson::Document& doc)
   return str_iequals(doc[OB_EXT_K_OUTPUT_FORMAT].GetString(), kPaimonHmsOutputFormat);
 }
 
-const char kBase64Alphabet[] =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-int status_to_errno(const paimon::Status& st)
-{
-  switch (st.code()) {
-    case paimon::StatusCode::OK:
-      return OB_EXT_SUCCESS;
-    case paimon::StatusCode::Invalid:
-    case paimon::StatusCode::IndexError:
-    case paimon::StatusCode::KeyError:
-    case paimon::StatusCode::TypeError:
-      return OB_EXT_INVALID_ARGUMENT;
-    case paimon::StatusCode::NotImplemented:
-      return OB_EXT_NOT_SUPPORTED;
-    case paimon::StatusCode::OutOfMemory:
-      return OB_EXT_ALLOCATE_MEMORY_FAILED;
-    case paimon::StatusCode::NotExist:
-      // Missing file/dir (e.g. table location gone) is NOT an IO error — let OB
-      // distinguish "path does not exist" from a real storage failure.
-      return OB_EXT_FILE_NOT_EXIST;
-    case paimon::StatusCode::SerializationError:
-      // paimon uses one code for both directions; this plugin is read-only, so
-      // every occurrence is a deserialize failure (split payload, metadata).
-      return OB_EXT_DESERIALIZE_ERROR;
-    case paimon::StatusCode::IOError:
-      return OB_EXT_IO_ERROR;
-    default:
-      return OB_EXT_ERR_UNEXPECTED;
-  }
-}
-
 // Log a paimon::Status failure at the CALL SITE and return the mapped OB errno.
 // This MUST be a macro (not a function) so OBEXT_LOG_WARN captures the real
 // __FILE__/__LINE__/__func__ of the failing paimon call — a function helper
@@ -244,7 +211,7 @@ int status_to_errno(const paimon::Status& st)
   (OBEXT_LOG_WARN((host), "%s: %s",                                                 \
                   (where) != nullptr ? (where) : "paimon plugin",                   \
                   (st).ToString().c_str()),                                         \
-   status_to_errno(st))
+   ::ob_ext_paimon::status_to_errno(st))
 
 // Log a C++ exception thrown out of a plugin entry point. Takes the caller's
 // source location explicitly (a function cannot capture __FILE__/__LINE__ at
@@ -259,7 +226,7 @@ int fail_exception_at(const ObExtTableHostApi* host, const char* where,
     throw;
   } catch (const paimon::Status& st) {
     OBEXT_LOG_WARN_AT(host, file, line, func, "%s: %s", w, st.ToString().c_str());
-    ret = status_to_errno(st);
+    ret = ob_ext_paimon::status_to_errno(st);
   } catch (const std::exception& e) {
     OBEXT_LOG_WARN_AT(host, file, line, func, "%s: std exception: %s", w, e.what());
   } catch (...) {
@@ -416,27 +383,6 @@ int copy_string_to_host(const ObExtTableHostApi* host, const std::string& s,
   return copy_string_to_host(host, s.data(), s.size(), out, out_len);
 }
 
-std::string base64_encode(const char* data, int32_t len)
-{
-  std::string out;
-  if (data == nullptr || len <= 0) {
-    return out;
-  }
-  out.reserve(((static_cast<size_t>(len) + 2) / 3) * 4);
-  const unsigned char* p = reinterpret_cast<const unsigned char*>(data);
-  for (int32_t i = 0; i < len; i += 3) {
-    const uint32_t b0 = p[i];
-    const uint32_t b1 = (i + 1 < len) ? p[i + 1] : 0;
-    const uint32_t b2 = (i + 2 < len) ? p[i + 2] : 0;
-    const uint32_t triple = (b0 << 16) | (b1 << 8) | b2;
-    out.push_back(kBase64Alphabet[(triple >> 18) & 0x3f]);
-    out.push_back(kBase64Alphabet[(triple >> 12) & 0x3f]);
-    out.push_back((i + 1 < len) ? kBase64Alphabet[(triple >> 6) & 0x3f] : '=');
-    out.push_back((i + 2 < len) ? kBase64Alphabet[triple & 0x3f] : '=');
-  }
-  return out;
-}
-
 int base64_value(unsigned char c)
 {
   if (c >= 'A' && c <= 'Z') return c - 'A';
@@ -516,29 +462,29 @@ int extract_options_schema_id(const char* options_json, int64_t& schema_id,
   return ret;
 }
 
-// Parse the task-scope key (payload_b64 -> serialized split bytes) of a
-// scan-task object. Scan-scope keys are ignored (already consumed at
-// reader_create / reader_open_scan).
-int parse_task_payload_json(const char* task_json, int32_t task_len, std::string& split_bytes,
-                            const ObExtTableHostApi* host)
+// Decode the plugin-owned Paimon split carried by one scan-task object.
+// Scan-scope keys are ignored (already consumed at reader_create / reader_open_scan).
+int decode_paimon_split_bytes(const char* task_json, int32_t task_len,
+                              std::string& serialized_split, const ObExtTableHostApi* host)
 {
   int ret = OB_EXT_SUCCESS;
   if (task_json == nullptr || task_len <= 0) {
-    OBEXT_LOG_WARN(host, "parse_task_payload_json: task_json is invalid, task_json=%p task_len=%d",
+    OBEXT_LOG_WARN(host, "decode_paimon_split_bytes: invalid task_json=%p task_len=%d",
                    (const void*)task_json, (int)task_len);
     ret = OB_EXT_INVALID_ARGUMENT;
   } else {
     rapidjson::Document doc;
     doc.Parse(task_json, static_cast<rapidjson::SizeType>(task_len));
     if (doc.HasParseError() || !doc.IsObject()) {
-      OBEXT_LOG_WARN(host, "parse_task_payload_json: task_json must be a JSON object");
+      OBEXT_LOG_WARN(host, "decode_paimon_split_bytes: task_json must be a JSON object");
       ret = OB_EXT_INVALID_ARGUMENT;
     } else {
-      std::string payload_b64;
-      if (OB_EXT_SUCCESS != (ret = get_task_string(doc, OB_EXT_K_PAYLOAD_B64, payload_b64, host))) {
-      } else if (!base64_decode(payload_b64.data(), payload_b64.size(), split_bytes)) {
-        // Undecodable plugin-serialized payload => corrupt scan-task data.
-        OBEXT_LOG_WARN(host, "parse_task_payload_json: task payload_b64 is invalid");
+      std::string plugin_split;
+      if (OB_EXT_SUCCESS
+          != (ret = get_task_string(doc, OB_EXT_K_PLUGIN_SPLIT, plugin_split, host))) {
+      } else if (!base64_decode(
+                     plugin_split.data(), plugin_split.size(), serialized_split)) {
+        OBEXT_LOG_WARN(host, "decode_paimon_split_bytes: plugin_split is invalid");
         ret = OB_EXT_DESERIALIZE_ERROR;
       }
     }
@@ -756,21 +702,22 @@ int build_schema_json(const std::string& paimon_schema_json, std::string& out,
     cols.PushBack(build_column_from_paimon(fid, name, ptype, al), al);
   }
   odoc.AddMember(rapidjson::StringRef(OB_EXT_K_COLUMNS), cols, al);
-  // Carry paimon's partition key names through to OB (option B: mark partition
-  // columns, do NOT build OB partitions — partition pruning is delegated to the
-  // plugin/SDK via partition_filter_json at plan_create). paimon's GetJsonSchema
-  // emits "partitionKeys" as a JSON array of field-name strings.
+  // Paimon's GetJsonSchema emits partitionKeys as field-name strings.
+  rapidjson::Value pkeys(rapidjson::kArrayType);
   const rapidjson::Value::ConstMemberIterator pit = pdoc.FindMember("partitionKeys");
-  if (pit != pdoc.MemberEnd() && pit->value.IsArray()) {
-    rapidjson::Value pkeys(rapidjson::kArrayType);
+  if (pit != pdoc.MemberEnd()) {
+    if (!pit->value.IsArray()) {
+      return OB_EXT_INVALID_ARGUMENT;
+    }
     for (rapidjson::SizeType i = 0; i < pit->value.Size(); ++i) {
       const rapidjson::Value& pk = pit->value[i];
-      if (pk.IsString()) {
-        pkeys.PushBack(rapidjson::Value(pk.GetString(), static_cast<rapidjson::SizeType>(pk.GetStringLength()), al), al);
+      if (!pk.IsString()) {
+        return OB_EXT_INVALID_ARGUMENT;
       }
+      pkeys.PushBack(rapidjson::Value(pk.GetString(), pk.GetStringLength(), al), al);
     }
-    odoc.AddMember(rapidjson::StringRef(OB_EXT_K_PARTITION_KEYS), pkeys, al);
   }
+  odoc.AddMember(rapidjson::StringRef(OB_EXT_K_PARTITION_KEYS), pkeys, al);
   // Plugin-private catalog context (T0): OB stores verbatim and passes back
   // inside options_json at plan_create. Format-specific keys live here only.
   rapidjson::Value catalog_ctx(rapidjson::kObjectType);
@@ -954,19 +901,21 @@ static bool parse_partition_filter(const char* json,
   return flatten_partition_filter(doc, out);
 }
 
-// Convert the shared contract predicate tree into a paimon Predicate. Unsupported
-// leaves are safely omitted from AND, but never from OR/NOT. OB evaluates the
-// original storage filter after reading, so this conversion is an optimization
-// and cannot change query correctness.
+// Convert the shared contract predicate tree into a paimon Predicate. When
+// require_full_conversion is false, unsupported leaves may be omitted from AND
+// because OB retains the complete residual filter. When true, every leaf must
+// convert so the result can prove that OB may safely elide that residual.
 class PredicateJsonParser {
  public:
   PredicateJsonParser(const std::shared_ptr<paimon::Schema>& schema,
                       const std::vector<int32_t>& read_field_ids,
-                      const ObExtTableHostApi* host)
+                      const ObExtTableHostApi* host,
+                      const bool require_full_conversion)
       : schema_(schema),
         read_field_ids_(read_field_ids),
         field_names_(schema != nullptr ? schema->FieldNames() : std::vector<std::string>()),
-        host_(host)
+        host_(host),
+        require_full_conversion_(require_full_conversion)
   {}
 
   bool Parse(const rapidjson::Value& node, std::shared_ptr<paimon::Predicate>& out)
@@ -1075,8 +1024,8 @@ class PredicateJsonParser {
     for (rapidjson::SizeType i = 0; i < children->Size(); ++i) {
       std::shared_ptr<paimon::Predicate> child;
       if (!Parse((*children)[i], child) || child == nullptr) {
-        if (!is_and) {
-          return false;  // partial OR could discard matching rows
+        if (!is_and || require_full_conversion_) {
+          return false;
         }
       } else {
         predicates.push_back(std::move(child));
@@ -1203,6 +1152,7 @@ class PredicateJsonParser {
   const std::vector<int32_t>& read_field_ids_;
   std::vector<std::string> field_names_;
   const ObExtTableHostApi* host_;
+  bool require_full_conversion_;
 };
 
 static bool parse_predicate_json(
@@ -1210,7 +1160,8 @@ static bool parse_predicate_json(
     const std::shared_ptr<paimon::Schema>& schema,
     const std::vector<int32_t>& read_field_ids,
     std::shared_ptr<paimon::Predicate>& out,
-    const ObExtTableHostApi* host)
+    const ObExtTableHostApi* host,
+    const bool require_full_conversion)
 {
   out.reset();
   if (is_empty_json(json)) {
@@ -1222,7 +1173,7 @@ static bool parse_predicate_json(
     OBEXT_LOG_WARN(host, "parse_predicate_json: invalid predicate json");
     return false;
   }
-  PredicateJsonParser parser(schema, read_field_ids, host);
+  PredicateJsonParser parser(schema, read_field_ids, host, require_full_conversion);
   return parser.Parse(doc, out);
 }
 
@@ -1327,11 +1278,14 @@ int pin_plan_to_latest_snapshot(const std::shared_ptr<paimon::FileSystem>& fs,
 }
 
 int apply_plan_scan_predicate(paimon::ScanContextBuilder& builder, const char* predicate_json,
+                              const char* partition_filter_json,
                               const std::shared_ptr<paimon::FileSystem>& fs, const char* table_uri,
                               const std::shared_ptr<paimon::TableSchema>& pinned_schema,
-                              const ObExtTableHostApi* host)
+                              const ObExtTableHostApi* host,
+                              bool& partition_filter_applied)
 {
   int ret = OB_EXT_SUCCESS;
+  partition_filter_applied = false;
   if (!is_empty_json(predicate_json)) {
     std::shared_ptr<paimon::Schema> pred_schema = pinned_schema;
     if (pred_schema == nullptr) {
@@ -1347,9 +1301,18 @@ int apply_plan_scan_predicate(paimon::ScanContextBuilder& builder, const char* p
       const std::vector<int32_t> all_fields;
       if (pred_schema == nullptr) {
         OBEXT_LOG_INFO(host, "plan_create: no latest schema; skip scan pushdown");
-      } else if (parse_predicate_json(predicate_json, pred_schema, all_fields, predicate, host) &&
+      } else if (parse_predicate_json(
+                     predicate_json, pred_schema, all_fields, predicate, host,
+                     false /*require_full_conversion: OB keeps the full scan residual*/) &&
                  predicate != nullptr) {
         builder.SetPredicate(predicate);
+        if (!is_empty_json(partition_filter_json)) {
+          std::shared_ptr<paimon::Predicate> partition_predicate;
+          partition_filter_applied = parse_predicate_json(
+              partition_filter_json, pred_schema, all_fields, partition_predicate, host,
+              true /*require_full_conversion: proof may elide the partition residual*/)
+              && partition_predicate != nullptr;
+        }
       } else {
         OBEXT_LOG_INFO(host, "plan_create: predicate is not convertible; skip scan pushdown");
       }
@@ -1385,64 +1348,6 @@ int create_scan_plan(paimon::ScanContextBuilder& builder, const ObExtTableHostAp
   return ret;
 }
 
-int build_plan_tasks_json(const std::shared_ptr<paimon::Plan>& plan,
-                          const std::shared_ptr<paimon::MemoryPool>& pool,
-                          const ObExtTableHostApi* host, char** out_tasks_json, int32_t* out_len)
-{
-  int ret = OB_EXT_SUCCESS;
-  rapidjson::Document doc;
-  doc.SetObject();
-  rapidjson::Document::AllocatorType& al = doc.GetAllocator();
-  rapidjson::Value tasks(rapidjson::kArrayType);
-  const auto& splits = plan->Splits();
-  for (auto it = splits.begin(); OB_EXT_SUCC(ret) && it != splits.end(); ++it) {
-    const auto& split = *it;
-    auto bytes_ret = paimon::Split::Serialize(split, pool);
-    if (!bytes_ret.ok()) {
-      ret = OBEXT_FAIL_STATUS(bytes_ret.status(), host, "plan_create: Split::Serialize");
-    } else {
-      const std::string bytes = std::move(bytes_ret).value();
-      const std::string payload = base64_encode(bytes.data(), static_cast<int32_t>(bytes.size()));
-
-      rapidjson::Value task(rapidjson::kObjectType);
-      // Feed OB's optimizer real per-task stats (cardinality / auto-dop depend on
-      // them; -1 collapses the row estimate to 1 and serializes PX plans).
-      // DataSplit carries per-file row_count/file_size from the manifest;
-      // non-data splits keep the -1 "unknown" fallback.
-      int64_t row_count = -1;
-      int64_t byte_size = -1;
-      const std::shared_ptr<paimon::DataSplit> data_split =
-          std::dynamic_pointer_cast<paimon::DataSplit>(split);
-      if (data_split != nullptr) {
-        row_count = 0;
-        byte_size = 0;
-        for (const auto& file_meta : data_split->GetFileList()) {
-          row_count += file_meta.row_count;
-          byte_size += file_meta.file_size;
-        }
-      }
-      task.AddMember(rapidjson::StringRef(OB_EXT_K_ROW_COUNT), row_count, al);
-      task.AddMember(rapidjson::StringRef(OB_EXT_K_BYTE_SIZE), byte_size, al);
-      task.AddMember(rapidjson::StringRef(OB_EXT_K_FILES), rapidjson::Value(rapidjson::kArrayType),
-                     al);
-      task.AddMember(rapidjson::StringRef(OB_EXT_K_SPLITTABLE), false, al);
-      task.AddMember(rapidjson::StringRef(OB_EXT_K_PAYLOAD_B64),
-                     rapidjson::Value(payload.c_str(),
-                                      static_cast<rapidjson::SizeType>(payload.size()), al),
-                     al);
-      tasks.PushBack(task, al);
-    }
-  }
-  if (OB_EXT_SUCC(ret)) {
-    doc.AddMember(rapidjson::StringRef(OB_EXT_K_TASKS), tasks, al);
-    rapidjson::StringBuffer sb;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
-    doc.Accept(writer);
-    ret = copy_string_to_host(host, sb.GetString(), sb.GetSize(), out_tasks_json, out_len);
-  }
-  return ret;
-}
-
 int apply_reader_predicate(paimon::ReadContextBuilder& builder,
                            const ObExtTableReaderWorkerState* worker,
                            const std::string& predicate_json,
@@ -1468,8 +1373,9 @@ int apply_reader_predicate(paimon::ReadContextBuilder& builder,
       std::shared_ptr<paimon::Predicate> predicate;
       if (pred_schema == nullptr) {
         OBEXT_LOG_INFO(host, "reader_open_scan: no latest schema; skip reader pushdown");
-      } else if (parse_predicate_json(predicate_json.c_str(), pred_schema,
-                                      worker->field_ids_, predicate, host)
+      } else if (parse_predicate_json(
+                     predicate_json.c_str(), pred_schema, worker->field_ids_, predicate, host,
+                     false /*require_full_conversion: OB keeps the full storage residual*/)
                  && predicate != nullptr) {
         builder.SetPredicate(predicate);
       } else {
@@ -1549,7 +1455,7 @@ int open_reader_split(const ObExtTableReaderWorkerState* worker,
                       const ObExtTableReaderScanState* scan,
                       ObExtTableReaderTaskState* task,
                       const ObExtTableHostApi* host,
-                      const std::string& split_bytes)
+                      const std::string& serialized_split)
 {
   int ret = OB_EXT_SUCCESS;
   paimon::TableRead* table_read = scan != nullptr ? scan->table_read_.get() : nullptr;
@@ -1559,7 +1465,7 @@ int open_reader_split(const ObExtTableReaderWorkerState* worker,
                    "reader_open_task: scan is configured without a TableRead");
   } else {
     auto split_ret = paimon::Split::Deserialize(
-        split_bytes.data(), split_bytes.size(), worker->pool_);
+        serialized_split.data(), serialized_split.size(), worker->pool_);
     if (!split_ret.ok()) {
       ret = OBEXT_FAIL_STATUS(split_ret.status(), host,
                               "reader_open_task: Split::Deserialize");
@@ -1726,6 +1632,7 @@ static int obext_plan_create(const char* table_uri, const char* options_json,
       std::shared_ptr<paimon::Executor> executor;
       std::shared_ptr<paimon::FileSystem> fs;
       std::shared_ptr<paimon::Plan> plan;
+      bool partition_filter_applied = false;
 
       if (OB_EXT_SUCCESS != (ret = parse_options_json(options_json, options, host))) {
         OBEXT_LOG_WARN(host, "plan_create: parse options_json failed, ret=%d", ret);
@@ -1753,13 +1660,20 @@ static int obext_plan_create(const char* table_uri, const char* options_json,
             !partition_filters.empty()) {
           builder.SetPartitionFilter(partition_filters);
         }
-        ret = apply_plan_scan_predicate(builder, predicate_json, fs, table_uri, pin.schema, host);
+        ret = apply_plan_scan_predicate(builder, predicate_json, partition_filter_json,
+                                        fs, table_uri, pin.schema, host,
+                                        partition_filter_applied);
         if (OB_EXT_SUCC(ret)) {
           ret = create_scan_plan(builder, host, plan);
         }
       }
       if (OB_EXT_SUCC(ret)) {
-        ret = build_plan_tasks_json(plan, pool, host, out_tasks_json, out_len);
+        std::string tasks_json;
+        ret = ob_ext_paimon::ScanTaskProducer::Produce(
+            plan, pool, pin.schema, options, partition_filter_applied, host, tasks_json);
+        if (OB_EXT_SUCC(ret)) {
+          ret = copy_string_to_host(host, tasks_json, out_tasks_json, out_len);
+        }
       }
     } catch (...) {
       ret = OBEXT_FAIL_EXCEPTION(host, "plan_create");
@@ -1904,13 +1818,14 @@ static int obext_reader_open_task(
       close_reader_task(task);
       task->host_ = worker->host_;
 
-      std::string split_bytes;
+      std::string serialized_split;
       if (OB_EXT_SUCCESS
-          != (ret = parse_task_payload_json(task_json, task_len, split_bytes, host))) {
-        OBEXT_LOG_WARN(host, "reader_open_task: parse task_json failed, ret=%d", ret);
+          != (ret = decode_paimon_split_bytes(
+                  task_json, task_len, serialized_split, host))) {
+        OBEXT_LOG_WARN(host, "reader_open_task: decode plugin_split failed, ret=%d", ret);
       } else {
         // Every task opens a new Split and BatchReader on the scan's TableRead.
-        ret = open_reader_split(worker, scan, task, host, split_bytes);
+        ret = open_reader_split(worker, scan, task, host, serialized_split);
       }
       if (OB_EXT_SUCC(ret)) {
         ++task->task_open_count_;
