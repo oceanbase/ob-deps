@@ -457,6 +457,35 @@ class ObHostFileSystem final : public paimon::FileSystem {
 
 }  // namespace
 
+int status_to_errno(const paimon::Status& status)
+{
+  switch (status.code()) {
+    case paimon::StatusCode::OK:
+      return OB_EXT_SUCCESS;
+    case paimon::StatusCode::Invalid:
+    case paimon::StatusCode::IndexError:
+    case paimon::StatusCode::KeyError:
+    case paimon::StatusCode::TypeError:
+      return OB_EXT_INVALID_ARGUMENT;
+    case paimon::StatusCode::NotImplemented:
+      return OB_EXT_NOT_SUPPORTED;
+    case paimon::StatusCode::OutOfMemory:
+      return OB_EXT_ALLOCATE_MEMORY_FAILED;
+    case paimon::StatusCode::NotExist:
+      // Missing file/dir (e.g. table location gone) is NOT an IO error — let OB
+      // distinguish "path does not exist" from a real storage failure.
+      return OB_EXT_FILE_NOT_EXIST;
+    case paimon::StatusCode::SerializationError:
+      // paimon uses one code for both directions; this plugin is read-only, so
+      // every occurrence is a deserialize failure (split payload, metadata).
+      return OB_EXT_DESERIALIZE_ERROR;
+    case paimon::StatusCode::IOError:
+      return OB_EXT_IO_ERROR;
+    default:
+      return OB_EXT_ERR_UNEXPECTED;
+  }
+}
+
 std::shared_ptr<paimon::MemoryPool> make_memory_pool(const ObExtTableHostApi* host)
 {
   return host == nullptr ? nullptr : std::make_shared<ObHostMemoryPool>(host);

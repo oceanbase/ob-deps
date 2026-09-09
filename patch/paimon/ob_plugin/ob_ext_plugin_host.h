@@ -34,6 +34,7 @@ namespace paimon {
 class Executor;
 class FileSystem;
 class MemoryPool;
+class Status;
 }  // namespace paimon
 
 namespace ob_ext_paimon {
@@ -42,6 +43,7 @@ std::shared_ptr<paimon::MemoryPool> make_memory_pool(const ObExtTableHostApi* ho
 std::shared_ptr<paimon::Executor> make_executor(const ObExtTableHostApi* host);
 std::shared_ptr<paimon::FileSystem> make_file_system(
     const ObExtTableHostApi* host, std::shared_ptr<paimon::Executor> executor);
+int status_to_errno(const paimon::Status& status);
 
 // ---- logging ----
 // Format the message into a stack buffer and hand it to the host's `log`
@@ -85,4 +87,3 @@ inline void obext_log(const ObExtTableHostApi* host, int32_t level, const char* 
 // so observer.log points at the caller's catch block, not inside the helper.
 #define OBEXT_LOG_WARN_AT(host, file, line, func, fmt, ...) \
   ::ob_ext_paimon::obext_log((host), OB_EXT_LOG_WARN, (file), (line), (func), (fmt), ##__VA_ARGS__)
-
