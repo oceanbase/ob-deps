@@ -25,13 +25,13 @@ if [ x"${arch}" == x"loongarch64" ]; then
     yum install -y ${loong_deps_url}/devdeps-abseil-cpp-20250814.1-20260630.an8.loongarch64.rpm
 elif [[ "${ID}"x == "alinux"x ]]; then
     wget http://mirrors.aliyun.com/oceanbase/OceanBaseAlinux.repo -P /etc/yum.repos.d/
-    yum install -y obdevtools-gcc9-9.3.0
+    yum install -y obdevtools-gcc-12.3.0
     yum install -y obdevtools-cmake-3.22.1
     yum install -y devdeps-openssl-static-1.1.1u
     yum install -y devdeps-abseil-cpp${ABI_FLAG}-20250814.1
 else
     os_release=`grep -Po '(?<=release )\d' /etc/redhat-release`
-    dep_pkgs=(obdevtools-gcc9-9.3.0-52022092914.el obdevtools-cmake-3.22.1-22022100417.el devdeps-openssl-static-1.1.1u-22023100710.el devdeps-abseil-cpp${ABI_FLAG}-20250814.1-42026041611.el)
+    dep_pkgs=(obdevtools-gcc-12.3.0-32024122017.el obdevtools-cmake-3.22.1-22022100417.el devdeps-openssl-static-1.1.1u-22023100710.el devdeps-abseil-cpp${ABI_FLAG}-20250814.1-42026041611.el)
  
     target_dir_3rd=${PROJECT_DIR}/deps/3rd
     pkg_dir=$target_dir_3rd/pkg
@@ -54,6 +54,9 @@ export DEP_DIR=/usr/local/oceanbase/deps/devel
 export PATH=/usr/local/oceanbase/devtools/bin:$PATH
 if [ x"${arch}" == x"loongarch64" ]; then
     export BABASSL_DIR=/usr/local/babassl-ob
+else
+    export CC=/usr/local/oceanbase/devtools/bin/gcc
+    export CXX=/usr/local/oceanbase/devtools/bin/g++
 fi
 export ABSL_DIR=$DEP_DIR/lib64/cmake/absl/
 export LD_LIBRARY_PATH=/usr/local/oceanbase/devtools/lib:/usr/local/oceanbase/devtools/lib64:$LD_LIBRARY_PATH
