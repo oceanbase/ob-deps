@@ -66,6 +66,11 @@ if [ -f "$ROOT_DIR/patch/apache-arrow-buffered-input-stream-gh-48311-%{version}.
     git apply --whitespace=fix ../patch/apache-arrow-buffered-input-stream-gh-48311-%{version}.patch
 fi
 
+if [ -f "$ROOT_DIR/patch/apache-arrow-parquet-logical-page-cache-%{version}.patch" ]; then
+    echo "Applying patch: apache-arrow-parquet-logical-page-cache-%{version}.patch"
+    git apply --whitespace=fix ../patch/apache-arrow-parquet-logical-page-cache-%{version}.patch
+fi
+
 if [ -f "$ROOT_DIR/patch/paimon-cpp-arrow-%{version}.diff" ]; then
     echo "Applying patch: paimon-cpp-arrow-%{version}.diff"
     git apply --whitespace=fix ../patch/paimon-cpp-arrow-%{version}.diff
